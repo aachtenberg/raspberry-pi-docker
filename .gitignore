@@ -1,0 +1,83 @@
+# ============================================================================
+# Docker Infrastructure .gitignore
+# ============================================================================
+
+# Secrets and Environment Variables
+# NEVER commit these!
+.env
+*.env
+!.env.example
+secrets/
+*.key
+*.pem
+*.crt
+*.token
+
+# Docker Data and Volumes
+# These are persisted in Docker volumes, not in Git
+data/
+logs/
+*.log
+*.db
+*.sqlite
+*.sqlite3
+
+# Nginx Proxy Manager Data
+# Large data directories - managed outside Git
+/nginx-proxy-manager/data/
+/nginx-proxy-manager/letsencrypt/
+
+# Home Assistant Data
+# Large config directory - separate repo if needed
+/homeassistant/
+
+# Backups
+*.tar.gz
+*.zip
+*.bak
+backup-*/
+backups/
+*.backup
+
+# Temporary Files
+tmp/
+temp/
+*.tmp
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Editor and IDE
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+.project
+.settings/
+
+# OS Files
+.DS_Store
+.AppleDouble
+.LSOverride
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Migration Scripts (already run)
+migrate.sh
+
+# Prometheus/Loki Data Directories
+prometheus/data/
+loki-data/
+grafana/data/
+
+# Plugin directories with downloaded content
+grafana/plugins/
+
+# Docker Compose Override
+docker-compose.override.yml
+
+# Local development
+.local/

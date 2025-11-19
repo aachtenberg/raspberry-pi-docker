@@ -1,0 +1,55 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'raspberry-pi'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          instance: 'raspberry-pi'
+          host: '192.168.0.167'
+
+  - job_name: 'docker'
+    static_configs:
+      - targets: ['cadvisor:8080']
+        labels:
+          instance: 'raspberry-pi'
+          host: '192.168.0.167'
+    metric_relabel_configs:
+      - source_labels: [id]
+        regex: '.*/docker-8d972d5a5757.*'
+        target_label: container_name
+        replacement: 'cadvisor'
+      - source_labels: [id]
+        regex: '.*/docker-8e722dfab4a2.*'
+        target_label: container_name
+        replacement: 'prometheus'
+      - source_labels: [id]
+        regex: '.*/docker-dca25ba8c2c0.*'
+        target_label: container_name
+        replacement: 'node-exporter'
+      - source_labels: [id]
+        regex: '.*/docker-bad099e00804.*'
+        target_label: container_name
+        replacement: 'nginx-proxy-manager'
+      - source_labels: [id]
+        regex: '.*/docker-42f4524ca307.*'
+        target_label: container_name
+        replacement: 'cloudflared'
+      - source_labels: [id]
+        regex: '.*/docker-04054e77cd36.*'
+        target_label: container_name
+        replacement: 'grafana'
+      - source_labels: [id]
+        regex: '.*/docker-8781f2817076.*'
+        target_label: container_name
+        replacement: 'mosquitto'
+      - source_labels: [id]
+        regex: '.*/docker-6c1142c79e78.*'
+        target_label: container_name
+        replacement: 'homeassistant'

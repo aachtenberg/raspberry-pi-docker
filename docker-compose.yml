@@ -1,0 +1,206 @@
+# Unified Docker Compose for Raspberry Pi Home Automation
+# All services managed in one place
+# Location: /home/aachten/docker/
+
+services:
+  # ============================================================================
+  # INFLUXDB - Time Series Database
+  # ============================================================================
+  influxdb:
+    image: influxdb:2.7
+    container_name: influxdb
+    restart: unless-stopped
+    ports:
+      - '8086:8086'
+    volumes:
+      - influxdb-data:/var/lib/influxdb2
+      - influxdb-config:/etc/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_USERNAME}
+      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG_ID}
+      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
+      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_ADMIN_TOKEN}
+    networks:
+      - monitoring
+
+  # ============================================================================
+  # GRAFANA - Visualization & Dashboards
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    volumes:
+      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_INSTALL_PLUGINS=grafana-mqtt-datasource 1.1.0
+    networks:
+      - monitoring
+    depends_on:
+      - influxdb
+      - prometheus
+      - loki
+
+  # ============================================================================
+  # PROMETHEUS STACK - Metrics & Logs
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - '9090:9090'
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - monitoring
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - '9100:9100'
+    command:
+      - '--path.rootfs=/host'
+    volumes:
+      - /:/host:ro,rslave
+    networks:
+      - monitoring
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    container_name: cadvisor
+    restart: unless-stopped
+    ports:
+      - '8081:8080'
+    volumes:
+      - /:/rootfs:ro
+      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - /sys:/sys:ro
+      - /sys/fs/cgroup:/cgroup:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    privileged: true
+    devices:
+      - /dev/kmsg
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    ports:
+      - '3100:3100'
+    volumes:
+      - ./prometheus/loki-config.yml:/etc/loki/local-config.yml
+      - loki-data:/loki
+    command:
+      - '-config.file=/etc/loki/local-config.yml'
+    user: root
+    networks:
+      - monitoring
+
+  promtail:
+    image: grafana/promtail:latest
+    container_name: promtail
+    restart: unless-stopped
+    volumes:
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./prometheus/promtail-config.yml:/etc/promtail/config.yml
+    command:
+      - '-config.file=/etc/promtail/config.yml'
+    depends_on:
+      - loki
+    networks:
+      - monitoring
+
+  # ============================================================================
+  # HOME ASSISTANT - Home Automation
+  # ============================================================================
+  homeassistant:
+    image: ghcr.io/home-assistant/home-assistant:stable
+    container_name: homeassistant
+    restart: unless-stopped
+    network_mode: host
+    privileged: true
+    volumes:
+      - /home/aachten/homeassistant:/config
+      - /etc/localtime:/etc/localtime:ro
+      - /run/dbus:/run/dbus:ro
+
+  # ============================================================================
+  # MQTT BROKER - Mosquitto
+  # ============================================================================
+  mosquitto:
+    image: eclipse-mosquitto:latest
+    container_name: mosquitto-broker
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
+      - mosquitto-data:/mosquitto/data
+      - mosquitto-log:/mosquitto/log
+
+  # ============================================================================
+  # NGINX PROXY MANAGER - Reverse Proxy
+  # ============================================================================
+  nginx-proxy-manager:
+    image: jc21/nginx-proxy-manager:latest
+    container_name: nginx-proxy-manager
+    restart: unless-stopped
+    ports:
+      - '81:81'     # Admin UI
+      - '8080:80'   # HTTP
+      - '8443:443'  # HTTPS
+    environment:
+      - DB_SQLITE_FILE=/data/database.sqlite
+    volumes:
+      - /home/aachten/nginx-proxy-manager/data:/data
+      - /home/aachten/nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+    networks:
+      - monitoring
+
+  # ============================================================================
+  # CLOUDFLARE TUNNEL - Remote Access
+  # ============================================================================
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    command: tunnel run
+    environment:
+      - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
+    network_mode: host
+
+# ==============================================================================
+# VOLUMES
+# ==============================================================================
+volumes:
+  influxdb-data:
+  influxdb-config:
+  grafana-data:
+  prometheus-data:
+  loki-data:
+  mosquitto-data:
+  mosquitto-log:
+
+# ==============================================================================
+# NETWORKS
+# ==============================================================================
+networks:
+  monitoring:
+    driver: bridge
