@@ -1,8 +1,37 @@
-# Unified Docker Compose Stack
+# Raspberry Pi Docker Infrastructure
 
-This directory contains all Docker services for the Raspberry Pi home automation system.
+Production-ready Docker Compose stack for home IoT monitoring and automation. Designed to work with [ESP temperature sensors](https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor) for complete end-to-end temperature monitoring.
 
-## Quick Start
+## What This Does
+
+This infrastructure receives, stores, and visualizes temperature data from multiple ESP8266/ESP32 devices:
+
+- **4 ESP Devices** send temperature readings every 15 seconds
+- **InfluxDB** stores time-series data (time-series database)
+- **Grafana** creates beautiful dashboards and graphs
+- **Home Assistant** provides home automation and alerts
+- **Prometheus Stack** monitors system health and logs
+- **Cloudflare Tunnel** enables secure remote access
+
+Perfect for:
+- 🏠 Home temperature monitoring across multiple locations
+- 📊 Long-term temperature trend analysis
+- 🔔 Temperature-based alerts and automation
+- 🌐 Remote access to dashboards from anywhere
+- 📈 System monitoring and observability
+
+## Architecture
+
+```
+ESP Devices (4) → Raspberry Pi → InfluxDB → Grafana/Home Assistant
+                                    ↓
+                              Prometheus → System Monitoring
+                                    ↓
+                            Cloudflare Tunnel → Remote Access
+```
+
+See [ESP Temperature Sensor Project](https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor) for the device firmware.
+
 
 ### 1. Configure Secrets
 
