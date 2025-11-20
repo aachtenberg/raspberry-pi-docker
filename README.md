@@ -304,6 +304,33 @@ See [docs/GRAFANA_DASHBOARDS.md](docs/GRAFANA_DASHBOARDS.md) for detailed docume
 - Disaster recovery procedures
 - Troubleshooting guide
 
+
+### Automated Backups
+
+Grafana dashboards are automatically backed up daily at 2 AM via cron job.
+
+**View cron schedule:**
+```bash
+crontab -l
+```
+
+**Check backup logs:**
+```bash
+tail -f ~/docker/logs/grafana_backup.log
+```
+
+**Run manual backup:**
+```bash
+cd ~/docker
+./scripts/backup_grafana_dashboards.sh
+```
+
+The backup script automatically:
+- Exports all dashboards to JSON
+- Commits changes to Git (if any)
+- Pushes to GitHub
+- Logs all activity to `logs/grafana_backup.log`
+
 ## Support
 
 For issues or questions:
