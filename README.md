@@ -270,116 +270,45 @@ Old directories can be removed after verifying everything works.
 ## Documentation
 
 - [Secrets Setup Guide](docs/SECRETS_SETUP.md) - **Configure credentials before deploying**
+- [Grafana Dashboard Management](docs/GRAFANA_DASHBOARDS.md) - Export and import dashboards
 - [Making Repository Public Checklist](MAKING_PUBLIC_CHECKLIST.md) - Steps to safely make this repo public
 
 
-## Grafana Dashboard Management
-
-### Export Dashboards to Version Control
-
-Export all Grafana dashboards as JSON files for backup and version control:
-
-```bash
-cd ~/docker
-
-# Export dashboards (will prompt for password)
-GRAFANA_PASSWORD=<grafana_password> ./scripts/export_grafana_dashboards.sh
-
-# Dashboards will be saved to grafana/dashboards/*.json
-```
-
-**Commit to Git:**
-```bash
-git add grafana/dashboards/
-git commit -m "chore: export Grafana dashboards"
-git push
-```
-
-### Import Dashboards
-
-To restore or share dashboards:
-
-1. **Via Grafana UI**:
-   - Go to Dashboards → Import
-   - Upload JSON file from `grafana/dashboards/`
-   - Click Import
-
-2. **Via API** (automated):
-   ```bash
-   for file in grafana/dashboards/*.json; do
-     curl -X POST -H "Content-Type: application/json" \
-       -u admin:<password> \
-       -d @"$file" \
-       http://localhost:3000/api/dashboards/db
-   done
-   ```
-
-### Dashboard Files
-
-Exported dashboards include metadata:
-- Export timestamp
-- Dashboard title and UID
-- Folder location
-- Version number
-
-Perfect for:
-- 📦 Backing up dashboard configurations
-- 🔄 Sharing dashboards between Grafana instances
-- 📝 Version controlling dashboard changes
-- 🚀 Automating dashboard deployment
-
 
 ## Grafana Dashboard Management
 
-### Export Dashboards to Version Control
+Export, import, and version control your Grafana dashboards for backup and disaster recovery.
 
-Export all Grafana dashboards as JSON files for backup and version control:
+### Quick Export
 
 ```bash
 cd ~/docker
-
-# Export dashboards (will prompt for password)
-GRAFANA_PASSWORD=<grafana_password> ./scripts/export_grafana_dashboards.sh
-
-# Dashboards will be saved to grafana/dashboards/*.json
+./scripts/export_grafana_dashboards.sh
 ```
 
-**Commit to Git:**
-```bash
-git add grafana/dashboards/
-git commit -m "chore: export Grafana dashboards"
-git push
-```
+Dashboards are automatically saved to `grafana/dashboards/*.json`.
 
-### Import Dashboards
+### Features
 
-To restore or share dashboards:
+- 📦 **Backup** - Version control dashboard configurations
+- 🔄 **Share** - Distribute dashboards across environments
+- 🔑 **API Key** - Secure authentication (no password exposure)
+- 🚀 **Automated** - Fetch all dashboards with one command
 
-1. **Via Grafana UI**:
-   - Go to Dashboards → Import
-   - Upload JSON file from `grafana/dashboards/`
-   - Click Import
+### Complete Guide
 
-2. **Via API** (automated):
-   ```bash
-   for file in grafana/dashboards/*.json; do
-     curl -X POST -H "Content-Type: application/json" \
-       -u admin:<password> \
-       -d @"$file" \
-       http://localhost:3000/api/dashboards/db
-   done
-   ```
+See [docs/GRAFANA_DASHBOARDS.md](docs/GRAFANA_DASHBOARDS.md) for detailed documentation:
+- Authentication setup (API key generation)
+- Import/export workflows
+- Automated backup scheduling
+- Disaster recovery procedures
+- Troubleshooting guide
 
-### Dashboard Files
+## Support
 
-Exported dashboards include metadata:
-- Export timestamp
-- Dashboard title and UID
-- Folder location
-- Version number
-
-Perfect for:
-- 📦 Backing up dashboard configurations
-- 🔄 Sharing dashboards between Grafana instances
-- 📝 Version controlling dashboard changes
-- 🚀 Automating dashboard deployment
+For issues or questions:
+- **ESP Device Firmware**: [github.com/aachtenberg/esp12f_ds18b20_temp_sensor](https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor)
+- **Pi Infrastructure**: This repository
+- **InfluxDB**: [docs.influxdata.com/influxdb/v2.7/](https://docs.influxdata.com/influxdb/v2.7/)
+- **Grafana**: [grafana.com/docs/](https://grafana.com/docs/)
+- **Docker**: [docs.docker.com/](https://docs.docker.com/)
