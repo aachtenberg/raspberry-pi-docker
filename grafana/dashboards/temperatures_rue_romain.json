@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-11-23 07:00:02",
+    "exported": "2025-11-23 15:16:31",
     "title": "Temperatures Rue Romain",
     "uid": "adk6dmr",
     "folder": "General",
-    "version": 18
+    "version": 21
   },
   "dashboard": {
     "annotations": {
@@ -101,9 +101,9 @@
         "options": {
           "legend": {
             "calcs": [],
-            "displayMode": "hidden",
+            "displayMode": "list",
             "placement": "right",
-            "showLegend": false
+            "showLegend": true
           },
           "tooltip": {
             "hideZeros": false,
@@ -118,7 +118,7 @@
               "type": "influxdb",
               "uid": "bf41ily35am80b"
             },
-            "query": "from(bucket: \"sensor_data\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"temperature\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"tempC\")\r\n  |> group(columns: [\"device\"])\r\n  |> keep(columns: [\"_time\", \"_value\", \"device\"])",
+            "query": "  from(bucket: \"sensor_data\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"temperature\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"tempC\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> group(columns: [\"device\"])\r\n  |> keep(columns: [\"_time\", \"_value\", \"device\"])",
             "refId": "A"
           }
         ],
@@ -140,6 +140,6 @@
     "timezone": "browser",
     "title": "Temperatures Rue Romain",
     "uid": "adk6dmr",
-    "version": 18
+    "version": 21
   }
 }
