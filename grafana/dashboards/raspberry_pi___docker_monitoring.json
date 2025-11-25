@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-11-25 03:30:19",
+    "exported": "2025-11-25 07:00:02",
     "title": "Raspberry Pi & Docker Monitoring",
     "uid": "VKtkKcAVz",
     "folder": "General",
-    "version": 2
+    "version": 3
   },
   "dashboard": {
     "annotations": {
@@ -3121,6 +3121,6 @@
     "timezone": "browser",
     "title": "Raspberry Pi & Docker Monitoring",
     "uid": "VKtkKcAVz",
-    "version": 2
+    "version": 3
   }
 }
