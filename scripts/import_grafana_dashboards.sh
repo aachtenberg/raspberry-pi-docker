@@ -218,10 +218,11 @@ else
     for file in "$DASHBOARD_DIR"/*.json; do
         if [ -f "$file" ]; then
             if import_dashboard "$file"; then
-                ((SUCCESS_COUNT++))
+                SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
             else
-                ((FAIL_COUNT++))
+                FAIL_COUNT=$((FAIL_COUNT + 1))
             fi
+            echo ""
         fi
     done
     
