@@ -8,7 +8,11 @@ This directory contains all Docker services for the Raspberry Pi home automation
 
 **IMPORTANT**: Before deploying, you must configure your secrets:
 
-[?2004h[?1049h[22;0;0t[1;24r(B[m[4l[?7h[39;49m[?1h=[?1h=[?25l[39;49m(B[m[H[2J[22;35H(B[0;7m[ New File ](B[m[H(B[0;7m  GNU nano 6.2                          .env                                    [1;79H(B[m[23d(B[0;7m^G(B[m Help[14G(B[0;7m^O(B[m Write Out (B[0;7m^W(B[m Where Is  (B[0;7m^K(B[m Cut[53G(B[0;7m^T(B[m Execute   (B[0;7m^C(B[m Location[24d(B[0;7m^X(B[m Exit[14G(B[0;7m^R(B[m Read File (B[0;7m^\(B[m Replace   (B[0;7m^U(B[m Paste     (B[0;7m^J(B[m Justify   (B[0;7m^/(B[m Go To Line[2d[?12l[?25h[24;1H[?1049l[23;0;0t[?1l>[?2004l
+[?2004h[?1049h[22;0;0t[1;24r(B[m[4l[?7h[39;49m[?1h=[?1h=[?25l[39;49m(B[m[H[2J[22;35H(B[0;7m[ New File ](B[m[H(B[0;7m  GNU nano 6.2                          .env                                    [1;79H(B[m
+[23d(B[0;7m^G(B[m Help[14G(B[0;7m^O(B[m Write Out (B[0;7m^W(B[m Where Is  (B[0;7m^K(B[m Cut[53G(B[0;7m^T(B[m Execute   (B[0;7m^C(B[m Location
+[24d(B[0;7m^X(B[m Exit[14G(B[0;7m^R(B[m Read File (B[0;7m^\(B[m Replace   (B[0;7m^U(B[m Paste     (B[0;7m^J(B[m Justify   (B[0;7m^/(B[m Go To Line
+[2d[?12l[?25h[24;1H[?1049l[23;0;0t
+[?1l>[?2004l
 
 See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for detailed instructions on obtaining:
 - Cloudflare Tunnel Token
@@ -322,67 +326,37 @@ Old directories can be removed after verifying everything works.
 
 ## Documentation
 
-- [Secrets Setup Guide](docs/SECRETS_SETUP.md) - **Configure credentials before deploying**
-- [Grafana Dashboard Management](docs/GRAFANA_DASHBOARDS.md) - Export and import dashboards
+- **[Setup Guide](docs/SETUP_GUIDE.md)** - Complete installation and configuration
+- **[Operations Guide](docs/OPERATIONS_GUIDE.md)** - Daily operations, monitoring, and maintenance
 - [Making Repository Public Checklist](MAKING_PUBLIC_CHECKLIST.md) - Steps to safely make this repo public
 
+## Quick Operations
 
-
-## Grafana Dashboard Management
-
-Export, import, and version control your Grafana dashboards for backup and disaster recovery.
-
-### Quick Export
+### Dashboard Management
 
 ```bash
-cd ~/docker
+# Export all Grafana dashboards
 ./scripts/export_grafana_dashboards.sh
-```
 
-Dashboards are automatically saved to `grafana/dashboards/*.json`.
+# Import dashboards from JSON
+./scripts/import_grafana_dashboards.sh
 
-### Features
-
-- 📦 **Backup** - Version control dashboard configurations
-- 🔄 **Share** - Distribute dashboards across environments
-- 🔑 **API Key** - Secure authentication (no password exposure)
-- 🚀 **Automated** - Fetch all dashboards with one command
-
-### Complete Guide
-
-See [docs/GRAFANA_DASHBOARDS.md](docs/GRAFANA_DASHBOARDS.md) for detailed documentation:
-- Authentication setup (API key generation)
-- Import/export workflows
-- Automated backup scheduling
-- Disaster recovery procedures
-- Troubleshooting guide
-
-
-### Automated Backups
-
-Grafana dashboards are automatically backed up daily at 2 AM via cron job.
-
-**View cron schedule:**
-```bash
-crontab -l
-```
-
-**Check backup logs:**
-```bash
-tail -f ~/docker/logs/grafana_backup.log
-```
-
-**Run manual backup:**
-```bash
-cd ~/docker
+# Automated daily backup (2 AM cron)
 ./scripts/backup_grafana_dashboards.sh
 ```
 
-The backup script automatically:
-- Exports all dashboards to JSON
-- Commits changes to Git (if any)
-- Pushes to GitHub
-- Logs all activity to `logs/grafana_backup.log`
+### System Monitoring
+
+```bash
+# Check all service status
+./scripts/status.sh
+
+# View logs
+docker compose logs -f
+
+# Resource usage
+docker stats
+```
 
 ## Support
 
