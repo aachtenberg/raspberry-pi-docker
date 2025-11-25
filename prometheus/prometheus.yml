@@ -53,3 +53,12 @@ scrape_configs:
         regex: '.*/docker-6c1142c79e78.*'
         target_label: container_name
         replacement: 'homeassistant'
+
+  - job_name: 'influxdb'
+    static_configs:
+      - targets: ['influxdb:8086']
+        labels:
+          instance: 'raspberry-pi'
+          service: 'influxdb'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
