@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-11-24 07:00:02",
+    "exported": "2025-11-25 03:30:19",
     "title": "Temperatures Rue Romain",
     "uid": "adk6dmr",
     "folder": "General",
-    "version": 23
+    "version": 36
   },
   "dashboard": {
     "annotations": {
@@ -89,36 +89,11 @@
             },
             "unit": "celsius"
           },
-          "overrides": [
-            {
-              "__systemRef": "hideSeriesFrom",
-              "matcher": {
-                "id": "byNames",
-                "options": {
-                  "mode": "exclude",
-                  "names": [
-                    "Pump_House"
-                  ],
-                  "prefix": "All except:",
-                  "readOnly": true
-                }
-              },
-              "properties": [
-                {
-                  "id": "custom.hideFrom",
-                  "value": {
-                    "legend": false,
-                    "tooltip": true,
-                    "viz": true
-                  }
-                }
-              ]
-            }
-          ]
+          "overrides": []
         },
         "gridPos": {
-          "h": 22,
-          "w": 24,
+          "h": 9,
+          "w": 23,
           "x": 0,
           "y": 0
         },
@@ -149,6 +124,230 @@
         ],
         "title": "Building Temperatures",
         "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "align": "auto",
+              "cellOptions": {
+                "type": "color-background"
+              },
+              "filterable": false,
+              "footer": {
+                "reducers": []
+              },
+              "inspect": false,
+              "wrapText": false
+            },
+            "mappings": [
+              {
+                "options": {
+                  "influxdb_error": {
+                    "color": "red",
+                    "index": 0
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "noValue": "No Errors",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "_time"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 271
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "timestamp {device_name=\"Main_Cottage\", event=\"device_boot\"}"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 515
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "device_name"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 154
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "timestamp"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 212
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "event"
+              },
+              "properties": [
+                {
+                  "id": "custom.width",
+                  "value": 228
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 14,
+          "w": 14,
+          "x": 0,
+          "y": 9
+        },
+        "id": 2,
+        "options": {
+          "cellHeight": "sm",
+          "enablePagination": false,
+          "showHeader": true
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "dataset": "iox",
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "query": "from(bucket: \"sensor_data\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r._measurement == \"device_events\")\r\n  |> filter(fn: (r) => r._field == \"message\")\r\n  |> map(fn: (r) => ({\r\n      timestamp: r._time,\r\n      device_name: r.device,\r\n      event: r.event_type,\r\n      details: r._value\r\n  }))\r\n  |> sort(columns: [\"timestamp\"], desc: true)",
+            "rawQuery": true,
+            "rawSql": "from(bucket: \"sensor_data\")\r\n  |> range(start: -7d)\r\n  |> filter(fn: (r) => r._measurement == \"device_events\")\r\n  |> filter(fn: (r) => r._field == \"message\")",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ]
+            }
+          }
+        ],
+        "title": "Sensor Events",
+        "type": "table"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [],
+            "noValue": "0",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "dark-red",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 14,
+          "w": 9,
+          "x": 14,
+          "y": 9
+        },
+        "id": 3,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r._measurement == \"device_events\")\r\n  |> filter(fn: (r) => r.severity == \"error\")\r\n  |> filter(fn: (r) => r._field == \"value\")\r\n  |> group(columns: [\"device\"])\r\n  |> sum()",
+            "refId": "A"
+          }
+        ],
+        "title": "Errors",
+        "type": "stat"
       }
     ],
     "preload": false,
@@ -165,6 +364,6 @@
     "timezone": "browser",
     "title": "Temperatures Rue Romain",
     "uid": "adk6dmr",
-    "version": 23
+    "version": 36
   }
 }

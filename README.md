@@ -1,6 +1,59 @@
-# Raspberry Pi Docker Infrastructure
+# Unified Docker Compose Stack
 
-Production-ready Docker Compose stack for home IoT monitoring and automation. Designed to work with [ESP temperature sensors](https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor) for complete end-to-end temperature monitoring.
+This directory contains all Docker services for the Raspberry Pi home automation system.
+
+## Quick Start
+
+### 1. Configure Secrets
+
+**IMPORTANT**: Before deploying, you must configure your secrets:
+
+[?2004h[?1049h[22;0;0t[1;24r(B[m[4l[?7h[39;49m[?1h=[?1h=[?25l[39;49m(B[m[H[2J[22;35H(B[0;7m[ New File ](B[m[H(B[0;7m  GNU nano 6.2                          .env                                    [1;79H(B[m[23d(B[0;7m^G(B[m Help[14G(B[0;7m^O(B[m Write Out (B[0;7m^W(B[m Where Is  (B[0;7m^K(B[m Cut[53G(B[0;7m^T(B[m Execute   (B[0;7m^C(B[m Location[24d(B[0;7m^X(B[m Exit[14G(B[0;7m^R(B[m Read File (B[0;7m^\(B[m Replace   (B[0;7m^U(B[m Paste     (B[0;7m^J(B[m Justify   (B[0;7m^/(B[m Go To Line[2d[?12l[?25h[24;1H[?1049l[23;0;0t[?1l>[?2004l
+
+See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for detailed instructions on obtaining:
+- Cloudflare Tunnel Token
+- InfluxDB credentials
+- Other service passwords
+
+### 2. Validate Configuration
+
+🔍 Validating secrets configuration...
+
+✅ include/secrets.h exists
+✅ include/secrets.h is properly gitignored
+✅ No placeholder values found (YOUR_*, YOUR-*)
+✅ WiFi networks configured: 3
+✅ InfluxDB URL configured: "http://192.168.0.167:8086"
+✅ InfluxDB token length: 89 characters (looks valid)
+⚠️  Warning: Found common example values. Make sure these are your actual credentials.
+✅ InfluxDB Organization ID format looks valid
+
+✅ Configuration looks good!
+
+Next steps:
+  1. Build: platformio run -e esp8266 (or -e esp32dev)
+  2. Flash: platformio run -e esp8266 --target upload
+  3. Monitor: platformio device monitor -b 115200
+
+### 3. Deploy Services
+
+
+
+### 4. Verify Services
+
+
+
+## Security Note
+
+**This repository does not contain any secrets or credentials.**
+
+All sensitive configuration is stored in , which is gitignored. Anyone cloning this repository must create their own  file from the provided template.
+
+See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for complete setup instructions.
+
+## Directory Structure
+
+
 
 ## What This Does
 

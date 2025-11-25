@@ -1,10 +1,10 @@
 {
   "meta": {
     "exported": "2025-11-25 03:30:18",
-    "title": "Docker Containers - Raspberry Pi",
-    "uid": "1e9281de-8b0c-484b-ab75-529e9a85b568",
+    "title": "InfluxDB Performance Monitoring",
+    "uid": "influxdb-perf",
     "folder": "General",
-    "version": 2
+    "version": 3
   },
   "dashboard": {
     "annotations": {
@@ -12,8 +12,8 @@
         {
           "builtIn": 1,
           "datasource": {
-            "type": "grafana",
-            "uid": "-- Grafana --"
+            "type": "prometheus",
+            "uid": "prometheus"
           },
           "enable": true,
           "hide": true,
@@ -26,208 +26,153 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 0,
-    "id": 13,
+    "id": 17,
     "links": [],
     "panels": [
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cf4gc0hl91ibka"
+          "uid": "prometheus"
         },
+        "description": "InfluxDB service uptime and availability",
         "fieldConfig": {
           "defaults": {
             "color": {
-              "mode": "palette-classic"
+              "mode": "thresholds"
             },
-            "custom": {
-              "axisBorderShow": false,
-              "axisCenteredZero": false,
-              "axisColorMode": "text",
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "barWidthFactor": 0.6,
-              "drawStyle": "line",
-              "fillOpacity": 0,
-              "gradientMode": "none",
-              "hideFrom": {
-                "legend": false,
-                "tooltip": false,
-                "viz": false
-              },
-              "insertNulls": false,
-              "lineInterpolation": "linear",
-              "lineWidth": 1,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "never",
-              "showValues": false,
-              "spanNulls": false,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "off"
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "red",
+                    "index": 1,
+                    "text": "DOWN"
+                  },
+                  "1": {
+                    "color": "green",
+                    "index": 0,
+                    "text": "UP"
+                  }
+                },
+                "type": "value"
               }
-            },
-            "mappings": [],
+            ],
             "thresholds": {
               "mode": "absolute",
               "steps": [
                 {
                   "color": "green",
-                  "value": 0
+                  "value": null
                 },
                 {
                   "color": "red",
-                  "value": 80
+                  "value": 0
                 }
               ]
             },
-            "unit": "s"
+            "unit": "short"
           },
           "overrides": []
         },
         "gridPos": {
-          "h": 8,
-          "w": 12,
+          "h": 4,
+          "w": 4,
           "x": 0,
           "y": 0
         },
         "id": 1,
         "options": {
-          "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom",
-            "showLegend": true
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "center",
+          "orientation": "horizontal",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           },
-          "tooltip": {
-            "hideZeros": false,
-            "mode": "single",
-            "sort": "none"
-          }
+          "textMode": "auto"
         },
         "pluginVersion": "12.2.1",
         "targets": [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cf4gc0hl91ibka"
-            },
-            "expr": "container_cpu_usage_seconds_total{cpu=\"total\",id=~\"/system.slice/docker-.*\\\\.scope\"}",
-            "legendFormat": "{{container_name}}",
+            "expr": "up{job=\"influxdb\"}",
+            "format": "time_series",
+            "intervalFactor": 1,
             "refId": "A"
           }
         ],
-        "title": "Container CPU Usage (Total Seconds)",
-        "type": "timeseries"
+        "title": "InfluxDB Status",
+        "type": "stat"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cf4gc0hl91ibka"
+          "uid": "prometheus"
         },
+        "description": "InfluxDB service uptime in hours",
         "fieldConfig": {
           "defaults": {
             "color": {
               "mode": "palette-classic"
             },
             "custom": {
-              "axisBorderShow": false,
-              "axisCenteredZero": false,
-              "axisColorMode": "text",
-              "axisLabel": "",
-              "axisPlacement": "auto",
-              "barAlignment": 0,
-              "barWidthFactor": 0.6,
-              "drawStyle": "line",
-              "fillOpacity": 0,
-              "gradientMode": "none",
               "hideFrom": {
                 "legend": false,
                 "tooltip": false,
                 "viz": false
-              },
-              "insertNulls": false,
-              "lineInterpolation": "linear",
-              "lineWidth": 1,
-              "pointSize": 5,
-              "scaleDistribution": {
-                "type": "linear"
-              },
-              "showPoints": "never",
-              "showValues": false,
-              "spanNulls": false,
-              "stacking": {
-                "group": "A",
-                "mode": "none"
-              },
-              "thresholdsStyle": {
-                "mode": "off"
               }
             },
             "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": 0
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "percent"
+            "unit": "dtdurations"
           },
           "overrides": []
         },
         "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 12,
+          "h": 4,
+          "w": 4,
+          "x": 4,
           "y": 0
         },
         "id": 2,
         "options": {
           "legend": {
-            "calcs": [],
             "displayMode": "list",
             "placement": "bottom",
-            "showLegend": true
+            "showLegend": false
+          },
+          "pieType": "pie",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
           },
           "tooltip": {
-            "hideZeros": false,
             "mode": "single",
             "sort": "none"
           }
         },
-        "pluginVersion": "12.2.1",
         "targets": [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cf4gc0hl91ibka"
-            },
-            "expr": "rate(container_cpu_usage_seconds_total{cpu=\"total\",id=~\"/system.slice/docker-.*\\\\.scope\"}[5m]) * 100",
-            "legendFormat": "{{container_name}}",
+            "expr": "influxdb_uptime_seconds{job=\"influxdb\"}",
+            "format": "time_series",
+            "intervalFactor": 1,
             "refId": "A"
           }
         ],
-        "title": "Container CPU Usage Rate %",
-        "type": "timeseries"
+        "title": "Uptime",
+        "type": "piechart"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cf4gc0hl91ibka"
+          "uid": "prometheus"
         },
+        "description": "Memory usage by InfluxDB process",
         "fieldConfig": {
           "defaults": {
             "color": {
@@ -240,9 +185,8 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
-              "barWidthFactor": 0.6,
               "drawStyle": "line",
-              "fillOpacity": 0,
+              "fillOpacity": 10,
               "gradientMode": "none",
               "hideFrom": {
                 "legend": false,
@@ -257,7 +201,6 @@
                 "type": "linear"
               },
               "showPoints": "never",
-              "showValues": false,
               "spanNulls": false,
               "stacking": {
                 "group": "A",
@@ -273,7 +216,7 @@
               "steps": [
                 {
                   "color": "green",
-                  "value": 0
+                  "value": null
                 },
                 {
                   "color": "red",
@@ -281,15 +224,15 @@
                 }
               ]
             },
-            "unit": "Bps"
+            "unit": "bytes"
           },
           "overrides": []
         },
         "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 0,
-          "y": 8
+          "h": 4,
+          "w": 8,
+          "x": 8,
+          "y": 0
         },
         "id": 3,
         "options": {
@@ -300,31 +243,35 @@
             "showLegend": true
           },
           "tooltip": {
-            "hideZeros": false,
             "mode": "single",
             "sort": "none"
           }
         },
-        "pluginVersion": "12.2.1",
         "targets": [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cf4gc0hl91ibka"
-            },
-            "expr": "rate(container_blkio_device_usage_total{id=~\"/system.slice/docker-.*\\\\.scope\",operation=\"Read\"}[5m])",
-            "legendFormat": "{{container_name}}",
+            "expr": "go_memstats_alloc_bytes{job=\"influxdb\"}",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "Allocated Memory",
             "refId": "A"
+          },
+          {
+            "expr": "go_memstats_sys_bytes{job=\"influxdb\"}",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "System Memory",
+            "refId": "B"
           }
         ],
-        "title": "Container Disk I/O (Read)",
+        "title": "Memory Usage",
         "type": "timeseries"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cf4gc0hl91ibka"
+          "uid": "prometheus"
         },
+        "description": "Number of active goroutines in InfluxDB",
         "fieldConfig": {
           "defaults": {
             "color": {
@@ -337,9 +284,8 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
-              "barWidthFactor": 0.6,
               "drawStyle": "line",
-              "fillOpacity": 0,
+              "fillOpacity": 10,
               "gradientMode": "none",
               "hideFrom": {
                 "legend": false,
@@ -354,7 +300,6 @@
                 "type": "linear"
               },
               "showPoints": "never",
-              "showValues": false,
               "spanNulls": false,
               "stacking": {
                 "group": "A",
@@ -370,67 +315,7 @@
               "steps": [
                 {
                   "color": "green",
-                  "value": 0
-                },
-                {
-                  "color": "red",
-                  "value": 80
-                }
-              ]
-            },
-            "unit": "s"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 8,
-          "w": 12,
-          "x": 12,
-          "y": 8
-        },
-        "id": 4,
-        "options": {
-          "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "bottom",
-            "showLegend": true
-          },
-          "tooltip": {
-            "hideZeros": false,
-            "mode": "single",
-            "sort": "none"
-          }
-        },
-        "pluginVersion": "12.2.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cf4gc0hl91ibka"
-            },
-            "expr": "container_cpu_system_seconds_total{id=~\"/system.slice/docker-.*\\\\.scope\"}",
-            "legendFormat": "{{container_name}}",
-            "refId": "A"
-          }
-        ],
-        "title": "Container System CPU Time",
-        "type": "timeseries"
-      },
-      {
-        "datasource": {
-          "type": "prometheus",
-          "uid": "cf4gc0hl91ibka"
-        },
-        "fieldConfig": {
-          "defaults": {
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": 0
+                  "value": null
                 },
                 {
                   "color": "red",
@@ -445,57 +330,176 @@
         "gridPos": {
           "h": 4,
           "w": 8,
+          "x": 16,
+          "y": 0
+        },
+        "id": 4,
+        "options": {
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "single",
+            "sort": "none"
+          }
+        },
+        "targets": [
+          {
+            "expr": "go_goroutines{job=\"influxdb\"}",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "Goroutines",
+            "refId": "A"
+          }
+        ],
+        "title": "Goroutines",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "description": "HTTP request rate to InfluxDB API",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "red",
+                  "value": 80
+                }
+              ]
+            },
+            "unit": "reqps"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
           "x": 0,
-          "y": 16
+          "y": 4
         },
         "id": 5,
         "options": {
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "percentChangeColorMode": "standard",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
           },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
         },
-        "pluginVersion": "12.2.1",
         "targets": [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cf4gc0hl91ibka"
-            },
-            "expr": "count(container_cpu_usage_seconds_total{cpu=\"total\",id=~\"/system.slice/docker-.*\\\\.scope\"})",
+            "expr": "rate(http_api_requests_total{job=\"influxdb\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "{{method}} {{response_code}}",
             "refId": "A"
           }
         ],
-        "title": "Total Containers Running",
-        "type": "stat"
+        "title": "HTTP Request Rate",
+        "type": "timeseries"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cf4gc0hl91ibka"
+          "uid": "prometheus"
         },
+        "description": "Database operations: reads and writes to BoltDB",
         "fieldConfig": {
           "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
             "mappings": [],
-            "max": 100,
-            "min": 0,
             "thresholds": {
               "mode": "absolute",
               "steps": [
                 {
                   "color": "green",
-                  "value": 0
+                  "value": null
                 },
                 {
                   "color": "red",
@@ -503,62 +507,98 @@
                 }
               ]
             },
-            "unit": "percent"
+            "unit": "ops"
           },
           "overrides": []
         },
         "gridPos": {
-          "h": 4,
-          "w": 8,
-          "x": 8,
-          "y": 16
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 4
         },
         "id": 6,
         "options": {
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "percentChangeColorMode": "standard",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
           },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
         },
-        "pluginVersion": "12.2.1",
         "targets": [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cf4gc0hl91ibka"
-            },
-            "expr": "sum(rate(container_cpu_usage_seconds_total{cpu=\"total\",id=~\"/system.slice/docker-.*\\\\.scope\"}[5m])) * 100",
+            "expr": "rate(boltdb_reads_total{job=\"influxdb\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "Reads/sec",
             "refId": "A"
+          },
+          {
+            "expr": "rate(boltdb_writes_total{job=\"influxdb\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "Writes/sec",
+            "refId": "B"
           }
         ],
-        "title": "Total CPU Usage (All Containers)",
-        "type": "stat"
+        "title": "Database Operations Rate",
+        "type": "timeseries"
       },
       {
         "datasource": {
           "type": "prometheus",
-          "uid": "cf4gc0hl91ibka"
+          "uid": "prometheus"
         },
+        "description": "Garbage collection frequency and duration",
         "fieldConfig": {
           "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 1,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
             "mappings": [],
             "thresholds": {
               "mode": "absolute",
               "steps": [
                 {
                   "color": "green",
-                  "value": 0
+                  "value": null
                 },
                 {
                   "color": "red",
@@ -566,64 +606,67 @@
                 }
               ]
             },
-            "unit": "dateTimeFromNow"
+            "unit": "s"
           },
           "overrides": []
         },
         "gridPos": {
-          "h": 4,
-          "w": 8,
-          "x": 16,
-          "y": 16
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 12
         },
         "id": 7,
         "options": {
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "percentChangeColorMode": "standard",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": true
           },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
         },
-        "pluginVersion": "12.2.1",
         "targets": [
           {
-            "datasource": {
-              "type": "prometheus",
-              "uid": "cf4gc0hl91ibka"
-            },
-            "expr": "container_start_time_seconds{id=~\"/system.slice/docker-.*\\\\.scope\"} * 1000",
-            "legendFormat": "{{container_name}}",
+            "expr": "rate(go_gc_duration_seconds_sum{job=\"influxdb\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "GC Duration/sec",
             "refId": "A"
+          },
+          {
+            "expr": "rate(go_gc_duration_seconds_count{job=\"influxdb\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "GC Frequency/sec",
+            "refId": "B"
           }
         ],
-        "title": "Container Start Times",
-        "type": "stat"
+        "title": "Garbage Collection Metrics",
+        "type": "timeseries"
       }
     ],
     "preload": false,
-    "refresh": "30s",
     "schemaVersion": 42,
     "tags": [
-      "docker",
-      "raspberry-pi"
+      "influxdb",
+      "performance",
+      "monitoring"
     ],
     "templating": {
       "list": []
     },
+    "time": {
+      "from": "now-1h",
+      "to": "now"
+    },
     "timepicker": {},
     "timezone": "browser",
-    "title": "Docker Containers - Raspberry Pi",
-    "uid": "1e9281de-8b0c-484b-ab75-529e9a85b568",
-    "version": 2
+    "title": "InfluxDB Performance Monitoring",
+    "uid": "influxdb-perf",
+    "version": 3
   }
 }
