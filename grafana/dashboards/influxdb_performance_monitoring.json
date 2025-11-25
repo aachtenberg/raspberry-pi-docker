@@ -4,7 +4,7 @@
     "title": "InfluxDB Performance Monitoring",
     "uid": "influxdb-perf",
     "folder": "General",
-    "version": 3
+    "version": 4
   },
   "dashboard": {
     "annotations": {
@@ -646,6 +646,314 @@
           }
         ],
         "title": "Garbage Collection Metrics",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "description": "Average response time for write and query API calls",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "line"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 0.1
+                },
+                {
+                  "color": "red",
+                  "value": 0.5
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 0,
+          "y": 20
+        },
+        "id": 8,
+        "options": {
+          "legend": {
+            "calcs": ["mean", "max"],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "expr": "rate(http_api_request_duration_seconds_sum{job=\"influxdb\",path=\"/api/v2/write\"}[5m]) / rate(http_api_request_duration_seconds_count{job=\"influxdb\",path=\"/api/v2/write\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "Write API (avg)",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(http_api_request_duration_seconds_sum{job=\"influxdb\",path=\"/api/v2/query\"}[5m]) / rate(http_api_request_duration_seconds_count{job=\"influxdb\",path=\"/api/v2/query\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "Query API (avg)",
+            "refId": "B"
+          }
+        ],
+        "title": "API Response Time (Average)",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "description": "Response time by ESP device type (ESP8266 vs ESP32)",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 12,
+          "x": 12,
+          "y": 20
+        },
+        "id": 9,
+        "options": {
+          "legend": {
+            "calcs": ["mean", "max"],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "expr": "rate(http_api_request_duration_seconds_sum{job=\"influxdb\",user_agent=\"ESP8266HTTPClient\"}[5m]) / rate(http_api_request_duration_seconds_count{job=\"influxdb\",user_agent=\"ESP8266HTTPClient\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "ESP8266",
+            "refId": "A"
+          },
+          {
+            "expr": "rate(http_api_request_duration_seconds_sum{job=\"influxdb\",user_agent=\"ESP32HTTPClient\"}[5m]) / rate(http_api_request_duration_seconds_count{job=\"influxdb\",user_agent=\"ESP32HTTPClient\"}[5m])",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "ESP32",
+            "refId": "B"
+          }
+        ],
+        "title": "Response Time by Device Type",
+        "type": "timeseries"
+      },
+      {
+        "datasource": {
+          "type": "prometheus",
+          "uid": "prometheus"
+        },
+        "description": "95th percentile response time - shows worst-case latency",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "drawStyle": "line",
+              "fillOpacity": 10,
+              "gradientMode": "none",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "linear",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "line"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                },
+                {
+                  "color": "yellow",
+                  "value": 0.25
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            },
+            "unit": "s"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 28
+        },
+        "id": 10,
+        "options": {
+          "legend": {
+            "calcs": ["mean", "max"],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "desc"
+          }
+        },
+        "targets": [
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_api_request_duration_seconds_bucket{job=\"influxdb\",path=\"/api/v2/write\"}[5m])) by (le))",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "Write API (p95)",
+            "refId": "A"
+          },
+          {
+            "expr": "histogram_quantile(0.95, sum(rate(http_api_request_duration_seconds_bucket{job=\"influxdb\",path=\"/api/v2/query\"}[5m])) by (le))",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "Query API (p95)",
+            "refId": "B"
+          },
+          {
+            "expr": "histogram_quantile(0.99, sum(rate(http_api_request_duration_seconds_bucket{job=\"influxdb\",path=\"/api/v2/write\"}[5m])) by (le))",
+            "format": "time_series",
+            "intervalFactor": 1,
+            "legendFormat": "Write API (p99)",
+            "refId": "C"
+          }
+        ],
+        "title": "Response Time Percentiles (p95/p99)",
         "type": "timeseries"
       }
     ],
