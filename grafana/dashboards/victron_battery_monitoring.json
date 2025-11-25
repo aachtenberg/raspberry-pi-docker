@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-11-25",
+    "exported": "2025-11-25 23:28:31",
     "title": "Victron Battery Monitoring",
     "uid": "victron-battery",
     "folder": "General",
-    "version": 1
+    "version": 6
   },
   "dashboard": {
     "annotations": {
@@ -26,7 +26,7 @@
     "editable": true,
     "fiscalYearStartMonth": 0,
     "graphTooltip": 1,
-    "id": null,
+    "id": 18,
     "links": [],
     "panels": [
       {
@@ -48,7 +48,7 @@
               "steps": [
                 {
                   "color": "red",
-                  "value": null
+                  "value": 0
                 },
                 {
                   "color": "orange",
@@ -80,7 +80,9 @@
           "minVizWidth": 75,
           "orientation": "auto",
           "reduceOptions": {
-            "calcs": ["lastNotNull"],
+            "calcs": [
+              "lastNotNull"
+            ],
             "fields": "",
             "values": false
           },
@@ -88,7 +90,7 @@
           "showThresholdMarkers": true,
           "sizing": "auto"
         },
-        "pluginVersion": "11.0.0",
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -122,7 +124,7 @@
               "steps": [
                 {
                   "color": "red",
-                  "value": null
+                  "value": 0
                 },
                 {
                   "color": "orange",
@@ -158,7 +160,9 @@
           "minVizWidth": 75,
           "orientation": "auto",
           "reduceOptions": {
-            "calcs": ["lastNotNull"],
+            "calcs": [
+              "lastNotNull"
+            ],
             "fields": "",
             "values": false
           },
@@ -166,7 +170,7 @@
           "showThresholdMarkers": true,
           "sizing": "auto"
         },
-        "pluginVersion": "11.0.0",
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -198,7 +202,7 @@
               "steps": [
                 {
                   "color": "orange",
-                  "value": null
+                  "value": 0
                 },
                 {
                   "color": "green",
@@ -222,8 +226,11 @@
           "graphMode": "area",
           "justifyMode": "auto",
           "orientation": "auto",
+          "percentChangeColorMode": "standard",
           "reduceOptions": {
-            "calcs": ["lastNotNull"],
+            "calcs": [
+              "lastNotNull"
+            ],
             "fields": "",
             "values": false
           },
@@ -231,7 +238,7 @@
           "textMode": "auto",
           "wideLayout": true
         },
-        "pluginVersion": "11.0.0",
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -272,7 +279,7 @@
               "steps": [
                 {
                   "color": "red",
-                  "value": null
+                  "value": 0
                 },
                 {
                   "color": "orange",
@@ -304,8 +311,11 @@
           "graphMode": "none",
           "justifyMode": "auto",
           "orientation": "auto",
+          "percentChangeColorMode": "standard",
           "reduceOptions": {
-            "calcs": ["lastNotNull"],
+            "calcs": [
+              "lastNotNull"
+            ],
             "fields": "",
             "values": false
           },
@@ -313,7 +323,7 @@
           "textMode": "auto",
           "wideLayout": true
         },
-        "pluginVersion": "11.0.0",
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -345,7 +355,7 @@
               "steps": [
                 {
                   "color": "green",
-                  "value": null
+                  "value": 0
                 },
                 {
                   "color": "yellow",
@@ -373,8 +383,11 @@
           "graphMode": "none",
           "justifyMode": "auto",
           "orientation": "auto",
+          "percentChangeColorMode": "standard",
           "reduceOptions": {
-            "calcs": ["lastNotNull"],
+            "calcs": [
+              "lastNotNull"
+            ],
             "fields": "",
             "values": false
           },
@@ -382,7 +395,7 @@
           "textMode": "auto",
           "wideLayout": true
         },
-        "pluginVersion": "11.0.0",
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -414,6 +427,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 10,
               "gradientMode": "none",
@@ -430,6 +444,7 @@
                 "type": "linear"
               },
               "showPoints": "never",
+              "showValues": false,
               "spanNulls": false,
               "stacking": {
                 "group": "A",
@@ -446,7 +461,7 @@
               "steps": [
                 {
                   "color": "red",
-                  "value": null
+                  "value": 0
                 },
                 {
                   "color": "green",
@@ -471,16 +486,22 @@
         "id": 6,
         "options": {
           "legend": {
-            "calcs": ["mean", "min", "max"],
+            "calcs": [
+              "mean",
+              "min",
+              "max"
+            ],
             "displayMode": "table",
             "placement": "bottom",
             "showLegend": true
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -512,6 +533,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 20,
               "gradientMode": "none",
@@ -528,6 +550,7 @@
                 "type": "linear"
               },
               "showPoints": "never",
+              "showValues": false,
               "spanNulls": false,
               "stacking": {
                 "group": "A",
@@ -544,7 +567,7 @@
               "steps": [
                 {
                   "color": "green",
-                  "value": null
+                  "value": 0
                 }
               ]
             },
@@ -561,16 +584,22 @@
         "id": 7,
         "options": {
           "legend": {
-            "calcs": ["mean", "min", "max"],
+            "calcs": [
+              "mean",
+              "min",
+              "max"
+            ],
             "displayMode": "table",
             "placement": "bottom",
             "showLegend": true
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -602,6 +631,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 20,
               "gradientMode": "opacity",
@@ -618,6 +648,7 @@
                 "type": "linear"
               },
               "showPoints": "never",
+              "showValues": false,
               "spanNulls": false,
               "stacking": {
                 "group": "A",
@@ -635,7 +666,7 @@
               "steps": [
                 {
                   "color": "red",
-                  "value": null
+                  "value": 0
                 },
                 {
                   "color": "orange",
@@ -664,16 +695,22 @@
         "id": 8,
         "options": {
           "legend": {
-            "calcs": ["mean", "min", "max"],
+            "calcs": [
+              "mean",
+              "min",
+              "max"
+            ],
             "displayMode": "table",
             "placement": "bottom",
             "showLegend": true
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -705,6 +742,7 @@
               "axisLabel": "",
               "axisPlacement": "auto",
               "barAlignment": 0,
+              "barWidthFactor": 0.6,
               "drawStyle": "line",
               "fillOpacity": 20,
               "gradientMode": "none",
@@ -721,6 +759,7 @@
                 "type": "linear"
               },
               "showPoints": "never",
+              "showValues": false,
               "spanNulls": false,
               "stacking": {
                 "group": "A",
@@ -737,13 +776,26 @@
               "steps": [
                 {
                   "color": "green",
-                  "value": null
+                  "value": 0
                 }
               ]
             },
             "unit": "watt"
           },
-          "overrides": []
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "_value"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "Power"
+                }
+              ]
+            }
+          ]
         },
         "gridPos": {
           "h": 8,
@@ -754,16 +806,22 @@
         "id": 9,
         "options": {
           "legend": {
-            "calcs": ["mean", "min", "max"],
+            "calcs": [
+              "mean",
+              "min",
+              "max"
+            ],
             "displayMode": "table",
             "placement": "bottom",
             "showLegend": true
           },
           "tooltip": {
+            "hideZeros": false,
             "mode": "multi",
             "sort": "none"
           }
         },
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -794,7 +852,7 @@
               "steps": [
                 {
                   "color": "text",
-                  "value": null
+                  "value": 0
                 }
               ]
             }
@@ -894,8 +952,11 @@
           "graphMode": "none",
           "justifyMode": "auto",
           "orientation": "horizontal",
+          "percentChangeColorMode": "standard",
           "reduceOptions": {
-            "calcs": ["lastNotNull"],
+            "calcs": [
+              "lastNotNull"
+            ],
             "fields": "",
             "values": false
           },
@@ -903,7 +964,7 @@
           "textMode": "auto",
           "wideLayout": true
         },
-        "pluginVersion": "11.0.0",
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -982,7 +1043,7 @@
               "steps": [
                 {
                   "color": "green",
-                  "value": null
+                  "value": 0
                 },
                 {
                   "color": "red",
@@ -1005,8 +1066,11 @@
           "graphMode": "none",
           "justifyMode": "auto",
           "orientation": "auto",
+          "percentChangeColorMode": "standard",
           "reduceOptions": {
-            "calcs": ["lastNotNull"],
+            "calcs": [
+              "lastNotNull"
+            ],
             "fields": "",
             "values": false
           },
@@ -1014,7 +1078,7 @@
           "textMode": "auto",
           "wideLayout": true
         },
-        "pluginVersion": "11.0.0",
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -1061,7 +1125,7 @@
               "steps": [
                 {
                   "color": "blue",
-                  "value": null
+                  "value": 0
                 },
                 {
                   "color": "green",
@@ -1084,8 +1148,11 @@
           "graphMode": "none",
           "justifyMode": "auto",
           "orientation": "auto",
+          "percentChangeColorMode": "standard",
           "reduceOptions": {
-            "calcs": ["lastNotNull"],
+            "calcs": [
+              "lastNotNull"
+            ],
             "fields": "",
             "values": false
           },
@@ -1093,7 +1160,7 @@
           "textMode": "auto",
           "wideLayout": true
         },
-        "pluginVersion": "11.0.0",
+        "pluginVersion": "12.2.1",
         "targets": [
           {
             "datasource": {
@@ -1108,8 +1175,14 @@
         "type": "stat"
       }
     ],
-    "schemaVersion": 39,
-    "tags": ["victron", "battery", "solar"],
+    "preload": false,
+    "refresh": "",
+    "schemaVersion": 42,
+    "tags": [
+      "victron",
+      "battery",
+      "solar"
+    ],
     "templating": {
       "list": []
     },
@@ -1121,7 +1194,6 @@
     "timezone": "browser",
     "title": "Victron Battery Monitoring",
     "uid": "victron-battery",
-    "version": 1,
-    "weekStart": ""
+    "version": 6
   }
 }
