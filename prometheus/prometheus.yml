@@ -54,14 +54,6 @@ scrape_configs:
         target_label: container_name
         replacement: 'homeassistant'
 
-  - job_name: 'victron-device'
-    static_configs:
-      - targets: ['192.168.0.176:80']
-        labels:
-          instance: 'victron-mppt-shunt'
-          device: 'bgsolarmon'
-          host: '192.168.0.176'
-
   - job_name: 'influxdb'
     static_configs:
       - targets: ['influxdb:8086']
