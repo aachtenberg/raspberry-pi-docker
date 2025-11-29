@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-11-28 07:00:02",
+    "exported": "2025-11-29 07:00:04",
     "title": "Temperatures Rue Romain",
     "uid": "adk6dmr",
     "folder": "General",
-    "version": 37
+    "version": 38
   },
   "dashboard": {
     "annotations": {
@@ -25,10 +25,370 @@
     },
     "editable": true,
     "fiscalYearStartMonth": 0,
-    "graphTooltip": 0,
+    "graphTooltip": 1,
     "id": 1,
     "links": [],
     "panels": [
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 0
+        },
+        "id": 100,
+        "title": "Current Temperatures",
+        "type": "row"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "description": "Current temperature at Big Garage",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 1,
+            "mappings": [],
+            "max": 30,
+            "min": -10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": -10
+                },
+                {
+                  "color": "light-blue",
+                  "value": 5
+                },
+                {
+                  "color": "green",
+                  "value": 15
+                },
+                {
+                  "color": "yellow",
+                  "value": 22
+                },
+                {
+                  "color": "orange",
+                  "value": 25
+                },
+                {
+                  "color": "red",
+                  "value": 28
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 0,
+          "y": 1
+        },
+        "id": 10,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"temperature\")\n  |> filter(fn: (r) => r._field == \"tempC\")\n  |> filter(fn: (r) => r.device == \"Big_Garage\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\"])",
+            "refId": "A"
+          }
+        ],
+        "title": "Big Garage",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "description": "Current temperature at Main Cottage",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 1,
+            "mappings": [],
+            "max": 30,
+            "min": -10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": -10
+                },
+                {
+                  "color": "light-blue",
+                  "value": 5
+                },
+                {
+                  "color": "green",
+                  "value": 15
+                },
+                {
+                  "color": "yellow",
+                  "value": 22
+                },
+                {
+                  "color": "orange",
+                  "value": 25
+                },
+                {
+                  "color": "red",
+                  "value": 28
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 6,
+          "y": 1
+        },
+        "id": 11,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"temperature\")\n  |> filter(fn: (r) => r._field == \"tempC\")\n  |> filter(fn: (r) => r.device == \"Main_Cottage\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\"])",
+            "refId": "A"
+          }
+        ],
+        "title": "Main Cottage",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "description": "Current temperature at Pump House",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 1,
+            "mappings": [],
+            "max": 30,
+            "min": -10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": -10
+                },
+                {
+                  "color": "light-blue",
+                  "value": 5
+                },
+                {
+                  "color": "green",
+                  "value": 15
+                },
+                {
+                  "color": "yellow",
+                  "value": 22
+                },
+                {
+                  "color": "orange",
+                  "value": 25
+                },
+                {
+                  "color": "red",
+                  "value": 28
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 12,
+          "y": 1
+        },
+        "id": 12,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"temperature\")\n  |> filter(fn: (r) => r._field == \"tempC\")\n  |> filter(fn: (r) => r.device == \"Pump_House\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\"])",
+            "refId": "A"
+          }
+        ],
+        "title": "Pump House",
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "description": "Current temperature at Small Garage",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 1,
+            "mappings": [],
+            "max": 30,
+            "min": -10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": -10
+                },
+                {
+                  "color": "light-blue",
+                  "value": 5
+                },
+                {
+                  "color": "green",
+                  "value": 15
+                },
+                {
+                  "color": "yellow",
+                  "value": 22
+                },
+                {
+                  "color": "orange",
+                  "value": 25
+                },
+                {
+                  "color": "red",
+                  "value": 28
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 6,
+          "x": 18,
+          "y": 1
+        },
+        "id": 13,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"temperature\")\n  |> filter(fn: (r) => r._field == \"tempC\")\n  |> filter(fn: (r) => r.device == \"Small_Garage\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\"])",
+            "refId": "A"
+          }
+        ],
+        "title": "Small Garage",
+        "type": "gauge"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 9
+        },
+        "id": 101,
+        "title": "Temperature History",
+        "type": "row"
+      },
       {
         "datasource": {
           "type": "influxdb",
@@ -48,8 +408,8 @@
               "barAlignment": 0,
               "barWidthFactor": 0.6,
               "drawStyle": "line",
-              "fillOpacity": 0,
-              "gradientMode": "none",
+              "fillOpacity": 10,
+              "gradientMode": "opacity",
               "hideFrom": {
                 "legend": false,
                 "tooltip": false,
@@ -57,7 +417,7 @@
               },
               "insertNulls": false,
               "lineInterpolation": "smooth",
-              "lineWidth": 1,
+              "lineWidth": 2,
               "pointSize": 5,
               "scaleDistribution": {
                 "type": "linear"
@@ -70,7 +430,7 @@
                 "mode": "none"
               },
               "thresholdsStyle": {
-                "mode": "off"
+                "mode": "line"
               }
             },
             "mappings": [],
@@ -78,12 +438,24 @@
               "mode": "absolute",
               "steps": [
                 {
+                  "color": "transparent",
+                  "value": null
+                },
+                {
+                  "color": "blue",
+                  "value": 5
+                },
+                {
                   "color": "green",
-                  "value": 0
+                  "value": 15
+                },
+                {
+                  "color": "yellow",
+                  "value": 22
                 },
                 {
                   "color": "red",
-                  "value": 80
+                  "value": 25
                 }
               ]
             },
@@ -92,23 +464,28 @@
           "overrides": []
         },
         "gridPos": {
-          "h": 9,
-          "w": 23,
+          "h": 10,
+          "w": 24,
           "x": 0,
-          "y": 0
+          "y": 10
         },
         "id": 1,
         "options": {
           "legend": {
-            "calcs": [],
-            "displayMode": "list",
-            "placement": "right",
+            "calcs": [
+              "min",
+              "max",
+              "mean",
+              "last"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
             "showLegend": true
           },
           "tooltip": {
             "hideZeros": false,
-            "mode": "single",
-            "sort": "none"
+            "mode": "multi",
+            "sort": "desc"
           }
         },
         "pluginVersion": "12.2.1",
@@ -118,12 +495,24 @@
               "type": "influxdb",
               "uid": "bf41ily35am80b"
             },
-            "query": "  from(bucket: \"sensor_data\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r[\"_measurement\"] == \"temperature\")\r\n  |> filter(fn: (r) => r[\"_field\"] == \"tempC\")\r\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\r\n  |> group(columns: [\"device\"])\r\n  |> keep(columns: [\"_time\", \"_value\", \"device\"])",
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"temperature\")\n  |> filter(fn: (r) => r._field == \"tempC\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> group(columns: [\"device\"])\n  |> keep(columns: [\"_time\", \"_value\", \"device\"])",
             "refId": "A"
           }
         ],
-        "title": "Building Temperatures",
+        "title": "Building Temperatures Over Time",
         "type": "timeseries"
+      },
+      {
+        "collapsed": false,
+        "gridPos": {
+          "h": 1,
+          "w": 24,
+          "x": 0,
+          "y": 20
+        },
+        "id": 102,
+        "title": "System Health",
+        "type": "row"
       },
       {
         "datasource": {
@@ -237,10 +626,10 @@
           ]
         },
         "gridPos": {
-          "h": 14,
-          "w": 14,
+          "h": 10,
+          "w": 15,
           "x": 0,
-          "y": 9
+          "y": 21
         },
         "id": 2,
         "options": {
@@ -258,9 +647,9 @@
             },
             "editorMode": "code",
             "format": "table",
-            "query": "from(bucket: \"sensor_data\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r._measurement == \"device_events\")\r\n  |> filter(fn: (r) => r._field == \"message\")\r\n  |> map(fn: (r) => ({\r\n      timestamp: r._time,\r\n      device_name: r.device,\r\n      event: r.event_type,\r\n      details: r._value\r\n  }))\r\n  |> sort(columns: [\"timestamp\"], desc: true)",
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"device_events\")\n  |> filter(fn: (r) => r._field == \"message\")\n  |> map(fn: (r) => ({\n      timestamp: r._time,\n      device_name: r.device,\n      event: r.event_type,\n      details: r._value\n  }))\n  |> sort(columns: [\"timestamp\"], desc: true)",
             "rawQuery": true,
-            "rawSql": "from(bucket: \"sensor_data\")\r\n  |> range(start: -7d)\r\n  |> filter(fn: (r) => r._measurement == \"device_events\")\r\n  |> filter(fn: (r) => r._field == \"message\")",
+            "rawSql": "from(bucket: \"sensor_data\")\n  |> range(start: -7d)\n  |> filter(fn: (r) => r._measurement == \"device_events\")\n  |> filter(fn: (r) => r._field == \"message\")",
             "refId": "A",
             "sql": {
               "columns": [
@@ -312,10 +701,10 @@
           "overrides": []
         },
         "gridPos": {
-          "h": 14,
+          "h": 10,
           "w": 9,
-          "x": 14,
-          "y": 9
+          "x": 15,
+          "y": 21
         },
         "id": 3,
         "options": {
@@ -342,7 +731,7 @@
               "type": "influxdb",
               "uid": "bf41ily35am80b"
             },
-            "query": "from(bucket: \"sensor_data\")\r\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\r\n  |> filter(fn: (r) => r._measurement == \"device_events\")\r\n  |> filter(fn: (r) => r.severity == \"error\")\r\n  |> filter(fn: (r) => r._field == \"value\")\r\n  |> group(columns: [\"device\"])\r\n  |> sum()",
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"device_events\")\n  |> filter(fn: (r) => r.severity == \"error\")\n  |> filter(fn: (r) => r._field == \"value\")\n  |> group(columns: [\"device\"])\n  |> sum()",
             "refId": "A"
           }
         ],
@@ -357,13 +746,13 @@
       "list": []
     },
     "time": {
-      "from": "now-5m",
+      "from": "now-24h",
       "to": "now"
     },
     "timepicker": {},
     "timezone": "browser",
     "title": "Temperatures Rue Romain",
     "uid": "adk6dmr",
-    "version": 37
+    "version": 38
   }
 }
