@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-11-28 07:00:02",
+    "exported": "2025-11-29 07:00:05",
     "title": "Victron Solar System",
     "uid": "victron-solar-system",
     "folder": "General",
-    "version": 4
+    "version": 6
   },
   "dashboard": {
     "annotations": {
@@ -836,15 +836,160 @@
         "type": "stat"
       },
       {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "description": "MPPT 1 solar power and voltage over time",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 20,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "PV Voltage"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "volt"
+                },
+                {
+                  "id": "custom.axisPlacement",
+                  "value": "right"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "blue",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "PV Power"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "watt"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "yellow",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 18
+        },
+        "id": 15,
+        "options": {
+          "legend": {
+            "calcs": [
+              "mean",
+              "max",
+              "last"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"pv_power\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> filter(fn: (r) => r.mppt == \"1\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])\n  |> set(key: \"_field\", value: \"PV Power\")",
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"pv_voltage\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> filter(fn: (r) => r.mppt == \"1\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])\n  |> set(key: \"_field\", value: \"PV Voltage\")",
+            "refId": "B"
+          }
+        ],
+        "title": "MPPT 1 - Power & Voltage History",
+        "type": "timeseries"
+      },
+      {
         "collapsed": false,
         "gridPos": {
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 18
+          "y": 42
         },
         "id": 102,
-        "title": "MPPT 2 - Current Status (Not Yet Connected)",
+        "title": "MPPT 2 - Current Status",
         "type": "row"
       },
       {
@@ -895,7 +1040,7 @@
           "h": 6,
           "w": 6,
           "x": 0,
-          "y": 19
+          "y": 27
         },
         "id": 20,
         "options": {
@@ -967,7 +1112,7 @@
           "h": 6,
           "w": 6,
           "x": 6,
-          "y": 19
+          "y": 27
         },
         "id": 21,
         "options": {
@@ -1037,7 +1182,7 @@
           "h": 6,
           "w": 4,
           "x": 12,
-          "y": 19
+          "y": 27
         },
         "id": 22,
         "options": {
@@ -1125,7 +1270,7 @@
           "h": 6,
           "w": 4,
           "x": 16,
-          "y": 19
+          "y": 27
         },
         "id": 23,
         "options": {
@@ -1197,7 +1342,7 @@
           "h": 6,
           "w": 4,
           "x": 20,
-          "y": 19
+          "y": 27
         },
         "id": 24,
         "options": {
@@ -1232,12 +1377,157 @@
         "type": "stat"
       },
       {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "description": "MPPT 2 solar power and voltage over time",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "palette-classic"
+            },
+            "custom": {
+              "axisBorderShow": false,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 20,
+              "gradientMode": "opacity",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "smooth",
+              "lineWidth": 2,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "never",
+              "spanNulls": false,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": null
+                }
+              ]
+            }
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "PV Voltage"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "volt"
+                },
+                {
+                  "id": "custom.axisPlacement",
+                  "value": "right"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "blue",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            },
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "PV Power"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "watt"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "fixedColor": "orange",
+                    "mode": "fixed"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 24,
+          "x": 0,
+          "y": 33
+        },
+        "id": 25,
+        "options": {
+          "legend": {
+            "calcs": [
+              "mean",
+              "max",
+              "last"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true
+          },
+          "tooltip": {
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"pv_power\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> filter(fn: (r) => r.mppt == \"2\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])\n  |> set(key: \"_field\", value: \"PV Power\")",
+            "refId": "A"
+          },
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"pv_voltage\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> filter(fn: (r) => r.mppt == \"2\")\n  |> aggregateWindow(every: v.windowPeriod, fn: mean, createEmpty: false)\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])\n  |> set(key: \"_field\", value: \"PV Voltage\")",
+            "refId": "B"
+          }
+        ],
+        "title": "MPPT 2 - Power & Voltage History",
+        "type": "timeseries"
+      },
+      {
         "collapsed": false,
         "gridPos": {
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 25
+          "y": 41
         },
         "id": 103,
         "title": "Solar Production History",
@@ -1307,7 +1597,7 @@
           "h": 8,
           "w": 24,
           "x": 0,
-          "y": 26
+          "y": 42
         },
         "id": 30,
         "options": {
@@ -1430,7 +1720,7 @@
           "h": 8,
           "w": 12,
           "x": 0,
-          "y": 34
+          "y": 50
         },
         "id": 31,
         "options": {
@@ -1549,7 +1839,7 @@
           "h": 8,
           "w": 12,
           "x": 12,
-          "y": 34
+          "y": 50
         },
         "id": 32,
         "options": {
@@ -1589,7 +1879,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 42
+          "y": 58
         },
         "id": 104,
         "title": "Energy Yield Statistics",
@@ -1656,7 +1946,7 @@
           "h": 12,
           "w": 24,
           "x": 0,
-          "y": 43
+          "y": 59
         },
         "id": 40,
         "options": {
@@ -1783,6 +2073,6 @@
     "timezone": "browser",
     "title": "Victron Solar System",
     "uid": "victron-solar-system",
-    "version": 4
+    "version": 6
   }
 }
