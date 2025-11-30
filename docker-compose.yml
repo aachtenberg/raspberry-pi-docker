@@ -186,6 +186,22 @@ services:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     network_mode: host
 
+  # ============================================================================
+  # PORTAINER - Docker Management UI
+  # ============================================================================
+  portainer:
+    image: portainer/portainer-ce:latest
+    container_name: portainer
+    restart: unless-stopped
+    ports:
+      - '9000:9000'
+      - '9443:9443'
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - portainer-data:/data
+    networks:
+      - monitoring
+
 # ==============================================================================
 # VOLUMES
 # ==============================================================================
@@ -197,6 +213,7 @@ volumes:
   loki-data:
   mosquitto-data:
   mosquitto-log:
+  portainer-data:
 
 # ==============================================================================
 # NETWORKS

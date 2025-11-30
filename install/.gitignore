@@ -1,0 +1,4 @@
+yenode_modules/
+build/
+*.log
+.env*
