@@ -65,7 +65,7 @@ vim .env
 4. Copy the tunnel token
 
 ```bash
-CLOUDFLARE_TUNNEL_TOKEN=eyJhIjoiZWEyNmZkZjVhOWVh...
+CLOUDFLARE_TUNNEL_TOKEN=your_cloudflare_tunnel_token_here
 ```
 
 #### InfluxDB Configuration
