@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-12-01 05:08:02",
+    "exported": "2025-12-01 07:00:02",
     "title": "Victron Solar System",
     "uid": "victron-solar-system",
     "folder": "General",
-    "version": 19
+    "version": 20
   },
   "dashboard": {
     "annotations": {
@@ -2131,53 +2131,24 @@
         "fieldConfig": {
           "defaults": {
             "color": {
-              "mode": "thresholds"
+              "mode": "continuous-GrYlRd"
             },
             "mappings": [],
             "thresholds": {
               "mode": "absolute",
               "steps": [
                 {
-                  "color": "text",
+                  "color": "green",
                   "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 80
                 }
               ]
             }
           },
-          "overrides": [
-            {
-              "matcher": {
-                "id": "byRegexp",
-                "options": ".*Yield.*"
-              },
-              "properties": [
-                {
-                  "id": "unit",
-                  "value": "kWh"
-                },
-                {
-                  "id": "decimals",
-                  "value": 2
-                }
-              ]
-            },
-            {
-              "matcher": {
-                "id": "byRegexp",
-                "options": ".*Max Power.*"
-              },
-              "properties": [
-                {
-                  "id": "unit",
-                  "value": "watt"
-                },
-                {
-                  "id": "decimals",
-                  "value": 0
-                }
-              ]
-            }
-          ]
+          "overrides": []
         },
         "gridPos": {
           "h": 12,
@@ -2187,11 +2158,18 @@
         },
         "id": 40,
         "options": {
-          "colorMode": "value",
-          "graphMode": "none",
-          "justifyMode": "auto",
+          "displayMode": "lcd",
+          "legend": {
+            "calcs": [],
+            "displayMode": "list",
+            "placement": "bottom",
+            "showLegend": false
+          },
+          "maxVizHeight": 300,
+          "minVizHeight": 16,
+          "minVizWidth": 8,
+          "namePlacement": "auto",
           "orientation": "auto",
-          "percentChangeColorMode": "standard",
           "reduceOptions": {
             "calcs": [
               "lastNotNull"
@@ -2199,9 +2177,9 @@
             "fields": "",
             "values": false
           },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
+          "showUnfilled": true,
+          "sizing": "auto",
+          "valueMode": "color"
         },
         "pluginVersion": "12.2.1",
         "targets": [
@@ -2287,7 +2265,7 @@
           }
         ],
         "title": "Energy Yield & Peak Power Statistics",
-        "type": "stat"
+        "type": "bargauge"
       }
     ],
     "preload": false,
@@ -2310,6 +2288,6 @@
     "timezone": "browser",
     "title": "Victron Solar System",
     "uid": "victron-solar-system",
-    "version": 19
+    "version": 20
   }
 }
