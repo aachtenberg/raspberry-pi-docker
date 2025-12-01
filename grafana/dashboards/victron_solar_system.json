@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-12-01 05:04:23",
+    "exported": "2025-12-01 05:08:02",
     "title": "Victron Solar System",
     "uid": "victron-solar-system",
     "folder": "General",
-    "version": 17
+    "version": 19
   },
   "dashboard": {
     "annotations": {
@@ -37,9 +37,9 @@
           "x": 0,
           "y": 0
         },
-        "id": 105,
+        "id": 100,
         "panels": [],
-        "title": "System Overview",
+        "title": "Battery Status",
         "type": "row"
       },
       {
@@ -202,84 +202,6 @@
           "type": "influxdb",
           "uid": "bf41ily35am80b"
         },
-        "description": "Total solar power from both MPPTs",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "decimals": 0,
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "dark-blue",
-                  "value": 0
-                },
-                {
-                  "color": "blue",
-                  "value": 50
-                },
-                {
-                  "color": "green",
-                  "value": 100
-                },
-                {
-                  "color": "yellow",
-                  "value": 400
-                },
-                {
-                  "color": "orange",
-                  "value": 600
-                }
-              ]
-            },
-            "unit": "watt"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 6,
-          "w": 6,
-          "x": 12,
-          "y": 1
-        },
-        "id": 106,
-        "options": {
-          "minVizHeight": 75,
-          "minVizWidth": 75,
-          "orientation": "auto",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showThresholdLabels": false,
-          "showThresholdMarkers": true,
-          "sizing": "auto"
-        },
-        "pluginVersion": "12.2.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "influxdb",
-              "uid": "bf41ily35am80b"
-            },
-            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"pv_power\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> last()\n  |> group()\n  |> sum()",
-            "refId": "A"
-          }
-        ],
-        "title": "Total Solar Power",
-        "type": "gauge"
-      },
-      {
-        "datasource": {
-          "type": "influxdb",
-          "uid": "bf41ily35am80b"
-        },
         "description": "Current flow (positive = charging, negative = discharging)",
         "fieldConfig": {
           "defaults": {
@@ -314,9 +236,9 @@
           "overrides": []
         },
         "gridPos": {
-          "h": 6,
+          "h": 9,
           "w": 6,
-          "x": 18,
+          "x": 12,
           "y": 1
         },
         "id": 3,
@@ -356,7 +278,7 @@
           "type": "influxdb",
           "uid": "bf41ily35am80b"
         },
-        "description": "Current MPPT charge state",
+        "description": "Estimated time remaining until battery is empty",
         "fieldConfig": {
           "defaults": {
             "color": {
@@ -365,53 +287,50 @@
             "mappings": [
               {
                 "options": {
-                  "ABSORPTION": {
-                    "color": "orange",
-                    "index": 2,
-                    "text": "ABSORPTION"
-                  },
-                  "BULK": {
-                    "color": "yellow",
-                    "index": 1,
-                    "text": "BULK"
-                  },
-                  "FLOAT": {
-                    "color": "green",
-                    "index": 3,
-                    "text": "FLOAT"
-                  },
-                  "OFF": {
-                    "color": "dark-blue",
-                    "index": 0,
-                    "text": "OFF"
+                  "match": "null",
+                  "result": {
+                    "text": "Charging"
                   }
                 },
-                "type": "value"
+                "type": "special"
               }
             ],
             "thresholds": {
               "mode": "absolute",
               "steps": [
                 {
-                  "color": "dark-blue",
+                  "color": "red",
                   "value": 0
+                },
+                {
+                  "color": "orange",
+                  "value": 60
+                },
+                {
+                  "color": "yellow",
+                  "value": 240
+                },
+                {
+                  "color": "green",
+                  "value": 720
                 }
               ]
-            }
+            },
+            "unit": "m"
           },
           "overrides": []
         },
         "gridPos": {
-          "h": 3,
-          "w": 12,
-          "x": 0,
-          "y": 7
+          "h": 9,
+          "w": 6,
+          "x": 18,
+          "y": 1
         },
-        "id": 107,
+        "id": 4,
         "options": {
-          "colorMode": "background",
+          "colorMode": "value",
           "graphMode": "none",
-          "justifyMode": "center",
+          "justifyMode": "auto",
           "orientation": "auto",
           "percentChangeColorMode": "standard",
           "reduceOptions": {
@@ -432,11 +351,11 @@
               "type": "influxdb",
               "uid": "bf41ily35am80b"
             },
-            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"charge_state\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> last()\n  |> group()",
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery\")\n  |> filter(fn: (r) => r._field == \"time_remaining\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\"])",
             "refId": "A"
           }
         ],
-        "title": "Charge State",
+        "title": "Time Remaining",
         "type": "stat"
       },
       {
@@ -444,7 +363,7 @@
           "type": "influxdb",
           "uid": "bf41ily35am80b"
         },
-        "description": "Total energy yield today",
+        "description": "Battery voltage as measured by MPPT 1",
         "fieldConfig": {
           "defaults": {
             "color": {
@@ -452,38 +371,48 @@
             },
             "decimals": 2,
             "mappings": [],
+            "max": 15,
+            "min": 10,
             "thresholds": {
               "mode": "absolute",
               "steps": [
                 {
-                  "color": "dark-blue",
+                  "color": "red",
                   "value": 0
                 },
                 {
-                  "color": "green",
-                  "value": 0.1
+                  "color": "orange",
+                  "value": 11.5
                 },
                 {
                   "color": "yellow",
-                  "value": 1
+                  "value": 12
+                },
+                {
+                  "color": "green",
+                  "value": 12.5
+                },
+                {
+                  "color": "blue",
+                  "value": 14.4
                 }
               ]
             },
-            "unit": "kWh"
+            "unit": "volt"
           },
           "overrides": []
         },
         "gridPos": {
           "h": 3,
-          "w": 12,
-          "x": 12,
+          "w": 6,
+          "x": 0,
           "y": 7
         },
-        "id": 108,
+        "id": 50,
         "options": {
           "colorMode": "value",
           "graphMode": "none",
-          "justifyMode": "center",
+          "justifyMode": "auto",
           "orientation": "auto",
           "percentChangeColorMode": "standard",
           "reduceOptions": {
@@ -504,11 +433,93 @@
               "type": "influxdb",
               "uid": "bf41ily35am80b"
             },
-            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"yield_today\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> last()\n  |> group()\n  |> sum()",
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"battery_voltage\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> filter(fn: (r) => r.mppt == \"1\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])",
             "refId": "A"
           }
         ],
-        "title": "Total Yield Today",
+        "title": "Battery Voltage (MPPT 1)",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "description": "Battery voltage as measured by MPPT 2",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 2,
+            "mappings": [],
+            "max": 15,
+            "min": 10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "red",
+                  "value": 0
+                },
+                {
+                  "color": "orange",
+                  "value": 11.5
+                },
+                {
+                  "color": "yellow",
+                  "value": 12
+                },
+                {
+                  "color": "green",
+                  "value": 12.5
+                },
+                {
+                  "color": "blue",
+                  "value": 14.4
+                }
+              ]
+            },
+            "unit": "volt"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 3,
+          "w": 6,
+          "x": 6,
+          "y": 7
+        },
+        "id": 51,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"battery_voltage\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> filter(fn: (r) => r.mppt == \"2\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])",
+            "refId": "A"
+          }
+        ],
+        "title": "Battery Voltage (MPPT 2)",
         "type": "stat"
       },
       {
@@ -665,104 +676,6 @@
           "x": 0,
           "y": 17
         },
-        "id": 100,
-        "panels": [],
-        "title": "Battery Status",
-        "type": "row"
-      },
-      {
-        "datasource": {
-          "type": "influxdb",
-          "uid": "bf41ily35am80b"
-        },
-        "description": "Estimated time remaining until battery is empty",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "mappings": [
-              {
-                "options": {
-                  "match": "null",
-                  "result": {
-                    "text": "Charging"
-                  }
-                },
-                "type": "special"
-              }
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "red",
-                  "value": 0
-                },
-                {
-                  "color": "orange",
-                  "value": 60
-                },
-                {
-                  "color": "yellow",
-                  "value": 240
-                },
-                {
-                  "color": "green",
-                  "value": 720
-                }
-              ]
-            },
-            "unit": "m"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 6,
-          "w": 24,
-          "x": 0,
-          "y": 18
-        },
-        "id": 4,
-        "options": {
-          "colorMode": "value",
-          "graphMode": "none",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "percentChangeColorMode": "standard",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
-        },
-        "pluginVersion": "12.2.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "influxdb",
-              "uid": "bf41ily35am80b"
-            },
-            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery\")\n  |> filter(fn: (r) => r._field == \"time_remaining\")\n  |> filter(fn: (r) => r.device == \"Solar_Monitor\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\"])",
-            "refId": "A"
-          }
-        ],
-        "title": "Time Remaining",
-        "type": "stat"
-      },
-      {
-        "collapsed": false,
-        "gridPos": {
-          "h": 1,
-          "w": 24,
-          "x": 0,
-          "y": 24
-        },
         "id": 101,
         "panels": [],
         "title": "MPPT 1 - Current Status",
@@ -816,7 +729,7 @@
           "h": 6,
           "w": 6,
           "x": 0,
-          "y": 25
+          "y": 18
         },
         "id": 10,
         "options": {
@@ -888,7 +801,7 @@
           "h": 6,
           "w": 6,
           "x": 6,
-          "y": 31
+          "y": 18
         },
         "id": 11,
         "options": {
@@ -958,7 +871,7 @@
           "h": 6,
           "w": 4,
           "x": 12,
-          "y": 31
+          "y": 18
         },
         "id": 12,
         "options": {
@@ -1046,7 +959,7 @@
           "h": 6,
           "w": 4,
           "x": 16,
-          "y": 31
+          "y": 18
         },
         "id": 13,
         "options": {
@@ -1118,7 +1031,7 @@
           "h": 6,
           "w": 4,
           "x": 20,
-          "y": 31
+          "y": 18
         },
         "id": 14,
         "options": {
@@ -1257,7 +1170,7 @@
           "h": 8,
           "w": 24,
           "x": 0,
-          "y": 31
+          "y": 24
         },
         "id": 15,
         "options": {
@@ -1305,7 +1218,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 39
+          "y": 32
         },
         "id": 102,
         "panels": [],
@@ -1360,7 +1273,7 @@
           "h": 6,
           "w": 6,
           "x": 0,
-          "y": 40
+          "y": 33
         },
         "id": 20,
         "options": {
@@ -1432,7 +1345,7 @@
           "h": 6,
           "w": 6,
           "x": 6,
-          "y": 46
+          "y": 33
         },
         "id": 21,
         "options": {
@@ -1502,7 +1415,7 @@
           "h": 6,
           "w": 4,
           "x": 12,
-          "y": 46
+          "y": 33
         },
         "id": 22,
         "options": {
@@ -1590,7 +1503,7 @@
           "h": 6,
           "w": 4,
           "x": 16,
-          "y": 46
+          "y": 33
         },
         "id": 23,
         "options": {
@@ -1662,7 +1575,7 @@
           "h": 6,
           "w": 4,
           "x": 20,
-          "y": 46
+          "y": 33
         },
         "id": 24,
         "options": {
@@ -1801,7 +1714,7 @@
           "h": 8,
           "w": 24,
           "x": 0,
-          "y": 46
+          "y": 39
         },
         "id": 25,
         "options": {
@@ -1849,7 +1762,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 54
+          "y": 47
         },
         "id": 103,
         "panels": [],
@@ -1920,7 +1833,7 @@
           "h": 8,
           "w": 24,
           "x": 0,
-          "y": 55
+          "y": 48
         },
         "id": 30,
         "options": {
@@ -2043,7 +1956,7 @@
           "h": 8,
           "w": 12,
           "x": 0,
-          "y": 63
+          "y": 56
         },
         "id": 31,
         "options": {
@@ -2162,7 +2075,7 @@
           "h": 8,
           "w": 12,
           "x": 12,
-          "y": 71
+          "y": 56
         },
         "id": 32,
         "options": {
@@ -2202,7 +2115,7 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 71
+          "y": 64
         },
         "id": 104,
         "panels": [],
@@ -2270,7 +2183,7 @@
           "h": 12,
           "w": 24,
           "x": 0,
-          "y": 72
+          "y": 65
         },
         "id": 40,
         "options": {
@@ -2397,6 +2310,6 @@
     "timezone": "browser",
     "title": "Victron Solar System",
     "uid": "victron-solar-system",
-    "version": 17
+    "version": 19
   }
 }
