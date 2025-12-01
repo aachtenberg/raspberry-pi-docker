@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-12-01 04:12:27",
+    "exported": "2025-12-01 04:18:48",
     "title": "Victron Solar System",
     "uid": "victron-solar-system",
     "folder": "General",
-    "version": 11
+    "version": 12
   },
   "dashboard": {
     "annotations": {
@@ -1066,6 +1066,243 @@
           "type": "influxdb",
           "uid": "bf41ily35am80b"
         },
+        "description": "MPPT error code (0 = No error)",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [
+              {
+                "options": {
+                  "0": {
+                    "color": "green",
+                    "index": 0,
+                    "text": "OK"
+                  }
+                },
+                "type": "value"
+              },
+              {
+                "options": {
+                  "match": "null+nan",
+                  "result": {
+                    "color": "text",
+                    "text": "N/A"
+                  }
+                },
+                "type": "special"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "green",
+                  "value": 0
+                },
+                {
+                  "color": "red",
+                  "value": 1
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 4,
+          "x": 0,
+          "y": 20
+        },
+        "id": 60,
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"error_code\")\n  |> filter(fn: (r) => r.device =~ /^(Solar_Monitor|BG_Solar_Monitor)$/)\n  |> filter(fn: (r) => r.mppt == \"2\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])",
+            "refId": "A"
+          }
+        ],
+        "title": "Error Code",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "description": "Load output state",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "mappings": [
+              {
+                "options": {
+                  "OFF": {
+                    "color": "blue",
+                    "index": 1,
+                    "text": "OFF"
+                  },
+                  "ON": {
+                    "color": "green",
+                    "index": 0,
+                    "text": "ON"
+                  }
+                },
+                "type": "value"
+              }
+            ],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": 0
+                }
+              ]
+            }
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 4,
+          "x": 4,
+          "y": 20
+        },
+        "id": 61,
+        "options": {
+          "colorMode": "background",
+          "graphMode": "none",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"load_state\")\n  |> filter(fn: (r) => r.device =~ /^(Solar_Monitor|BG_Solar_Monitor)$/)\n  |> filter(fn: (r) => r.mppt == \"2\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])",
+            "refId": "A"
+          }
+        ],
+        "title": "Load State",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "description": "Load output current",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 2,
+            "mappings": [],
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "dark-blue",
+                  "value": 0
+                },
+                {
+                  "color": "green",
+                  "value": 0.1
+                },
+                {
+                  "color": "yellow",
+                  "value": 5
+                }
+              ]
+            },
+            "unit": "amp"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 4,
+          "w": 4,
+          "x": 8,
+          "y": 20
+        },
+        "id": 62,
+        "options": {
+          "colorMode": "value",
+          "graphMode": "area",
+          "justifyMode": "auto",
+          "orientation": "auto",
+          "percentChangeColorMode": "standard",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showPercentChange": false,
+          "textMode": "auto",
+          "wideLayout": true
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"load_current\")\n  |> filter(fn: (r) => r.device =~ /^(Solar_Monitor|BG_Solar_Monitor)$/)\n  |> filter(fn: (r) => r.mppt == \"2\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])",
+            "refId": "A"
+          }
+        ],
+        "title": "Load Current",
+        "type": "stat"
+      },
+      {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
         "description": "Solar power output over time for both MPPTs",
         "fieldConfig": {
           "defaults": {
@@ -1125,7 +1362,7 @@
           "h": 8,
           "w": 24,
           "x": 0,
-          "y": 20
+          "y": 24
         },
         "id": 30,
         "options": {
@@ -1248,7 +1485,7 @@
           "h": 8,
           "w": 12,
           "x": 0,
-          "y": 20
+          "y": 24
         },
         "id": 31,
         "options": {
@@ -1367,7 +1604,7 @@
           "h": 8,
           "w": 12,
           "x": 12,
-          "y": 20
+          "y": 24
         },
         "id": 32,
         "options": {
@@ -1400,243 +1637,6 @@
         ],
         "title": "Battery SOC History",
         "type": "timeseries"
-      },
-      {
-        "datasource": {
-          "type": "influxdb",
-          "uid": "bf41ily35am80b"
-        },
-        "description": "MPPT error code (0 = No error)",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "mappings": [
-              {
-                "options": {
-                  "0": {
-                    "color": "green",
-                    "index": 0,
-                    "text": "OK"
-                  }
-                },
-                "type": "value"
-              },
-              {
-                "options": {
-                  "match": "null+nan",
-                  "result": {
-                    "color": "text",
-                    "text": "N/A"
-                  }
-                },
-                "type": "special"
-              }
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "green",
-                  "value": 0
-                },
-                {
-                  "color": "red",
-                  "value": 1
-                }
-              ]
-            }
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 4,
-          "w": 4,
-          "x": 0,
-          "y": 19
-        },
-        "id": 60,
-        "options": {
-          "colorMode": "background",
-          "graphMode": "none",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "percentChangeColorMode": "standard",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
-        },
-        "pluginVersion": "12.2.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "influxdb",
-              "uid": "bf41ily35am80b"
-            },
-            "query": "from(bucket: \"sensor_data\")\\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\\n  |> filter(fn: (r) => r._measurement == \"solar\")\\n  |> filter(fn: (r) => r._field == \"error_code\")\\n  |> filter(fn: (r) => r.device =~ /^(Solar_Monitor|BG_Solar_Monitor)$/)\\n  |> filter(fn: (r) => r.mppt == \"2\")\\n  |> last()\\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])",
-            "refId": "A"
-          }
-        ],
-        "title": "Error Code",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "influxdb",
-          "uid": "bf41ily35am80b"
-        },
-        "description": "Load output state",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "mappings": [
-              {
-                "options": {
-                  "OFF": {
-                    "color": "blue",
-                    "index": 1,
-                    "text": "OFF"
-                  },
-                  "ON": {
-                    "color": "green",
-                    "index": 0,
-                    "text": "ON"
-                  }
-                },
-                "type": "value"
-              }
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "blue",
-                  "value": 0
-                }
-              ]
-            }
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 4,
-          "w": 4,
-          "x": 4,
-          "y": 19
-        },
-        "id": 61,
-        "options": {
-          "colorMode": "background",
-          "graphMode": "none",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "percentChangeColorMode": "standard",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
-        },
-        "pluginVersion": "12.2.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "influxdb",
-              "uid": "bf41ily35am80b"
-            },
-            "query": "from(bucket: \"sensor_data\")\\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\\n  |> filter(fn: (r) => r._measurement == \"solar\")\\n  |> filter(fn: (r) => r._field == \"load_state\")\\n  |> filter(fn: (r) => r.device =~ /^(Solar_Monitor|BG_Solar_Monitor)$/)\\n  |> filter(fn: (r) => r.mppt == \"2\")\\n  |> last()\\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])",
-            "refId": "A"
-          }
-        ],
-        "title": "Load State",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "influxdb",
-          "uid": "bf41ily35am80b"
-        },
-        "description": "Load output current",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "decimals": 2,
-            "mappings": [],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "dark-blue",
-                  "value": 0
-                },
-                {
-                  "color": "green",
-                  "value": 0.1
-                },
-                {
-                  "color": "yellow",
-                  "value": 5
-                }
-              ]
-            },
-            "unit": "amp"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 4,
-          "w": 4,
-          "x": 8,
-          "y": 19
-        },
-        "id": 62,
-        "options": {
-          "colorMode": "value",
-          "graphMode": "area",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "percentChangeColorMode": "standard",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
-        },
-        "pluginVersion": "12.2.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "influxdb",
-              "uid": "bf41ily35am80b"
-            },
-            "query": "from(bucket: \"sensor_data\")\\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\\n  |> filter(fn: (r) => r._measurement == \"solar\")\\n  |> filter(fn: (r) => r._field == \"load_current\")\\n  |> filter(fn: (r) => r.device =~ /^(Solar_Monitor|BG_Solar_Monitor)$/)\\n  |> filter(fn: (r) => r.mppt == \"2\")\\n  |> last()\\n  |> drop(columns: [\"device\", \"location\", \"_measurement\", \"mppt\"])",
-            "refId": "A"
-          }
-        ],
-        "title": "Load Current",
-        "type": "stat"
       },
       {
         "collapsed": false,
@@ -1839,6 +1839,6 @@
     "timezone": "browser",
     "title": "Victron Solar System",
     "uid": "victron-solar-system",
-    "version": 11
+    "version": 12
   }
 }
