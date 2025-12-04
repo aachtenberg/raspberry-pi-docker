@@ -688,37 +688,7 @@
       "fieldConfig": {
         "defaults": {
           "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "axisCenteredZero": false,
-            "axisColorMode": "text",
-            "axisLabel": "",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "line",
-            "fillOpacity": 20,
-            "gradientMode": "none",
-            "hideFrom": {
-              "tooltip": false,
-              "viz": false,
-              "legend": false
-            },
-            "lineInterpolation": "smooth",
-            "lineWidth": 2,
-            "pointSize": 5,
-            "scaleDistribution": {
-              "type": "linear"
-            },
-            "showPoints": "never",
-            "spanNulls": true,
-            "stacking": {
-              "group": "A",
-              "mode": "none"
-            },
-            "thresholdsStyle": {
-              "mode": "off"
-            }
+            "mode": "thresholds"
           },
           "mappings": [],
           "thresholds": {
@@ -727,6 +697,14 @@
               {
                 "color": "green",
                 "value": null
+              },
+              {
+                "color": "yellow",
+                "value": 3600
+              },
+              {
+                "color": "green",
+                "value": 86400
               }
             ]
           },
@@ -742,19 +720,18 @@
       },
       "id": 9,
       "options": {
-        "legend": {
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "orientation": "auto",
+        "reduceOptions": {
+          "values": false,
           "calcs": [
-            "lastNotNull",
-            "max"
+            "lastNotNull"
           ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
+          "fields": ""
         },
-        "tooltip": {
-          "mode": "single",
-          "sort": "none"
-        }
+        "textMode": "value_and_name"
       },
       "pluginVersion": "10.0.0",
       "targets": [
@@ -763,12 +740,12 @@
             "type": "influxdb",
             "uid": "bf41ily35am80b"
           },
-          "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"camera_metrics\")\n  |> filter(fn: (r) => r._field == \"uptime\")\n  |> filter(fn: (r) => r.device == \"ESP32-S3-Surveillance\")\n  |> aggregateWindow(every: v.windowPeriod, fn: last, createEmpty: false)",
+          "query": "from(bucket: \"sensor_data\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"camera_metrics\")\n  |> filter(fn: (r) => r._field == \"uptime\")\n  |> filter(fn: (r) => r.device == \"ESP32-S3-Surveillance\")\n  |> last()",
           "refId": "A"
         }
       ],
       "title": "Camera Uptime",
-      "type": "timeseries"
+      "type": "stat"
     }
   ],
   "refresh": "10s",
