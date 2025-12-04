@@ -142,7 +142,7 @@
       "id": 2,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -152,7 +152,7 @@
           ],
           "fields": ""
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "pluginVersion": "10.0.0",
       "targets": [
@@ -278,7 +278,7 @@
       "id": 4,
       "options": {
         "colorMode": "value",
-        "graphMode": "area",
+        "graphMode": "none",
         "justifyMode": "auto",
         "orientation": "auto",
         "reduceOptions": {
@@ -288,7 +288,7 @@
           ],
           "fields": ""
         },
-        "textMode": "value_and_name"
+        "textMode": "value"
       },
       "pluginVersion": "10.0.0",
       "targets": [
@@ -334,24 +334,20 @@
       },
       "gridPos": {
         "h": 4,
-        "w": 4,
+        "w": 8,
         "x": 16,
         "y": 0
       },
       "id": 5,
       "options": {
-        "colorMode": "background",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "textMode": "value_and_name"
+        "dedupStrategy": "none",
+        "enableLogDetails": true,
+        "prettifyLogMessage": false,
+        "showCommonLabels": false,
+        "showLabels": false,
+        "showTime": true,
+        "sortOrder": "Descending",
+        "wrapLogMessage": false
       },
       "pluginVersion": "10.0.0",
       "targets": [
@@ -360,12 +356,12 @@
             "type": "influxdb",
             "uid": "bf41ily35am80b"
           },
-          "query": "from(bucket: \"sensor_data\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"camera_metrics\")\n  |> filter(fn: (r) => r._field == \"camera_errors\")\n  |> filter(fn: (r) => r.device == \"ESP32-S3-Surveillance\")\n  |> last()",
+          "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"camera_metrics\")\n  |> filter(fn: (r) => r._field == \"camera_errors\")\n  |> filter(fn: (r) => r.device == \"ESP32-S3-Surveillance\")\n  |> filter(fn: (r) => r._value > 0)",
           "refId": "A"
         }
       ],
-      "title": "Camera Errors",
-      "type": "stat"
+      "title": "Camera Errors Log",
+      "type": "logs"
     },
     {
       "datasource": {
@@ -679,73 +675,6 @@
       ],
       "title": "Image Captures Over Time",
       "type": "timeseries"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "bf41ily35am80b"
-      },
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "green",
-                "value": null
-              },
-              {
-                "color": "yellow",
-                "value": 3600
-              },
-              {
-                "color": "green",
-                "value": 86400
-              }
-            ]
-          },
-          "unit": "s"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 12,
-        "y": 12
-      },
-      "id": 9,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "area",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "values": false,
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": ""
-        },
-        "textMode": "value_and_name"
-      },
-      "pluginVersion": "10.0.0",
-      "targets": [
-        {
-          "datasource": {
-            "type": "influxdb",
-            "uid": "bf41ily35am80b"
-          },
-          "query": "from(bucket: \"sensor_data\")\n  |> range(start: -5m)\n  |> filter(fn: (r) => r._measurement == \"camera_metrics\")\n  |> filter(fn: (r) => r._field == \"uptime\")\n  |> filter(fn: (r) => r.device == \"ESP32-S3-Surveillance\")\n  |> last()",
-          "refId": "A"
-        }
-      ],
-      "title": "Camera Uptime",
-      "type": "stat"
     }
   ],
   "refresh": "10s",
