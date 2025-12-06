@@ -1,0 +1,17 @@
+# Ignore SSL certificates and keys
+letsencrypt/
+data/custom_ssl/
+data/keys.json
+
+# Ignore logs
+data/logs/
+
+# Ignore runtime data
+data/letsencrypt-acme-challenge/
+
+# Keep nginx configs but ignore generated includes
+data/nginx/temp/
+data/nginx/cache/
+
+# Ignore access control list
+data/access/
