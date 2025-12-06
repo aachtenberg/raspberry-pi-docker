@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-12-05 07:00:02",
+    "exported": "2025-12-06 07:00:02",
     "title": "Temperatures Rue Romain",
     "uid": "adk6dmr",
     "folder": "General",
-    "version": 41
+    "version": 44
   },
   "dashboard": {
     "annotations": {
@@ -38,6 +38,7 @@
           "y": 0
         },
         "id": 100,
+        "panels": [],
         "title": "Current Temperatures",
         "type": "row"
       },
@@ -61,7 +62,7 @@
               "steps": [
                 {
                   "color": "blue",
-                  "value": -10
+                  "value": 0
                 },
                 {
                   "color": "light-blue",
@@ -91,7 +92,7 @@
         },
         "gridPos": {
           "h": 8,
-          "w": 6,
+          "w": 5,
           "x": 0,
           "y": 1
         },
@@ -145,7 +146,7 @@
               "steps": [
                 {
                   "color": "blue",
-                  "value": -10
+                  "value": 0
                 },
                 {
                   "color": "light-blue",
@@ -175,8 +176,8 @@
         },
         "gridPos": {
           "h": 8,
-          "w": 6,
-          "x": 6,
+          "w": 5,
+          "x": 5,
           "y": 1
         },
         "id": 11,
@@ -229,7 +230,7 @@
               "steps": [
                 {
                   "color": "blue",
-                  "value": -10
+                  "value": 0
                 },
                 {
                   "color": "light-blue",
@@ -259,8 +260,8 @@
         },
         "gridPos": {
           "h": 8,
-          "w": 6,
-          "x": 12,
+          "w": 5,
+          "x": 10,
           "y": 1
         },
         "id": 12,
@@ -313,7 +314,7 @@
               "steps": [
                 {
                   "color": "blue",
-                  "value": -10
+                  "value": 0
                 },
                 {
                   "color": "light-blue",
@@ -343,8 +344,8 @@
         },
         "gridPos": {
           "h": 8,
-          "w": 6,
-          "x": 18,
+          "w": 4,
+          "x": 15,
           "y": 1
         },
         "id": 13,
@@ -378,6 +379,90 @@
         "type": "gauge"
       },
       {
+        "datasource": {
+          "type": "influxdb",
+          "uid": "bf41ily35am80b"
+        },
+        "description": "Current temperature at Spa",
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds"
+            },
+            "decimals": 1,
+            "mappings": [],
+            "max": 45,
+            "min": -10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "blue",
+                  "value": 0
+                },
+                {
+                  "color": "light-blue",
+                  "value": 5
+                },
+                {
+                  "color": "green",
+                  "value": 15
+                },
+                {
+                  "color": "yellow",
+                  "value": 22
+                },
+                {
+                  "color": "orange",
+                  "value": 30
+                },
+                {
+                  "color": "red",
+                  "value": 40
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 5,
+          "x": 19,
+          "y": 1
+        },
+        "id": 14,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "influxdb",
+              "uid": "bf41ily35am80b"
+            },
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"temperature\")\n  |> filter(fn: (r) => r._field == \"tempC\")\n  |> filter(fn: (r) => r.device == \"Spa\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\"])",
+            "refId": "A"
+          }
+        ],
+        "title": "Spa",
+        "type": "gauge"
+      },
+      {
         "collapsed": false,
         "gridPos": {
           "h": 1,
@@ -386,6 +471,7 @@
           "y": 9
         },
         "id": 101,
+        "panels": [],
         "title": "Temperature History",
         "type": "row"
       },
@@ -439,7 +525,7 @@
               "steps": [
                 {
                   "color": "transparent",
-                  "value": null
+                  "value": 0
                 },
                 {
                   "color": "blue",
@@ -464,7 +550,7 @@
           "overrides": []
         },
         "gridPos": {
-          "h": 10,
+          "h": 11,
           "w": 24,
           "x": 0,
           "y": 10
@@ -508,9 +594,10 @@
           "h": 1,
           "w": 24,
           "x": 0,
-          "y": 20
+          "y": 21
         },
         "id": 102,
+        "panels": [],
         "title": "System Health",
         "type": "row"
       },
@@ -629,7 +716,7 @@
           "h": 10,
           "w": 15,
           "x": 0,
-          "y": 21
+          "y": 22
         },
         "id": 2,
         "options": {
@@ -704,7 +791,7 @@
           "h": 10,
           "w": 9,
           "x": 15,
-          "y": 21
+          "y": 22
         },
         "id": 3,
         "options": {
@@ -753,6 +840,6 @@
     "timezone": "browser",
     "title": "Temperatures Rue Romain",
     "uid": "adk6dmr",
-    "version": 41
+    "version": 44
   }
 }
