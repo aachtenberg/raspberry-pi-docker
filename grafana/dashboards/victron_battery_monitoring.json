@@ -4,7 +4,7 @@
     "title": "Victron Battery Monitoring",
     "uid": "victron-battery",
     "folder": "General",
-    "version": 16
+    "version": 17
   },
   "dashboard": {
     "annotations": {
