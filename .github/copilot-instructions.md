@@ -96,6 +96,112 @@ docker compose pull && docker compose up -d
 ./scripts/status.sh
 ```
 
+### Nginx Proxy Manager Configuration
+
+**File Locations:**
+- Proxy host configs: `nginx-proxy-manager/data/nginx/proxy_host/*.conf`
+- Each config file represents one proxy host entry
+- Configs are tracked in git for version control
+
+**Adding a new proxy entry:**
+
+1. **Determine the next config number:**
+   ```bash
+   ls nginx-proxy-manager/data/nginx/proxy_host/ | grep -o "[0-9]*" | sort -n | tail -1
+   # Use next number (e.g., if max is 5, use 6)
+   ```
+
+2. **Create config file** (e.g., `6.conf` for spa.xgrunt.com → 192.168.0.213:80):
+   ```bash
+   cat > nginx-proxy-manager/data/nginx/proxy_host/6.conf << 'EOF'
+   # ------------------------------------------------------------
+   # spa.xgrunt.com
+   # ------------------------------------------------------------
+   
+   map $scheme $hsts_header {
+       https   "max-age=63072000; preload";
+   }
+   
+   server {
+     set $forward_scheme http;
+     set $server         "192.168.0.213";
+     set $port           80;
+   
+     listen 80;
+     listen [::]:80;
+   
+     server_name spa.xgrunt.com;
+     http2 off;
+   
+     # Block Exploits
+     include conf.d/include/block-exploits.conf;
+   
+     # Proxy
+     location / {
+       proxy_pass            $forward_scheme://$server:$port;
+       
+       # Timeouts
+       proxy_connect_timeout 600s;
+       proxy_send_timeout    600s;
+       proxy_read_timeout    600s;
+   
+       # Proxy headers
+       proxy_set_header Host                $host;
+       proxy_set_header X-Forwarded-Scheme  $scheme;
+       proxy_set_header X-Forwarded-Proto   $scheme;
+       proxy_set_header X-Forwarded-For     $remote_addr;
+       proxy_set_header X-Real-IP           $remote_addr;
+       proxy_http_version                   1.1;
+       proxy_set_header Connection          "";
+       proxy_buffering                      off;
+       proxy_request_buffering              off;
+       proxy_max_temp_file_size             0;
+   
+       # WebSocket support
+       proxy_set_header Upgrade           $http_upgrade;
+       proxy_set_header Connection        $connection_upgrade;
+     }
+   }
+   EOF
+   ```
+
+3. **Reload nginx:**
+   ```bash
+   docker compose exec -T nginx-proxy-manager nginx -s reload
+   ```
+
+4. **Test the proxy:**
+   ```bash
+   curl -s -o /dev/null -w "HTTP Status: %{http_code}\n" \
+     -H "Host: spa.xgrunt.com" http://localhost:8080/
+   ```
+
+5. **Commit to git:**
+   ```bash
+   git add -f nginx-proxy-manager/data/nginx/proxy_host/6.conf
+   git commit -m "feat: add spa.xgrunt.com proxy (192.168.0.213)"
+   git push
+   ```
+
+**Editing existing proxy entries:**
+
+1. Edit the corresponding `.conf` file in `nginx-proxy-manager/data/nginx/proxy_host/`
+2. Update `server_name`, `$server`, or `$port` as needed
+3. Reload: `docker compose exec -T nginx-proxy-manager nginx -s reload`
+4. Test and commit
+
+**Proxy variables to customize:**
+- `$server`: Target IP address (e.g., `192.168.0.213`)
+- `$port`: Target port (default 80)
+- `server_name`: Domain(s) to listen on (e.g., `spa.xgrunt.com`)
+- `proxy_connect_timeout`: Connection timeout in seconds
+
+**Notes:**
+- Cloudflare tunnel automatically handles HTTPS/SSL routing
+- Each proxy host config gets its own numbered file
+- Configs are reloaded without container restart
+- Add both HTTP (port 80) and HTTPS (port 443) server blocks for full support
+
 ## Code Style
 
 - Shell scripts: Use `#!/bin/bash`, include error handling with `set -e`
