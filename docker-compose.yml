@@ -158,6 +158,10 @@ services:
   # ============================================================================
   # NGINX PROXY MANAGER - Reverse Proxy
   # ============================================================================
+  # NGINX PROXY MANAGER - Reverse Proxy & SSL Management
+  # Config files: ./nginx-proxy-manager/data/nginx/
+  # Database: ./nginx-proxy-manager/data/database.sqlite
+  # ============================================================================
   nginx-proxy-manager:
     image: jc21/nginx-proxy-manager:latest
     container_name: nginx-proxy-manager
@@ -169,8 +173,8 @@ services:
     environment:
       - DB_SQLITE_FILE=/data/database.sqlite
     volumes:
-      - /home/aachten/nginx-proxy-manager/data:/data
-      - /home/aachten/nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+      - ./nginx-proxy-manager/data:/data
+      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
     networks:
       - monitoring
 
