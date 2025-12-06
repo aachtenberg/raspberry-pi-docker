@@ -177,91 +177,6 @@
           "type": "influxdb",
           "uid": "bf41ily35am80b"
         },
-        "description": "Estimated time remaining until battery is empty",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "mappings": [
-              {
-                "options": {
-                  "match": "null",
-                  "result": {
-                    "text": "Charging"
-                  }
-                },
-                "type": "special"
-              }
-            ],
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "red",
-                  "value": 0
-                },
-                {
-                  "color": "orange",
-                  "value": 60
-                },
-                {
-                  "color": "yellow",
-                  "value": 240
-                },
-                {
-                  "color": "green",
-                  "value": 720
-                }
-              ]
-            },
-            "unit": "m"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 6,
-          "w": 6,
-          "x": 12,
-          "y": 0
-        },
-        "id": 4,
-        "options": {
-          "colorMode": "value",
-          "graphMode": "none",
-          "justifyMode": "auto",
-          "orientation": "auto",
-          "percentChangeColorMode": "standard",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showPercentChange": false,
-          "textMode": "auto",
-          "wideLayout": true
-        },
-        "pluginVersion": "12.2.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "influxdb",
-              "uid": "bf41ily35am80b"
-            },
-            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery\")\n  |> filter(fn: (r) => r._field == \"time_remaining\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\"])",
-            "refId": "A"
-          }
-        ],
-        "title": "Time Remaining",
-        "type": "stat"
-      },
-      {
-        "datasource": {
-          "type": "influxdb",
-          "uid": "bf41ily35am80b"
-        },
         "description": "Amp-hours consumed since last full charge",
         "fieldConfig": {
           "defaults": {
@@ -294,10 +209,10 @@
         "gridPos": {
           "h": 6,
           "w": 6,
-          "x": 18,
+          "x": 12,
           "y": 0
         },
-        "id": 5,
+        "id": 4,
         "options": {
           "colorMode": "value",
           "graphMode": "none",
