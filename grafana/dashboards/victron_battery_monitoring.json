@@ -34,37 +34,37 @@
           "type": "influxdb",
           "uid": "bf41ily35am80b"
         },
-        "description": "Current battery state of charge",
+        "description": "Current battery voltage",
         "fieldConfig": {
           "defaults": {
             "color": {
               "mode": "thresholds"
             },
             "mappings": [],
-            "max": 100,
-            "min": 0,
+            "max": 15,
+            "min": 10,
             "thresholds": {
               "mode": "absolute",
               "steps": [
                 {
                   "color": "red",
-                  "value": 0
+                  "value": 10
                 },
                 {
                   "color": "orange",
-                  "value": 20
+                  "value": 11.8
                 },
                 {
                   "color": "yellow",
-                  "value": 50
+                  "value": 12.4
                 },
                 {
                   "color": "green",
-                  "value": 80
+                  "value": 12.7
                 }
               ]
             },
-            "unit": "percent"
+            "unit": "volt"
           },
           "overrides": []
         },
@@ -97,87 +97,7 @@
               "type": "influxdb",
               "uid": "bf41ily35am80b"
             },
-            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery\")\n  |> filter(fn: (r) => r._field == \"soc\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\"])",
-            "refId": "A"
-          }
-        ],
-        "title": "State of Charge",
-        "type": "gauge"
-      },
-      {
-        "datasource": {
-          "type": "influxdb",
-          "uid": "bf41ily35am80b"
-        },
-        "description": "Current battery voltage",
-        "fieldConfig": {
-          "defaults": {
-            "color": {
-              "mode": "thresholds"
-            },
-            "decimals": 2,
-            "mappings": [],
-            "max": 15,
-            "min": 10,
-            "thresholds": {
-              "mode": "absolute",
-              "steps": [
-                {
-                  "color": "red",
-                  "value": 0
-                },
-                {
-                  "color": "orange",
-                  "value": 11.5
-                },
-                {
-                  "color": "yellow",
-                  "value": 12
-                },
-                {
-                  "color": "green",
-                  "value": 12.5
-                },
-                {
-                  "color": "blue",
-                  "value": 14.4
-                }
-              ]
-            },
-            "unit": "volt"
-          },
-          "overrides": []
-        },
-        "gridPos": {
-          "h": 6,
-          "w": 6,
-          "x": 6,
-          "y": 0
-        },
-        "id": 2,
-        "options": {
-          "minVizHeight": 75,
-          "minVizWidth": 75,
-          "orientation": "auto",
-          "reduceOptions": {
-            "calcs": [
-              "lastNotNull"
-            ],
-            "fields": "",
-            "values": false
-          },
-          "showThresholdLabels": false,
-          "showThresholdMarkers": true,
-          "sizing": "auto"
-        },
-        "pluginVersion": "12.2.1",
-        "targets": [
-          {
-            "datasource": {
-              "type": "influxdb",
-              "uid": "bf41ily35am80b"
-            },
-            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"battery\")\n  |> filter(fn: (r) => r._field == \"voltage\")\n  |> last()\n  |> drop(columns: [\"device\", \"location\", \"_measurement\"])",
+            "query": "from(bucket: \"sensor_data\")\n  |> range(start: v.timeRangeStart, stop: v.timeRangeStop)\n  |> filter(fn: (r) => r._measurement == \"solar\")\n  |> filter(fn: (r) => r._field == \"battery_voltage\")\n  |> last()\n  |> group(columns: [])\n  |> first()",
             "refId": "A"
           }
         ],
@@ -216,12 +136,8 @@
         },
         "gridPos": {
           "h": 6,
-          "w": 4,
-          "x": 12,
-          "y": 0
-        },
+          "w": 6,
         "id": 3,
-        "options": {
           "colorMode": "value",
           "graphMode": "area",
           "justifyMode": "auto",
@@ -301,8 +217,8 @@
         },
         "gridPos": {
           "h": 6,
-          "w": 4,
-          "x": 16,
+          "w": 6,
+          "x": 12,
           "y": 0
         },
         "id": 4,
@@ -373,8 +289,8 @@
         },
         "gridPos": {
           "h": 6,
-          "w": 4,
-          "x": 20,
+          "w": 6,
+          "x": 18,
           "y": 0
         },
         "id": 5,
