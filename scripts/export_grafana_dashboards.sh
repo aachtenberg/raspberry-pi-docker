@@ -11,6 +11,21 @@ echo "🔍 Grafana Dashboard Export Tool"
 echo "=================================="
 echo ""
 
+# Check for uncommitted changes in dashboards directory
+UNCOMMITTED=$(git diff --name-only 2>/dev/null | grep "^$OUTPUT_DIR")
+if [ -n "$UNCOMMITTED" ]; then
+    echo "⚠️  Warning: Uncommitted changes found in $OUTPUT_DIR:"
+    echo "$UNCOMMITTED"
+    echo ""
+    read -p "Do you want to continue and overwrite these changes? (y/N) " -n 1 -r
+    echo
+    if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+        echo "❌ Export cancelled. Commit or discard your changes first:"
+        echo "   git status"
+        exit 1
+    fi
+fi
+
 # Check if credentials are provided
 if [ -z "$GRAFANA_PASSWORD" ] && [ -z "$GRAFANA_API_KEY" ]; then
     echo "⚠️  No credentials provided"
