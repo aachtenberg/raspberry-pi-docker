@@ -33,6 +33,46 @@ docker compose logs -f influxdb3-core
 docker compose logs -f influxdb3-explorer
 ```
 
+## Getting Started: First Database and Query
+
+### Step 1: Access Explorer UI
+
+Open your browser to: `http://localhost:8888`
+
+### Step 2: Create a Database
+
+1. Click **Databases** in the left menu
+2. Click **Create Database**
+3. Enter name: `sensor_data`
+4. Click **Create**
+
+### Step 3: Write Sample Data
+
+1. Click **Write Data** in the left menu
+2. Select database: `sensor_data`
+3. Paste sample line protocol:
+   ```
+   temperature,sensor=living_room,location=ground_floor temp=22.5,humidity=45 1701270000000000000
+   temperature,sensor=bedroom,location=first_floor temp=20.1,humidity=50 1701270000000000000
+   ```
+4. Click **Write**
+
+### Step 4: Query Data
+
+1. Click **Query Data** in the left menu
+2. Select database: `sensor_data`
+3. Enter SQL query:
+   ```sql
+   SELECT * FROM temperature LIMIT 10
+   ```
+4. Click **Execute**
+
+### Step 5: Integrate with Grafana
+
+1. Open Grafana: `http://localhost:3000`
+2. Add InfluxDB 3 as data source (see Grafana Integration section above)
+3. Create dashboard querying your sample data
+
 ## Architecture
 
 ### Services
@@ -60,44 +100,50 @@ Both services connect to the `monitoring` bridge network, allowing communication
 
 ## API Usage
 
-### Create Database
+⚠️ **Note**: InfluxDB 3 Core is primarily accessed through the **Explorer UI** (`http://localhost:8888`). Direct HTTP API access is available but requires specific endpoint configuration beyond the scope of this setup.
+
+### Primary Method: Explorer UI
+
+Access the web interface at `http://localhost:8888` to:
+- Create and manage databases
+- Write data via line protocol
+- Query data with SQL or Flux
+- Visualize results
+- Manage retention policies
+
+### Secondary Method: SQL Queries (via Explorer UI)
+
+1. Open `http://localhost:8888`
+2. Select database
+3. Write SQL queries directly in the UI:
+   ```sql
+   SELECT * FROM measurement
+   SELECT time, field1 FROM measurement WHERE time > now() - interval '1 hour'
+   ```
+
+### Flux Queries (via Explorer UI)
+
+1. Open `http://localhost:8888`
+2. Switch to Flux query mode
+3. Write Flux queries:
+   ```flux
+   from(bucket:"mydb") 
+   |> range(start:-1h)
+   |> filter(fn: (r) => r._measurement == "measurement")
+   ```
+
+### Line Protocol Data Ingestion
+
+For programmatic writes, use the HTTP endpoint:
 
 ```bash
-curl -X POST http://localhost:8181/api/v1/databases \
-  -H "Content-Type: application/json" \
-  -d '{"database":"mydb"}'
-```
-
-### Write Data (Line Protocol)
-
-```bash
-curl -X POST http://localhost:8181/api/v1/write \
+# Write data via curl (requires proper authentication setup)
+curl -X POST http://localhost:8181/write \
   -H "Content-Type: text/plain" \
-  -d 'measurement,tag1=value1 field1=10.5 1000000000'
+  -d 'measurement,tag1=value1 field1=10.5'
 ```
 
-### Query Data (SQL)
-
-```bash
-curl -X POST http://localhost:8181/api/v1/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "database": "mydb",
-    "query": "SELECT * FROM measurement"
-  }'
-```
-
-### Query Data (Flux)
-
-```bash
-curl -X POST http://localhost:8181/api/v1/query \
-  -H "Content-Type: application/json" \
-  -d '{
-    "database": "mydb",
-    "query": "from(bucket:\"mydb\") |> range(start:-1h)",
-    "format": "flux"
-  }'
-```
+**Note**: InfluxDB 3 Core may require additional configuration for direct HTTP API access. Use Explorer UI for initial setup and testing.
 
 ## Integration with Existing Services
 
@@ -105,15 +151,24 @@ curl -X POST http://localhost:8181/api/v1/query \
 
 1. **Add Data Source**:
    - Grafana URL: `http://localhost:3000`
-   - Go to Configuration → Data Sources
-   - Add InfluxDB data source:
-     - Query Language: InfluxQL or Flux
-     - URL: `http://influxdb3-core:8086` (internal network)
-     - Database: (leave empty for Flux, specify for InfluxQL)
+   - Go to Configuration → Data Sources → Add data source
+   - Select **InfluxDB**
+   - Configure:
+     - Name: `InfluxDB 3 Core`
+     - Query Language: **SQL** (recommended) or Flux
+     - URL: `http://influxdb3-core:8086` (internal container network)
+     - Leave auth fields empty (no authentication required for local setup)
 
-2. **Create Dashboards**:
-   - Use InfluxDB 3 as query source
-   - Same query capabilities as InfluxDB 2.7
+2. **Test Connection**:
+   - Click "Save & Test"
+   - You should see "datasource is working" message
+
+3. **Create Dashboards**:
+   - Create new dashboard
+   - Add panel with InfluxDB 3 data source
+   - Use SQL or Flux queries same as InfluxDB 2.7
+
+**Note**: Ensure you have data in InfluxDB 3 before creating queries. Use Explorer UI (`http://localhost:8888`) to verify databases and tables exist.
 
 ### Home Assistant Integration
 
