@@ -203,15 +203,13 @@ services:
     ports:
       - '8181:8086'  # API port (8086 is taken by influxdb 2.7)
     volumes:
-      - influxdb3-data:/var/lib/influxdb3/data
-      - influxdb3-plugins:/var/lib/influxdb3/plugins
+      - influxdb3-data:/var/lib/influxdb3
     command:
       - influxdb3
       - serve
       - --node-id=influxdb-node-0
       - --object-store=file
       - --data-dir=/var/lib/influxdb3/data
-      - --plugin-dir=/var/lib/influxdb3/plugins
     environment:
       - TZ=UTC
     networks:
@@ -259,7 +257,6 @@ volumes:
   influxdb-data:
   influxdb-config:
   influxdb3-data:
-  influxdb3-plugins:
   influxdb3-explorer-db:
   grafana-data:
   prometheus-data:
