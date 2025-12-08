@@ -93,10 +93,35 @@ ESP Devices (4) → Raspberry Pi → InfluxDB → Grafana/Home Assistant
 
 See [ESP Temperature Sensor Project](https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor) for the device firmware.
 
+## InfluxDB 3 Core (Beta)
+
+**New**: InfluxDB 3 Core is now available alongside InfluxDB 2.7 for evaluation and migration testing.
+
+- **API**: `http://localhost:8181`
+- **Explorer UI**: `http://localhost:8888`
+- **Reference**: [InfluxDB 3 Setup Guide](docs/INFLUXDB3_SETUP.md)
+
+Both databases run independently. Use InfluxDB 3 to evaluate next-generation features while maintaining existing InfluxDB 2.7 data pipelines.
+
+### Quick Start with InfluxDB 3
+
+```bash
+# Start InfluxDB 3 services
+docker compose up -d influxdb3-core influxdb3-explorer
+
+# Access Explorer UI
+# Open http://localhost:8888 in your browser
+
+# Check service status
+docker compose ps | grep influxdb3
+
+# View startup logs
+docker compose logs influxdb3-core
+```
+
+For detailed integration instructions, see the [InfluxDB 3 Setup Guide](docs/INFLUXDB3_SETUP.md).
 
 ### 1. Configure Secrets
-
-**IMPORTANT**: Before deploying, you must configure your secrets:
 
 ```bash
 cd ~/docker
@@ -171,6 +196,8 @@ See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for complete setup instructio
 | Service | Port(s) | Purpose |
 |---------|---------|---------|
 | InfluxDB | 8086 | Time-series database for ESP sensor data |
+| **InfluxDB 3 Core** | **8181** | **Next-gen time-series database (evaluation/migration)** |
+| **InfluxDB 3 Explorer** | **8888** | **Web UI for InfluxDB 3 Core** |
 | Grafana | 3000 | Dashboards and visualization |
 | Prometheus | 9090 | Metrics collection |
 | Loki | 3100 | Log aggregation |
