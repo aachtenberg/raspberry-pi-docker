@@ -5,6 +5,9 @@ data/keys.json
 
 # Ignore logs
 data/logs/
+*.log
+*.log.*
+*.gz
 
 # Ignore runtime data
 data/letsencrypt-acme-challenge/

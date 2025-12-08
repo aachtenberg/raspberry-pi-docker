@@ -149,11 +149,15 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto-broker
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - '1883:1883'   # MQTT
+      - '9001:9001'   # WebSocket
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
+    networks:
+      - monitoring
 
   # ============================================================================
   # NGINX PROXY MANAGER - Reverse Proxy
@@ -200,8 +204,7 @@ services:
     image: influxdb:3-core
     container_name: influxdb3-core
     restart: unless-stopped
-    ports:
-      - '8181:8086'  # API port (8086 is taken by influxdb 2.7)
+    network_mode: host
     volumes:
       - influxdb3-data:/var/lib/influxdb3
     command:
@@ -210,10 +213,26 @@ services:
       - --node-id=influxdb-node-0
       - --object-store=file
       - --data-dir=/var/lib/influxdb3/data
+      - --http-bind=0.0.0.0:8181
     environment:
       - TZ=UTC
-    networks:
-      - monitoring
+
+  # ============================================================================
+  # TELEGRAF - MQTT to InfluxDB 3 Bridge
+  # ============================================================================
+  # Consumes Home Assistant MQTT messages and writes to InfluxDB 3 Core
+  # Transforms JSON payloads to InfluxDB line protocol
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    environment:
+      - INFLUXDB3_ADMIN_TOKEN=${INFLUXDB3_ADMIN_TOKEN}
+    depends_on:
+      - mosquitto
 
   # ============================================================================
   # INFLUXDB 3 EXPLORER UI
