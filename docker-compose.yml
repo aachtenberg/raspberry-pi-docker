@@ -26,6 +26,41 @@ services:
       - monitoring
 
   # ============================================================================
+  # INFLUXDB 3 CORE - New Time Series Database (for IoT/Camera deployment)
+  # NOTE: ARM64 jemalloc issue - requires manual setup/workaround
+  # See: https://github.com/influxdata/influxdb/issues/[ARM64_ISSUE]
+  # Runs alongside existing InfluxDB 2.7 for gradual migration
+  # ============================================================================
+  influxdb3-core:
+    image: influxdb:3-core
+    container_name: influxdb3-core
+    restart: no
+    ports:
+      - '8181:8181'
+    volumes:
+      - influxdb3-data:/var/lib/influxdb3/data
+      - influxdb3-plugins:/var/lib/influxdb3/plugins
+    environment:
+      - TZ=UTC
+    networks:
+      - monitoring
+
+  influxdb3-explorer:
+    image: influxdata/influxdb3-ui:latest
+    container_name: influxdb3-explorer
+    restart: unless-stopped
+    ports:
+      - '8888:80'
+    volumes:
+      - influxdb3-explorer-db:/db:rw
+    environment:
+      - MODE=admin
+    depends_on:
+      - influxdb3-core
+    networks:
+      - monitoring
+
+  # ============================================================================
   # GRAFANA - Visualization & Dashboards
   # ============================================================================
   grafana:
@@ -212,6 +247,9 @@ services:
 volumes:
   influxdb-data:
   influxdb-config:
+  influxdb3-data:
+  influxdb3-plugins:
+  influxdb3-explorer-db:
   grafana-data:
   prometheus-data:
   loki-data:
