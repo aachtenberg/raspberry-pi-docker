@@ -1,6 +1,6 @@
 {
   "meta": {
-    "exported": "2025-12-06 04:16:19",
+    "exported": "2025-12-09 07:00:02",
     "title": "Victron Battery Monitoring",
     "uid": "victron-battery",
     "folder": "General",
@@ -1029,6 +1029,6 @@
     "timezone": "browser",
     "title": "Victron Battery Monitoring",
     "uid": "victron-battery",
-    "version": 16
+    "version": 19
   }
 }
