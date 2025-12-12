@@ -31,7 +31,7 @@ See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for detailed instructions on 
 ✅ include/secrets.h is properly gitignored
 ✅ No placeholder values found (YOUR_*, YOUR-*)
 ✅ WiFi networks configured: 3
-✅ InfluxDB URL configured: "http://192.168.0.167:8086"
+✅ InfluxDB URL configured: "http://localhost:8086"
 ✅ InfluxDB token length: 89 characters (looks valid)
 ⚠️  Warning: Found common example values. Make sure these are your actual credentials.
 ✅ InfluxDB Organization ID format looks valid
