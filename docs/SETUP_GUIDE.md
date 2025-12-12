@@ -38,7 +38,6 @@ This infrastructure receives, stores, and visualizes temperature data from multi
 | InfluxDB | 8086 | Time-series database for ESP sensor data |
 | Grafana | 3000 | Dashboards and visualization |
 | Prometheus | 9090 | Metrics collection |
-| Loki | 3100 | Log aggregation |
 | Node Exporter | 9100 | System metrics |
 | cAdvisor | 8081 | Container metrics |
 | Home Assistant | 8123 | Home automation |
