@@ -1,0 +1,141 @@
+{
+  "id": 2,
+  "type": "timeseries",
+  "title": "Temperature by Device (24h)",
+  "gridPos": {
+    "x": 0,
+    "y": 8,
+    "h": 10,
+    "w": 24
+  },
+  "fieldConfig": {
+    "defaults": {
+      "custom": {
+        "drawStyle": "line",
+        "lineInterpolation": "smooth",
+        "barAlignment": 0,
+        "barWidthFactor": 0.6,
+        "lineWidth": 2,
+        "fillOpacity": 0,
+        "gradientMode": "none",
+        "spanNulls": true,
+        "insertNulls": false,
+        "showPoints": "auto",
+        "showValues": false,
+        "pointSize": 5,
+        "stacking": {
+          "mode": "none",
+          "group": "A"
+        },
+        "axisPlacement": "auto",
+        "axisLabel": "",
+        "axisColorMode": "text",
+        "axisBorderShow": false,
+        "scaleDistribution": {
+          "type": "linear"
+        },
+        "axisCenteredZero": false,
+        "hideFrom": {
+          "tooltip": false,
+          "viz": false,
+          "legend": false
+        },
+        "thresholdsStyle": {
+          "mode": "off"
+        }
+      },
+      "color": {
+        "mode": "palette-classic"
+      },
+      "mappings": [],
+      "thresholds": {
+        "mode": "absolute",
+        "steps": [
+          {
+            "value": null,
+            "color": "green"
+          },
+          {
+            "value": 80,
+            "color": "red"
+          }
+        ]
+      },
+      "decimals": 1,
+      "unit": "celsius"
+    },
+    "overrides": [
+      {
+        "matcher": {
+          "id": "byName",
+          "options": "celsius"
+        },
+        "properties": [
+          {
+            "id": "displayName",
+            "value": "${__field.labels.device}"
+          }
+        ]
+      }
+    ]
+  },
+  "transformations": [
+    {
+      "id": "filterFieldsByName",
+      "options": {
+        "include": {
+          "names": [
+            "time",
+            "device",
+            "celsius"
+          ]
+        }
+      }
+    },
+    {
+      "id": "organize",
+      "options": {
+        "excludeByName": {},
+        "indexByName": {
+          "celsius": 2,
+          "device": 1,
+          "time": 0
+        },
+        "renameByName": {}
+      }
+    }
+  ],
+  "pluginVersion": "12.2.1",
+  "targets": [
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "influxdbv3"
+      },
+      "editorMode": "builder",
+      "format": "time_series",
+      "hide": false,
+      "rawQuery": true,
+      "rawSql": "SELECT time, device, celsius FROM esp_temperature WHERE time >= $__timeFrom AND time <= $__timeTo ORDER BY time, device",
+      "refId": "A"
+    }
+  ],
+  "datasource": {
+    "type": "grafana-influxdb-flightsql-datasource",
+    "uid": "influxdbv3"
+  },
+  "options": {
+    "tooltip": {
+      "mode": "multi",
+      "sort": "none",
+      "hideZeros": false
+    },
+    "legend": {
+      "showLegend": true,
+      "displayMode": "list",
+      "placement": "bottom",
+      "calcs": [],
+      "values": []
+    }
+  }
+}

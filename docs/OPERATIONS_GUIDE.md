@@ -35,10 +35,26 @@ curl -X POST \
 
 #### Available Dashboards
 
-1. **Temperatures Rue Romain** - ESP sensor temperature monitoring
-2. **Raspberry Pi & Docker Monitoring** - System resource monitoring  
-3. **Docker Containers** - Container status and metrics
-4. **InfluxDB Performance Monitoring** - Database performance metrics
+1. **Temperature Data (InfluxDB 3)** - InfluxDB 3 Core temperature monitoring via FlightSQL queries; transparent panels with color-coded thresholds; auto-refresh 30s; 12h default range
+2. **Temperatures Rue Romain** - Legacy InfluxDB 2.7 ESP sensor temperature monitoring
+3. **Raspberry Pi & Docker Monitoring** - System resource monitoring  
+4. **Docker Containers** - Container status and metrics
+5. **InfluxDB Performance Monitoring** - Database performance metrics
+
+### Temperature Data Dashboard (InfluxDB 3)
+
+The **Temperature Data (InfluxDB 3)** dashboard visualizes real-time ESP sensor data flowing through Telegraf into InfluxDB 3 Core.
+
+**See [TEMPERATURE_MONITORING.md](TEMPERATURE_MONITORING.md) for:**
+- Complete dashboard setup and panel reference
+- FlightSQL query examples
+- Adding new sensor devices
+- Troubleshooting and database schema
+
+**Quick Summary**:
+- **Big Garage Gauge**: Latest temperature with color thresholds (dark-blue at -10°C → red at 31°C+)
+- **Temperature by Device (24h)**: Multi-device timeseries with table legend (min, max, median, last)
+- **Auto-refresh**: 30s | **Time Range**: 12h default | **Panels**: Transparent for dark theme
 
 ### Dashboard Version Control
 
@@ -396,3 +412,14 @@ services:
 ---
 
 **Last Updated**: November 2025
+
+## Temperature Monitoring Summary
+
+Complete implementation details moved to:
+- **[TEMPERATURE_MONITORING.md](TEMPERATURE_MONITORING.md)** — Dashboard setup, queries, troubleshooting
+- **[INTEGRATIONS.md](INTEGRATIONS.md)** — Data pipelines (MQTT → Telegraf → InfluxDB 3)
+- **[INFLUXDB3_SETUP.md](INFLUXDB3_SETUP.md)** — Database authentication and API reference
+
+---
+
+**Last Updated**: December 12, 2025
