@@ -187,9 +187,7 @@ See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for complete setup instructio
 ├── grafana/
 │   └── grafana.ini             # Grafana configuration
 ├── prometheus/
-│   ├── prometheus.yml          # Prometheus scrape config
-│   ├── loki-config.yml         # Loki configuration
-│   └── promtail-config.yml     # Promtail configuration
+│   └── prometheus.yml          # Prometheus scrape config
 ├── mosquitto/
 │   └── mosquitto.conf          # MQTT broker config
 ├── nginx-proxy-manager/        # (data in /home/aachten/nginx-proxy-manager/)
@@ -206,10 +204,8 @@ See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for complete setup instructio
 | **InfluxDB 3 Explorer** | **8888** | **Web UI for InfluxDB 3 Core** |
 | Grafana | 3000 | Dashboards and visualization |
 | Prometheus | 9090 | Metrics collection |
-| Loki | 3100 | Log aggregation |
 | Node Exporter | 9100 | System metrics |
 | cAdvisor | 8081 | Container metrics |
-| Promtail | - | Log shipping to Loki |
 | Home Assistant | 8123 | Home automation |
 | Mosquitto | 1883 | MQTT broker |
 | Nginx Proxy Manager | 81, 8080, 8443 | Reverse proxy |

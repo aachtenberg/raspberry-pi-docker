@@ -2,7 +2,7 @@
 
 ## What this is
 - Raspberry Pi home automation + monitoring stack orchestrated by `docker-compose.yml`; services live under `grafana/`, `prometheus/`, `nginx-proxy-manager/`, `mosquitto/`, `homeassistant/`, `cloudflared/`, `influxdb/`, and new `influxdb3-core` + `influxdb3-explorer` services.
-- Core data flow: ESP8266/ESP32 sensors → InfluxDB 2.7 (8086) and/or InfluxDB 3 Core (8181) → Grafana dashboards (3000); Prometheus/Loki/Promtail/cAdvisor/Node Exporter for system metrics; Nginx Proxy Manager + Cloudflare Tunnel for remote access.
+- Core data flow: ESP8266/ESP32 sensors → InfluxDB 2.7 (8086) and/or InfluxDB 3 Core (8181) → Grafana dashboards (3000); Prometheus/cAdvisor/Node Exporter for system metrics; Nginx Proxy Manager + Cloudflare Tunnel for remote access.
 
 ## Non-negotiables
 - Use `docker compose` (no hyphen) for all commands. Validate with `docker compose config -q` before applying.
@@ -12,7 +12,7 @@
 ## Key files & locations
 - Orchestration: `docker-compose.yml` (all services), `.env` (local secrets), `.env.example` (template).
 - Grafana dashboards: `grafana/dashboards/*.json` (export/import via scripts; avoid manual edits when possible).
-- Prometheus/Loki/Promtail configs: `prometheus/*.yml`.
+- Prometheus configs: `prometheus/prometheus.yml`.
 - Nginx Proxy Manager hosts: `nginx-proxy-manager/data/nginx/proxy_host/*.conf` (numbered files, tracked in git).
 - Docs: `docs/SETUP_GUIDE.md`, `docs/OPERATIONS_GUIDE.md`, `docs/INFLUXDB3_SETUP.md` (auth-required API usage), `MAKING_PUBLIC_CHECKLIST.md`.
 - Scripts: `scripts/*.sh` (export/import/backup dashboards, validate secrets, status, update-all).
