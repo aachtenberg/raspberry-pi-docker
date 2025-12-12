@@ -38,7 +38,7 @@ services:
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
       - grafana-data:/var/lib/grafana
     environment:
-      - GF_INSTALL_PLUGINS=grafana-mqtt-datasource 1.1.0
+      - GF_INSTALL_PLUGINS=grafana-mqtt-datasource 1.1.0,grafana-influxdb-flightsql-datasource
     networks:
       - monitoring
     depends_on:
@@ -248,6 +248,7 @@ services:
       - influxdb3-explorer-db:/db
     environment:
       - MODE=admin
+      - SESSION_SECRET_KEY=${INFLUXDB3_UI_SESSION_KEY}
     networks:
       - monitoring
     depends_on:

@@ -44,7 +44,19 @@
 - When editing dashboards JSON, preserve structure/ids; prefer exporting via Grafana scripts instead of hand edits.
 - InfluxDB 3 API calls fail without bearer token; always include `Authorization: Bearer <token>`.
 
+## Grafana + InfluxDB 3 FlightSQL queries: best practices
+- **Panel format**: Use `rawSql: true`, `rawQuery: true`, `editorMode: "builder"` for FlightSQL queries in targets.
+- **Time macros**: Use `$__timeFrom` and `$__timeTo` in WHERE clauses; Grafana converts to milliseconds for InfluxDB 3.
+- **Legend display**: Use field overrides with `displayName: "${__field.labels.deviceField}"` syntax for dimension-based naming. Use `"color": { "mode": "thresholds" }` for value-based line coloring.
+- **Transformations**: For multi-series timeseries, apply `filterFieldsByName` (to keep time/dimensions/values) + `organize` (to reorder columns and ensure proper grouping).
+- **Threshold colors**: Use `"mode": "absolute"` with value steps; e.g., `{ "value": 25, "color": "orange" }, { "value": 31, "color": "red" }` for temperature banding.
+- **Panel transparency**: Set `"transparent": true` on panels for cleaner dark theme integration.
+- **Gauge panels**: Match thresholds to timeseries thresholds for visual consistency; use `reduceOptions.calcs: ["lastNotNull"]` to always show latest value.
+- **Legend tables**: Set `displayMode: "table"`, add `calcs: ["min", "max", "median", "last"]`, and include in `values` array for multi-column legend display.
+- **Device grouping**: When selecting time, device, and value fields from FlightSQL, device becomes a natural dimension; hide it with `custom.hideFrom: { legend: true }` to avoid legend pollution.
+
 ## Helpful references
 - `docs/INFLUXDB3_SETUP.md` for tested auth + API examples.
 - `docs/OPERATIONS_GUIDE.md` and `docs/SETUP_GUIDE.md` for end-to-end procedures.
+- `docs/influxv3-sql-example.json` for working temperature dashboard panel JSON reference.
 - `MAKING_PUBLIC_CHECKLIST.md` for sanitization steps if sharing.

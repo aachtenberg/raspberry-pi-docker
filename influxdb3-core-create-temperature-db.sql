@@ -1,0 +1,12 @@
+-- Create temperature_data database in InfluxDB 3 Core
+-- This is a documentation file for reference
+--
+-- To create the database, use the CLI command:
+-- source .env && docker compose exec influxdb3-core influxdb3 create database --token="$INFLUXDB3_ADMIN_TOKEN" temperature_data
+--
+-- Or with a retention period (e.g., 30 days):
+-- source .env && docker compose exec influxdb3-core influxdb3 create database --token="$INFLUXDB3_ADMIN_TOKEN" --retention-period 30d temperature_data
+--
+-- Database name: temperature_data
+-- Description: Stores temperature sensor data from ESP devices via MQTT
+-- Retention: Infinite (by default) or set with --retention-period flag
