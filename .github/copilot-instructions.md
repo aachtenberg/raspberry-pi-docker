@@ -37,6 +37,7 @@
 - Shell: `#!/bin/bash`, `set -e` (or `set -euo pipefail`), 2-space YAML, keep JSON dashboards as exported (avoid reformatting).
 - Network: all services on `monitoring` bridge unless otherwise noted; refer to services by container name (`http://influxdb:8086`, `http://influxdb3-core:8181`, etc.).
 - Avoid embedding real tokens in docs; use placeholders like `apiv3_EXAMPLE_TOKEN...`.
+- **Git branches**: Use `feature/` or `feat/` prefix for feature branches (e.g., `feature/mqtt-bridge`, `feat/dashboard-redesign`). Branch names trigger secrets workflow and pre-commit hooks for validation.
 
 ## Pitfalls to avoid
 - Do not use `docker-compose` binary; use `docker compose` v2.
