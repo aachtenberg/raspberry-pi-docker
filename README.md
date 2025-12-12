@@ -25,29 +25,35 @@ See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for detailed instructions on 
 
 ### 2. Validate Configuration
 
-🔍 Validating secrets configuration...
+Run the validation script to check your configuration:
 
-✅ include/secrets.h exists
-✅ include/secrets.h is properly gitignored
-✅ No placeholder values found (YOUR_*, YOUR-*)
-✅ WiFi networks configured: 3
-✅ InfluxDB URL configured: "http://localhost:8086"
-✅ InfluxDB token length: 89 characters (looks valid)
-⚠️  Warning: Found common example values. Make sure these are your actual credentials.
-✅ InfluxDB Organization ID format looks valid
+```bash
+./scripts/validate_secrets.sh
+```
 
-✅ Configuration looks good!
-
-Next steps:
-  1. Build: platformio run -e esp8266 (or -e esp32dev)
-  2. Flash: platformio run -e esp8266 --target upload
-  3. Monitor: platformio device monitor -b 115200
+This confirms your secrets file exists, is properly gitignored, and credentials are configured.
 
 ### 3. Deploy Services
 
+Start the Docker services:
 
+```bash
+docker compose up -d
+```
 
 ### 4. Verify Services
+
+Check that all services are running:
+
+```bash
+./scripts/status.sh
+```
+
+Or view logs for a specific service:
+
+```bash
+docker compose logs -f <service_name>
+```
 
 
 
