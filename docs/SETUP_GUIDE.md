@@ -35,7 +35,19 @@ This infrastructure receives, stores, and visualizes temperature data from multi
 
 | Service | Port | Purpose |
 |---------|------|---------|
-| InfluxDB | 8086 | Time-series database for ESP sensor data |
+| InfluxDB (v2 optional) | 8086 | Time-series database for ESP sensor data |
+## InfluxDB Setup
+
+InfluxDB 3 Core is the default database. InfluxDB 2.7 is retained as an optional override.
+
+- For v3 setup and authentication examples, see [INFLUXDB3_SETUP.md](INFLUXDB3_SETUP.md).
+- To enable v2, use the override compose file `docker-compose.influxdb2.yml`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.influxdb2.yml up -d influxdb
+```
+
+Environment variables for v2 should be provided in `.env` (do not commit): `INFLUXDB_USERNAME`, `INFLUXDB_PASSWORD`, `INFLUXDB_ORG`, `INFLUXDB_BUCKET`, `INFLUXDB_TOKEN`.
 | Grafana | 3000 | Dashboards and visualization |
 | Prometheus | 9090 | Metrics collection |
 | Node Exporter | 9100 | System metrics |

@@ -6,7 +6,7 @@ This guide explains how Telegraf bridges Home Assistant MQTT messages to InfluxD
 - 📡 MQTT sensor data from Home Assistant → Telegraf → InfluxDB 3
 - 🔄 Automatic JSON → Line Protocol transformation
 - 📊 Real-time data ingestion without modifying Home Assistant config
-- 🔌 No breaking changes to existing InfluxDB 2.7 pipeline
+- 🔌 No breaking changes to existing InfluxDB 2.7 pipeline (v2 remains available as an optional override; v3 is default)
 
 ## Architecture
 
@@ -136,6 +136,8 @@ Telegraf extracts:
 - **Measurement**: `mqtt_event`
 - **Tags**: `device_id`, `unit`, `name`, `sensor_type`
 - **Fields**: `value` (numeric sensor reading)
+
+If you choose InfluxDB 2.7, set `token = "${INFLUXDB_TOKEN}"` and point `urls = ["http://influxdb:8086"]`, with `bucket` set to your v2 bucket.
 
 ## Data Flow Examples
 

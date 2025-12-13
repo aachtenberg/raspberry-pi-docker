@@ -122,6 +122,18 @@ docker compose logs -f
 # Specific service
 docker compose logs -f influxdb
 docker compose logs -f grafana
+## InfluxDB Operations
+
+InfluxDB 3 Core is the default database. If you need InfluxDB 2.7, enable and operate it via the override file.
+
+- Restart v3: `docker compose restart influxdb3-core`
+- View v3 logs: `docker compose logs -f influxdb3-core`
+- Start/operate v2 (optional):
+  ```bash
+  docker compose -f docker-compose.yml -f docker-compose.influxdb2.yml up -d influxdb
+  docker compose logs -f influxdb
+  ```
+- Backups: see README Volumes section for volume backup commands.
 
 # Last 100 lines
 docker compose logs --tail=100 prometheus
