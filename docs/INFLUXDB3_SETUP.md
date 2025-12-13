@@ -2,7 +2,7 @@
 
 ## Overview
 
-InfluxDB 3 Core is the next-generation time-series database engine integrated into this Docker Compose setup. It runs alongside InfluxDB 2.7, enabling migration evaluation and parallel data ingestion during transition periods.
+InfluxDB 3 Core is the next-generation time-series database engine integrated into this Docker Compose setup. It is the default in this stack. InfluxDB 2.7 remains available as an optional override for users who prefer v2 or during migration.
 
 **Reference Repository**: https://github.com/aachtenberg/influxdbv3-core
 
@@ -53,6 +53,8 @@ Token: apiv3_EXAMPLE_TOKEN_REPLACE_WITH_YOUR_ACTUAL_TOKEN_VALUE_HERE
 HTTP Requests Header: Authorization: Bearer apiv3_EXAMPLE_TOKEN_REPLACE_WITH_YOUR_ACTUAL_TOKEN_VALUE_HERE
 
 IMPORTANT: Store this token securely, as it will not be shown again.
+
+If you enable InfluxDB 2.7 instead, generate v2 API tokens from the InfluxDB UI on port 8086 (see Setup Guide).
 ```
 
 ### Step 2: Save Token to `.env`
