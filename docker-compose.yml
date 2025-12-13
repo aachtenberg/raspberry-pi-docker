@@ -4,26 +4,26 @@
 
 services:
   # ============================================================================
-  # INFLUXDB - Time Series Database
+  # INFLUXDB v2 - DISABLED (migrated to InfluxDB 3 Core)
   # ============================================================================
-  influxdb:
-    image: influxdb:2.7
-    container_name: influxdb
-    restart: unless-stopped
-    ports:
-      - '8086:8086'
-    volumes:
-      - influxdb-data:/var/lib/influxdb2
-      - influxdb-config:/etc/influxdb2
-    environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_USERNAME}
-      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
-      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG_ID}
-      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_ADMIN_TOKEN}
-    networks:
-      - monitoring
+  # influxdb:
+  #   image: influxdb:2.7
+  #   container_name: influxdb
+  #   restart: unless-stopped
+  #   ports:
+  #     - '8086:8086'
+  #   volumes:
+  #     - /storage/influxdb/data:/var/lib/influxdb2
+  #     - /storage/influxdb/config:/etc/influxdb2
+  #   environment:
+  #     - DOCKER_INFLUXDB_INIT_MODE=setup
+  #     - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_USERNAME}
+  #     - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+  #     - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG_ID}
+  #     - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
+  #     - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_ADMIN_TOKEN}
+  #   networks:
+  #     - monitoring
 
   # ============================================================================
   # GRAFANA - Visualization & Dashboards
@@ -38,11 +38,10 @@ services:
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
       - grafana-data:/var/lib/grafana
     environment:
-      - GF_INSTALL_PLUGINS=grafana-mqtt-datasource 1.1.0,grafana-influxdb-flightsql-datasource
+      - GF_PLUGINS_PREINSTALL=grafana-mqtt-datasource@1.1.0
     networks:
       - monitoring
     depends_on:
-      - influxdb
       - prometheus
 
   # ============================================================================
@@ -56,6 +55,7 @@ services:
       - '9090:9090'
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/influxdb3_token:/etc/prometheus/influxdb3_token:ro
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -79,18 +79,16 @@ services:
       - monitoring
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    image: gcr.io/cadvisor/cadvisor:v0.50.0
     container_name: cadvisor
     restart: unless-stopped
     ports:
       - '8081:8080'
     volumes:
       - /:/rootfs:ro
-      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - /var/run:/var/run:ro
       - /sys:/sys:ro
-      - /sys/fs/cgroup:/cgroup:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
+      - /storage/docker/:/var/lib/docker:ro
     privileged: true
     devices:
       - /dev/kmsg
@@ -146,8 +144,10 @@ services:
     environment:
       - DB_SQLITE_FILE=/data/database.sqlite
     volumes:
-      - ./nginx-proxy-manager/data:/data
-      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+      - /storage/nginx-proxy-manager/data:/data
+      - /storage/nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+      - /storage/nginx-proxy-manager/letsencrypt/default.crt:/etc/nginx/conf.d/default.crt
+      - /storage/nginx-proxy-manager/letsencrypt/default.key:/etc/nginx/conf.d/default.key
     networks:
       - monitoring
 
@@ -174,6 +174,7 @@ services:
     container_name: influxdb3-core
     restart: unless-stopped
     network_mode: host
+    user: "1000:1000"
     volumes:
       - influxdb3-data:/var/lib/influxdb3
     command:
