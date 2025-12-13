@@ -99,15 +99,27 @@ ESP Devices (4) → Raspberry Pi → InfluxDB → Grafana/Home Assistant
 
 See [ESP Temperature Sensor Project](https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor) for the device firmware.
 
-## InfluxDB 3 Core (Beta)
+## InfluxDB
 
-**New**: InfluxDB 3 Core is now available alongside InfluxDB 2.7 for evaluation and migration testing.
+InfluxDB 3 Core is the default. InfluxDB 2.7 support is retained as an optional override for users who prefer v2.
+
+### InfluxDB 3 Core (default)
 
 - **API**: `http://localhost:8181`
 - **Explorer UI**: `http://localhost:8888`
 - **Reference**: [InfluxDB 3 Setup Guide](docs/INFLUXDB3_SETUP.md)
 
-Both databases run independently. Use InfluxDB 3 to evaluate next-generation features while maintaining existing InfluxDB 2.7 data pipelines.
+### InfluxDB 2.7 (optional)
+
+- Provided via an override compose file: `docker-compose.influxdb2.yml`
+- Enable with:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.influxdb2.yml up -d influxdb
+```
+
+- v2 credentials use `.env` variables: `INFLUXDB_USERNAME`, `INFLUXDB_PASSWORD`, `INFLUXDB_ORG`, `INFLUXDB_BUCKET`, `INFLUXDB_TOKEN`
+- v2 data persists under `/storage/docker/volumes/docker_influxdb-data`
 
 ### Quick Start with InfluxDB 3
 
