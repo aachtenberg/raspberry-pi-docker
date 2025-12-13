@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-12-12 07:00:03",
+    "exported": "2025-12-13 07:00:02",
     "title": "Temperatures Rue Romain",
     "uid": "adk6dmr",
     "folder": "General",
-    "version": 44
+    "version": 45
   },
   "dashboard": {
     "annotations": {
@@ -840,6 +840,6 @@
     "timezone": "browser",
     "title": "Temperatures Rue Romain",
     "uid": "adk6dmr",
-    "version": 44
+    "version": 45
   }
 }
