@@ -236,14 +236,31 @@ sudo ss -tulpn | grep :8086
 
 ### InfluxDB 3 Authentication Errors
 
-All InfluxDB 3 Core API calls require authentication:
-```bash
-# Verify token exists
-echo $INFLUXDB3_ADMIN_TOKEN
+All InfluxDB 3 Core API calls require authentication. The token is stored in `/home/aachten/docker/prometheus/influxdb3_token` (also available as `INFLUXDB3_ADMIN_TOKEN` in `.env`).
 
-# API call format
-curl -H "Authorization: Bearer $INFLUXDB3_ADMIN_TOKEN" http://localhost:8181/api/v3/...
+**IMPORTANT - Correct Authentication Pattern**:
+```bash
+# Read token from file (correct - single line, no newlines)
+TOKEN=$(cat /home/aachten/docker/prometheus/influxdb3_token)
+
+# Direct usage (recommended for testing)
+curl -H "Authorization: Bearer apiv3_f4z4m1nJuJM61hNj9viTbXBTU77ehNmFp9OU-Er1pOpguSbJlKaaSA17mPyF6cWPojTIHMn_-DCDwfxCfOiKfQ" http://192.168.0.167:8181/metrics
+
+# Examples of API calls
+curl -H "Authorization: Bearer $TOKEN" http://192.168.0.167:8181/metrics
+curl -H "Authorization: Bearer $TOKEN" http://192.168.0.167:8181/api/v3/query_sql
+
+# Common mistake - DO NOT use command substitution with extra processing
+# WRONG: TOKEN=$(cat file | tr -d '\n')  # This breaks the eval/escaping
+# RIGHT: TOKEN=$(cat file)               # File already has no newlines
 ```
+
+**Available Metrics**:
+- `grpc_request_duration_seconds_*` - Query duration histograms by path (`/api/v3/query_sql`, `/api/v3/query_influxql`)
+- `influxdb3_write_lines_total` - Total lines written
+- `influxdb3_write_bytes_total` - Total bytes written
+- `influxdb3_parquet_cache_*` - Parquet cache statistics
+- `influxdb3_catalog_operations_total` - Catalog operations
 
 ### Resource Cleanup
 
