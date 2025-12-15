@@ -4,26 +4,26 @@
 
 services:
   # ============================================================================
-  # INFLUXDB - Time Series Database
+  # INFLUXDB v2 - DISABLED (migrated to InfluxDB 3 Core)
   # ============================================================================
-  influxdb:
-    image: influxdb:2.7
-    container_name: influxdb
-    restart: unless-stopped
-    ports:
-      - '8086:8086'
-    volumes:
-      - influxdb-data:/var/lib/influxdb2
-      - influxdb-config:/etc/influxdb2
-    environment:
-      - DOCKER_INFLUXDB_INIT_MODE=setup
-      - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_USERNAME}
-      - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
-      - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG_ID}
-      - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
-      - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_ADMIN_TOKEN}
-    networks:
-      - monitoring
+  # influxdb:
+  #   image: influxdb:2.7
+  #   container_name: influxdb
+  #   restart: unless-stopped
+  #   ports:
+  #     - '8086:8086'
+  #   volumes:
+  #     - /storage/influxdb/data:/var/lib/influxdb2
+  #     - /storage/influxdb/config:/etc/influxdb2
+  #   environment:
+  #     - DOCKER_INFLUXDB_INIT_MODE=setup
+  #     - DOCKER_INFLUXDB_INIT_USERNAME=${INFLUXDB_ADMIN_USERNAME}
+  #     - DOCKER_INFLUXDB_INIT_PASSWORD=${INFLUXDB_ADMIN_PASSWORD}
+  #     - DOCKER_INFLUXDB_INIT_ORG=${INFLUXDB_ORG_ID}
+  #     - DOCKER_INFLUXDB_INIT_BUCKET=${INFLUXDB_BUCKET}
+  #     - DOCKER_INFLUXDB_INIT_ADMIN_TOKEN=${INFLUXDB_ADMIN_TOKEN}
+  #   networks:
+  #     - monitoring
 
   # ============================================================================
   # GRAFANA - Visualization & Dashboards
@@ -38,16 +38,14 @@ services:
       - ./grafana/grafana.ini:/etc/grafana/grafana.ini
       - grafana-data:/var/lib/grafana
     environment:
-      - GF_INSTALL_PLUGINS=grafana-mqtt-datasource 1.1.0
+      - GF_PLUGINS_PREINSTALL=grafana-mqtt-datasource@1.1.0
     networks:
       - monitoring
     depends_on:
-      - influxdb
       - prometheus
-      - loki
 
   # ============================================================================
-  # PROMETHEUS STACK - Metrics & Logs
+  # PROMETHEUS STACK - Metrics
   # ============================================================================
   prometheus:
     image: prom/prometheus:latest
@@ -57,6 +55,7 @@ services:
       - '9090:9090'
     volumes:
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/influxdb3_token:/etc/prometheus/influxdb3_token:ro
       - prometheus-data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -74,57 +73,27 @@ services:
       - '9100:9100'
     command:
       - '--path.rootfs=/host'
+      - '--collector.textfile.directory=/textfile_collector'
     volumes:
       - /:/host:ro,rslave
+      - /var/lib/node_exporter/textfile_collector:/textfile_collector:ro
     networks:
       - monitoring
 
   cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.47.0
+    image: gcr.io/cadvisor/cadvisor:v0.50.0
     container_name: cadvisor
     restart: unless-stopped
     ports:
       - '8081:8080'
     volumes:
       - /:/rootfs:ro
-      - /var/run/docker.sock:/var/run/docker.sock:rw
+      - /var/run:/var/run:ro
       - /sys:/sys:ro
-      - /sys/fs/cgroup:/cgroup:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-      - /dev/disk/:/dev/disk:ro
+      - /storage/docker/:/var/lib/docker:ro
     privileged: true
     devices:
       - /dev/kmsg
-    networks:
-      - monitoring
-
-  loki:
-    image: grafana/loki:latest
-    container_name: loki
-    restart: unless-stopped
-    ports:
-      - '3100:3100'
-    volumes:
-      - ./prometheus/loki-config.yml:/etc/loki/local-config.yml
-      - loki-data:/loki
-    command:
-      - '-config.file=/etc/loki/local-config.yml'
-    user: root
-    networks:
-      - monitoring
-
-  promtail:
-    image: grafana/promtail:latest
-    container_name: promtail
-    restart: unless-stopped
-    volumes:
-      - /var/lib/docker/containers:/var/lib/docker/containers:ro
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./prometheus/promtail-config.yml:/etc/promtail/config.yml
-    command:
-      - '-config.file=/etc/promtail/config.yml'
-    depends_on:
-      - loki
     networks:
       - monitoring
 
@@ -149,11 +118,15 @@ services:
     image: eclipse-mosquitto:latest
     container_name: mosquitto-broker
     restart: unless-stopped
-    network_mode: host
+    ports:
+      - '1883:1883'   # MQTT
+      - '9001:9001'   # WebSocket
     volumes:
       - ./mosquitto/mosquitto.conf:/mosquitto/config/mosquitto.conf
       - mosquitto-data:/mosquitto/data
       - mosquitto-log:/mosquitto/log
+    networks:
+      - monitoring
 
   # ============================================================================
   # NGINX PROXY MANAGER - Reverse Proxy
@@ -173,8 +146,10 @@ services:
     environment:
       - DB_SQLITE_FILE=/data/database.sqlite
     volumes:
-      - ./nginx-proxy-manager/data:/data
-      - ./nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+      - /storage/nginx-proxy-manager/data:/data
+      - /storage/nginx-proxy-manager/letsencrypt:/etc/letsencrypt
+      - /storage/nginx-proxy-manager/letsencrypt/default.crt:/etc/nginx/conf.d/default.crt
+      - /storage/nginx-proxy-manager/letsencrypt/default.key:/etc/nginx/conf.d/default.key
     networks:
       - monitoring
 
@@ -200,8 +175,8 @@ services:
     image: influxdb:3-core
     container_name: influxdb3-core
     restart: unless-stopped
-    ports:
-      - '8181:8086'  # API port (8086 is taken by influxdb 2.7)
+    network_mode: host
+    user: "1000:1000"
     volumes:
       - influxdb3-data:/var/lib/influxdb3
     command:
@@ -210,10 +185,29 @@ services:
       - --node-id=influxdb-node-0
       - --object-store=file
       - --data-dir=/var/lib/influxdb3/data
+      - --http-bind=0.0.0.0:8181
+      - --plugin-dir=/var/lib/influxdb3/plugins
     environment:
       - TZ=UTC
-    networks:
-      - monitoring
+
+  # ============================================================================
+  # TELEGRAF - MQTT to InfluxDB 3 Bridge
+  # ============================================================================
+  # Consumes Home Assistant MQTT messages and writes to InfluxDB 3 Core
+  # Transforms JSON payloads to InfluxDB line protocol
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
+    restart: unless-stopped
+    network_mode: host
+    ports:
+      - "9273:9273"  # Expose Telegraf metrics endpoint
+    volumes:
+      - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
+    environment:
+      - INFLUXDB3_ADMIN_TOKEN=${INFLUXDB3_ADMIN_TOKEN}
+    depends_on:
+      - mosquitto
 
   # ============================================================================
   # INFLUXDB 3 EXPLORER UI
@@ -229,6 +223,7 @@ services:
       - influxdb3-explorer-db:/db
     environment:
       - MODE=admin
+      - SESSION_SECRET_KEY=${INFLUXDB3_UI_SESSION_KEY}
     networks:
       - monitoring
     depends_on:
@@ -250,6 +245,27 @@ services:
     networks:
       - monitoring
 
+  # ============================================================================
+  # GRAFANA PDC AGENT - Grafana Cloud Remote Data Collection
+  # ============================================================================
+  # Grafana Private Data Center (PDC) Agent for remote sensor data collection
+  # Collects metrics from local infrastructure and sends to Grafana Cloud
+  pdc-agent:
+    image: grafana/pdc-agent:latest
+    container_name: pdc-agent
+    restart: unless-stopped
+    command:
+      - -token=${GRAFANA_PDC_TOKEN}
+      - -cluster=${GRAFANA_PDC_CLUSTER}
+      - -gcloud-hosted-grafana-id=${GRAFANA_PDC_GCLOUD_HOSTED_GRAFANA_ID}
+    environment:
+      - TZ=UTC
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+      - grafana
+
 # ==============================================================================
 # VOLUMES
 # ==============================================================================
@@ -260,7 +276,6 @@ volumes:
   influxdb3-explorer-db:
   grafana-data:
   prometheus-data:
-  loki-data:
   mosquitto-data:
   mosquitto-log:
   portainer-data:

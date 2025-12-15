@@ -136,14 +136,51 @@ import_dashboard() {
     
     # Extract dashboard JSON and wrap it properly for import
     # Grafana API expects: {"dashboard": {...}, "overwrite": true}
-    local payload=$(jq '{dashboard: .dashboard, overwrite: true, message: "Imported from JSON file"}' "$file" 2>/dev/null)
-    
-    if [ -z "$payload" ] || [ "$payload" = "null" ]; then
+    local base_payload=$(jq '{dashboard: .dashboard, overwrite: true, message: "Imported from JSON file"}' "$file" 2>/dev/null)
+
+    if [ -z "$base_payload" ] || [ "$base_payload" = "null" ]; then
         echo -e "${RED}      ❌ Invalid JSON format${NC}"
         return 1
     fi
+
+    # Ensure overwrite will actually replace existing dashboards:
+    # Grafana only overwrites if incoming dashboard.uid matches an existing one.
+    # Try to find an existing dashboard by title and inject its uid/id into payload.
+    # If the JSON already contains a uid that matches an existing dashboard, this will still work.
+    local payload="$base_payload"
+
+    # URL-encode the title for search; fall back to raw if python unavailable
+    if command -v python3 >/dev/null 2>&1; then
+        enc_title=$(python3 -c "import urllib.parse,sys; print(urllib.parse.quote(sys.argv[1]))" "$dashboard_title")
+    else
+        enc_title="$dashboard_title"
+    fi
+
+    # Search for existing dashboard by title
+    if [ "$USE_API_KEY" = true ]; then
+        SEARCH_RESP=$(curl -s -H "Authorization: Bearer $API_KEY" "$GRAFANA_URL/api/search?query=$enc_title&type=dash-db")
+    else
+        SEARCH_RESP=$(curl -s -u "$GRAFANA_USER:$GRAFANA_PASSWORD" "$GRAFANA_URL/api/search?query=$enc_title&type=dash-db")
+    fi
+
+    EXISTING_UID=$(echo "$SEARCH_RESP" | jq -r '.[0].uid // empty')
+    # If found, fetch full model to get id/uid and inject
+    if [ -n "$EXISTING_UID" ] && [ "$EXISTING_UID" != "null" ]; then
+        if [ "$USE_API_KEY" = true ]; then
+            MODEL_RESP=$(curl -s -H "Authorization: Bearer $API_KEY" "$GRAFANA_URL/api/dashboards/uid/$EXISTING_UID")
+        else
+            MODEL_RESP=$(curl -s -u "$GRAFANA_USER:$GRAFANA_PASSWORD" "$GRAFANA_URL/api/dashboards/uid/$EXISTING_UID")
+        fi
+
+        EXISTING_ID=$(echo "$MODEL_RESP" | jq -r '.dashboard.id // empty')
+        EXISTING_UID=$(echo "$MODEL_RESP" | jq -r '.dashboard.uid // empty')
+
+        if [ -n "$EXISTING_UID" ] && [ "$EXISTING_UID" != "null" ]; then
+            payload=$(echo "$base_payload" | jq --arg uid "$EXISTING_UID" --argjson id $(echo ${EXISTING_ID:-null}) ' .dashboard.uid = $uid | .dashboard.id = $id ')
+        fi
+    fi
     
-    # Import dashboard
+    # Import dashboard (overwrite: true)
     if [ "$USE_API_KEY" = true ]; then
         RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
             -H "Content-Type: application/json" \

@@ -1,0 +1,870 @@
+{
+  "meta": {
+    "exported": "2025-12-13 07:00:02",
+    "title": "Temperature Data (InfluxDB 3)",
+    "uid": "cd50dd6c-87d1-49d6-9859-dcf76551cf68",
+    "folder": "General",
+    "version": 51
+  },
+  "dashboard": {
+    "annotations": {
+      "list": [
+        {
+          "builtIn": 1,
+          "datasource": {
+            "type": "grafana",
+            "uid": "-- Grafana --"
+          },
+          "enable": true,
+          "hide": true,
+          "iconColor": "rgba(0, 211, 255, 1)",
+          "name": "Annotations & Alerts",
+          "type": "dashboard"
+        }
+      ]
+    },
+    "editable": true,
+    "fiscalYearStartMonth": 0,
+    "graphTooltip": 0,
+    "id": 25,
+    "links": [],
+    "panels": [
+      {
+        "datasource": {
+          "type": "grafana-influxdb-flightsql-datasource",
+          "uid": "influxdbv3"
+        },
+        "description": "Latest temperature from Big Garage",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 1,
+            "mappings": [],
+            "max": 30,
+            "min": -10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "dark-blue",
+                  "value": 0
+                },
+                {
+                  "color": "dark-blue",
+                  "value": -10
+                },
+                {
+                  "color": "light-blue",
+                  "value": 0
+                },
+                {
+                  "color": "light-green",
+                  "value": 15
+                },
+                {
+                  "color": "dark-green",
+                  "value": 20
+                },
+                {
+                  "color": "orange",
+                  "value": 25
+                },
+                {
+                  "color": "dark-orange",
+                  "value": 30
+                },
+                {
+                  "color": "red",
+                  "value": 31
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "fahrenheit"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "fahrenheit"
+                },
+                {
+                  "id": "displayName",
+                  "value": "°F"
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 4,
+          "x": 0,
+          "y": 0
+        },
+        "id": 1,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "/^celsius$/",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-influxdb-flightsql-datasource",
+              "uid": "influxdbv3"
+            },
+            "editorMode": "builder",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT celsius, fahrenheit FROM esp_temperature WHERE device = 'Big-Garage' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
+            "refId": "A"
+          }
+        ],
+        "title": "Big Garage",
+        "transparent": true,
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "grafana-influxdb-flightsql-datasource",
+          "uid": "influxdbv3"
+        },
+        "description": "Latest temperature from Small Garage",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 1,
+            "mappings": [],
+            "max": 30,
+            "min": -10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "dark-blue",
+                  "value": 0
+                },
+                {
+                  "color": "dark-blue",
+                  "value": -10
+                },
+                {
+                  "color": "light-blue",
+                  "value": 0
+                },
+                {
+                  "color": "light-green",
+                  "value": 15
+                },
+                {
+                  "color": "dark-green",
+                  "value": 20
+                },
+                {
+                  "color": "orange",
+                  "value": 25
+                },
+                {
+                  "color": "dark-orange",
+                  "value": 30
+                },
+                {
+                  "color": "red",
+                  "value": 31
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "fahrenheit"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "fahrenheit"
+                },
+                {
+                  "id": "displayName",
+                  "value": "°F"
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 4,
+          "x": 4,
+          "y": 0
+        },
+        "id": 3,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "/^celsius$/",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "dataset": "iox",
+            "datasource": {
+              "type": "grafana-influxdb-flightsql-datasource",
+              "uid": "influxdbv3"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT celsius, fahrenheit FROM esp_temperature WHERE device = 'Small-Garage' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ]
+            }
+          }
+        ],
+        "title": "Small Garage",
+        "transparent": true,
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "grafana-influxdb-flightsql-datasource",
+          "uid": "influxdbv3"
+        },
+        "description": "Latest temperature from Spa",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 1,
+            "mappings": [],
+            "max": 30,
+            "min": -10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "dark-blue",
+                  "value": 0
+                },
+                {
+                  "color": "dark-blue",
+                  "value": -10
+                },
+                {
+                  "color": "light-blue",
+                  "value": 0
+                },
+                {
+                  "color": "light-green",
+                  "value": 15
+                },
+                {
+                  "color": "dark-green",
+                  "value": 20
+                },
+                {
+                  "color": "orange",
+                  "value": 25
+                },
+                {
+                  "color": "dark-orange",
+                  "value": 30
+                },
+                {
+                  "color": "red",
+                  "value": 31
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "fahrenheit"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "fahrenheit"
+                },
+                {
+                  "id": "displayName",
+                  "value": "°F"
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 4,
+          "x": 8,
+          "y": 0
+        },
+        "id": 4,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "/^celsius$/",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "dataset": "iox",
+            "datasource": {
+              "type": "grafana-influxdb-flightsql-datasource",
+              "uid": "influxdbv3"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT celsius, fahrenheit FROM esp_temperature WHERE device = 'Spa' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ]
+            }
+          }
+        ],
+        "title": "Spa",
+        "transparent": true,
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "grafana-influxdb-flightsql-datasource",
+          "uid": "influxdbv3"
+        },
+        "description": "Latest temperature from Pump House",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 1,
+            "mappings": [],
+            "max": 30,
+            "min": -10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "dark-blue",
+                  "value": 0
+                },
+                {
+                  "color": "dark-blue",
+                  "value": -10
+                },
+                {
+                  "color": "light-blue",
+                  "value": 0
+                },
+                {
+                  "color": "light-green",
+                  "value": 15
+                },
+                {
+                  "color": "dark-green",
+                  "value": 20
+                },
+                {
+                  "color": "orange",
+                  "value": 25
+                },
+                {
+                  "color": "dark-orange",
+                  "value": 30
+                },
+                {
+                  "color": "red",
+                  "value": 31
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "fahrenheit"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "fahrenheit"
+                },
+                {
+                  "id": "displayName",
+                  "value": "°F"
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 4,
+          "x": 12,
+          "y": 0
+        },
+        "id": 5,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "/^celsius$/",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "dataset": "iox",
+            "datasource": {
+              "type": "grafana-influxdb-flightsql-datasource",
+              "uid": "influxdbv3"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT celsius, fahrenheit FROM esp_temperature WHERE device = 'Pump-House' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ]
+            }
+          }
+        ],
+        "title": "Pump House",
+        "transparent": true,
+        "type": "gauge"
+      },
+      {
+        "datasource": {
+          "type": "grafana-influxdb-flightsql-datasource",
+          "uid": "influxdbv3"
+        },
+        "description": "Latest temperature from Main Cottage",
+        "fieldConfig": {
+          "defaults": {
+            "decimals": 1,
+            "mappings": [],
+            "max": 30,
+            "min": -10,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "dark-blue",
+                  "value": 0
+                },
+                {
+                  "color": "dark-blue",
+                  "value": -10
+                },
+                {
+                  "color": "light-blue",
+                  "value": 0
+                },
+                {
+                  "color": "light-green",
+                  "value": 15
+                },
+                {
+                  "color": "dark-green",
+                  "value": 20
+                },
+                {
+                  "color": "orange",
+                  "value": 25
+                },
+                {
+                  "color": "dark-orange",
+                  "value": 30
+                },
+                {
+                  "color": "red",
+                  "value": 31
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "fahrenheit"
+              },
+              "properties": [
+                {
+                  "id": "unit",
+                  "value": "fahrenheit"
+                },
+                {
+                  "id": "displayName",
+                  "value": "°F"
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 4,
+          "x": 16,
+          "y": 0
+        },
+        "id": 6,
+        "options": {
+          "minVizHeight": 75,
+          "minVizWidth": 75,
+          "orientation": "auto",
+          "reduceOptions": {
+            "calcs": [
+              "lastNotNull"
+            ],
+            "fields": "/^celsius$/",
+            "values": false
+          },
+          "showThresholdLabels": false,
+          "showThresholdMarkers": true,
+          "sizing": "auto"
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "dataset": "iox",
+            "datasource": {
+              "type": "grafana-influxdb-flightsql-datasource",
+              "uid": "influxdbv3"
+            },
+            "editorMode": "code",
+            "format": "table",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT celsius, fahrenheit FROM esp_temperature WHERE device = 'Main-Cottage' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
+            "refId": "A",
+            "sql": {
+              "columns": [
+                {
+                  "parameters": [],
+                  "type": "function"
+                }
+              ],
+              "groupBy": [
+                {
+                  "property": {
+                    "type": "string"
+                  },
+                  "type": "groupBy"
+                }
+              ]
+            }
+          }
+        ],
+        "title": "Main Cottage",
+        "transparent": true,
+        "type": "gauge"
+      },
+      {
+        "fieldConfig": {
+          "defaults": {},
+          "overrides": []
+        },
+        "gridPos": {
+          "h": 8,
+          "w": 4,
+          "x": 20,
+          "y": 0
+        },
+        "id": 7,
+        "options": {
+          "code": {
+            "language": "plaintext",
+            "showLineNumbers": false,
+            "showMiniMap": false
+          },
+          "content": "### Notes\n- Gauges aligned to fill row\n- Time series spans full width",
+          "mode": "markdown"
+        },
+        "pluginVersion": "12.2.1",
+        "title": "",
+        "transparent": true,
+        "type": "text"
+      },
+      {
+        "datasource": {
+          "type": "grafana-influxdb-flightsql-datasource",
+          "uid": "influxdbv3"
+        },
+        "fieldConfig": {
+          "defaults": {
+            "color": {
+              "mode": "thresholds",
+              "seriesBy": "last"
+            },
+            "custom": {
+              "axisBorderShow": true,
+              "axisCenteredZero": false,
+              "axisColorMode": "text",
+              "axisGridShow": true,
+              "axisLabel": "",
+              "axisPlacement": "auto",
+              "barAlignment": 0,
+              "barWidthFactor": 0.6,
+              "drawStyle": "line",
+              "fillOpacity": 2,
+              "gradientMode": "scheme",
+              "hideFrom": {
+                "legend": false,
+                "tooltip": false,
+                "viz": false
+              },
+              "insertNulls": false,
+              "lineInterpolation": "smooth",
+              "lineWidth": 3,
+              "pointSize": 5,
+              "scaleDistribution": {
+                "type": "linear"
+              },
+              "showPoints": "auto",
+              "showValues": false,
+              "spanNulls": true,
+              "stacking": {
+                "group": "A",
+                "mode": "none"
+              },
+              "thresholdsStyle": {
+                "mode": "off"
+              }
+            },
+            "decimals": 1,
+            "fieldMinMax": false,
+            "mappings": [],
+            "max": 40,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {
+                  "color": "dark-blue",
+                  "value": 0
+                },
+                {
+                  "color": "light-blue",
+                  "value": 0
+                },
+                {
+                  "color": "dark-green",
+                  "value": 20
+                },
+                {
+                  "color": "dark-orange",
+                  "value": 30
+                }
+              ]
+            },
+            "unit": "celsius"
+          },
+          "overrides": [
+            {
+              "matcher": {
+                "id": "byName",
+                "options": "celsius"
+              },
+              "properties": [
+                {
+                  "id": "displayName",
+                  "value": "${__field.labels.device}"
+                },
+                {
+                  "id": "color",
+                  "value": {
+                    "mode": "thresholds",
+                    "seriesBy": "last"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        "gridPos": {
+          "h": 13,
+          "w": 24,
+          "x": 0,
+          "y": 8
+        },
+        "id": 2,
+        "options": {
+          "legend": {
+            "calcs": [
+              "min",
+              "max",
+              "median",
+              "last"
+            ],
+            "displayMode": "table",
+            "placement": "bottom",
+            "showLegend": true,
+            "values": [
+              "min",
+              "max",
+              "median",
+              "last"
+            ]
+          },
+          "tooltip": {
+            "hideZeros": false,
+            "mode": "multi",
+            "sort": "none"
+          }
+        },
+        "pluginVersion": "12.2.1",
+        "targets": [
+          {
+            "datasource": {
+              "type": "grafana-influxdb-flightsql-datasource",
+              "uid": "influxdbv3"
+            },
+            "editorMode": "builder",
+            "format": "time_series",
+            "hide": false,
+            "rawQuery": true,
+            "rawSql": "SELECT time, device, celsius FROM esp_temperature WHERE time >= $__timeFrom AND time <= $__timeTo ORDER BY time, device",
+            "refId": "A"
+          }
+        ],
+        "title": "Temperature by Device (24h)",
+        "transformations": [
+          {
+            "id": "filterFieldsByName",
+            "options": {
+              "include": {
+                "names": [
+                  "time",
+                  "device",
+                  "celsius"
+                ]
+              }
+            }
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {},
+              "indexByName": {
+                "celsius": 2,
+                "device": 1,
+                "time": 0
+              },
+              "renameByName": {}
+            }
+          }
+        ],
+        "transparent": true,
+        "type": "timeseries"
+      }
+    ],
+    "preload": false,
+    "refresh": "30s",
+    "schemaVersion": 42,
+    "tags": [],
+    "templating": {
+      "list": []
+    },
+    "time": {
+      "from": "now-3h",
+      "to": "now"
+    },
+    "timepicker": {},
+    "timezone": "browser",
+    "title": "Temperature Data (InfluxDB 3)",
+    "uid": "cd50dd6c-87d1-49d6-9859-dcf76551cf68",
+    "version": 51
+  }
+}

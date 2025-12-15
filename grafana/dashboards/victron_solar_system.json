@@ -1,10 +1,10 @@
 {
   "meta": {
-    "exported": "2025-12-08 07:00:03",
+    "exported": "2025-12-13 07:00:02",
     "title": "Victron Solar System",
     "uid": "victron-solar-system",
     "folder": "General",
-    "version": 24
+    "version": 25
   },
   "dashboard": {
     "annotations": {
@@ -2288,6 +2288,6 @@
     "timezone": "browser",
     "title": "Victron Solar System",
     "uid": "victron-solar-system",
-    "version": 24
+    "version": 25
   }
 }

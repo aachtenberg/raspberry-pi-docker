@@ -1,0 +1,11 @@
+[Unit]
+Description=Docker Infrastructure Backup to NAS (raspberrypi2)
+After=docker.service network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+User=root
+ExecStart=/bin/bash /home/aachten/docker/raspberry-pi2/backup_to_nas.sh
+StandardOutput=journal
+StandardError=journal

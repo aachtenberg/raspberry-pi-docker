@@ -42,7 +42,7 @@ Create a new file `data/nginx/proxy_host/custom.conf`:
 ```nginx
 server {
   set $forward_scheme http;
-  set $server         "192.168.0.100";
+  set $server         "your-internal-ip";
   set $port           80;
 
   listen 80;
