@@ -1,103 +1,64 @@
-# Unified Docker Compose Stack
+# Raspberry Pi Docker Infrastructure
 
-This directory contains all Docker services for the Raspberry Pi home automation system.
+Home automation and monitoring stack with InfluxDB 3 Core, Grafana Cloud, Home Assistant, and ESP sensor integration.
 
 ## Quick Start
 
-### 1. Configure Secrets
-
-**IMPORTANT**: Before deploying, you must configure your secrets:
-
 ```bash
+# Clone repository
+git clone https://github.com/aachtenberg/raspberry-pi-docker.git ~/docker
 cd ~/docker
 
-# Copy the example file
+# Configure secrets
 cp .env.example .env
+nano .env  # Add your tokens and credentials
 
-# Edit with your actual credentials
-nano .env
-```
-
-See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for detailed instructions on obtaining:
-- Cloudflare Tunnel Token
-- InfluxDB credentials
-- Other service passwords
-
-### 2. Validate Configuration
-
-Run the validation script to check your configuration:
-
-```bash
-./scripts/validate_secrets.sh
-```
-
-This confirms your secrets file exists, is properly gitignored, and credentials are configured.
-
-### 3. Deploy Services
-
-Start the Docker services:
-
-```bash
+# Deploy all services
 docker compose up -d
-```
 
-### 4. Verify Services
-
-Check that all services are running:
-
-```bash
+# Verify deployment
 ./scripts/status.sh
 ```
 
-Or view logs for a specific service:
+**📚 Documentation:**
+- **[Setup Guide](docs/SETUP.md)** - Complete installation and configuration
+- **[Operations Guide](docs/OPERATIONS.md)** - Daily operations, backup, troubleshooting  
+- **[Reference Guide](docs/REFERENCE.md)** - Architecture, integrations, advanced topics
 
-```bash
-docker compose logs -f <service_name>
-```
-
-
-
-## Security Note
-
-**This repository does not contain any secrets or credentials.**
-
-All sensitive configuration is stored in , which is gitignored. Anyone cloning this repository must create their own  file from the provided template.
-
-See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for complete setup instructions.
-
-## Directory Structure
-
-
+---
 
 ## What This Does
 
-This infrastructure receives, stores, and visualizes temperature data from multiple ESP8266/ESP32 devices:
+Receives, stores, and visualizes sensor data from ESP devices:
 
-- **4 ESP Devices** send temperature readings every 15 seconds
-- **InfluxDB** stores time-series data (time-series database)
-- **Grafana** creates beautiful dashboards and graphs
-- **Home Assistant** provides home automation and alerts
-- **Prometheus Stack** monitors system health and logs
-- **Cloudflare Tunnel** enables secure remote access
+- **ESP Sensors** → MQTT → Telegraf → **InfluxDB 3 Core** (time-series database)
+- **Grafana Cloud** → Dashboards & alerting (via pdc-agent)
+- **Home Assistant** → Automation & smart home control
+- **Prometheus Stack** → System & container monitoring
+- **Cloudflare Tunnel** → Secure remote access
 
-Perfect for:
-- 🏠 Home temperature monitoring across multiple locations
-- 📊 Long-term temperature trend analysis
-- 🔔 Temperature-based alerts and automation
-- 🌐 Remote access to dashboards from anywhere
-- 📈 System monitoring and observability
+**Perfect for:**
+- 🏠 Multi-location temperature monitoring
+- 📊 Long-term trend analysis
+- 🔔 Automated alerts
+- 🌐 Remote dashboard access
+- 📈 System observability
+
+---
 
 ## Architecture
 
 ```
-ESP Devices (4) → Raspberry Pi → InfluxDB → Grafana/Home Assistant
-                                    ↓
-                              Prometheus → System Monitoring
-                                    ↓
-                            Cloudflare Tunnel → Remote Access
+ESP Sensors → MQTT (1883) → Telegraf → InfluxDB 3 Core (8181)
+                                            ↓
+                                    Grafana Cloud (pdc-agent)
+                                            ↓
+                               Prometheus Stack (monitoring)
+                                            ↓
+                            Cloudflare Tunnel (remote access)
 ```
 
-See [ESP Temperature Sensor Project](https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor) for the device firmware.
+**Related:** [ESP Sensor Firmware](https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor)
 
 ## InfluxDB
 
@@ -147,267 +108,63 @@ cd ~/docker
 # Copy the example file
 cp .env.example .env
 
-# Edit with your actual credentials
-nano .env
-```
+## Services
 
-See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for detailed instructions on obtaining:
-- Cloudflare Tunnel Token
-- InfluxDB credentials
-- Other service passwords
+| Service | Port | Purpose |
+|---------|------|---------|
+| InfluxDB 3 Core | 8181 | Time-series database |
+| InfluxDB 3 Explorer | 8888 | Web UI for queries |
+| Grafana (local) | 3000 | Dashboards (deprecated, use Cloud) |
+| Prometheus | 9090 | Metrics collection |
+| Home Assistant | 8123 | Home automation |
+| Mosquitto | 1883 | MQTT broker |
+| Nginx Proxy Manager | 81, 8080 | Reverse proxy |
 
-### 2. Validate Configuration
-
-```bash
-./scripts/validate_secrets.sh
-```
-
-### 3. Deploy Services
-
-```bash
-sudo docker compose up -d
-```
-
-### 4. Verify Services
-
-```bash
-sudo docker compose ps
-sudo docker compose logs -f
-```
+---
 
 ## Security Note
 
-**This repository does not contain any secrets or credentials.**
+**This repository contains no secrets.**
 
-All sensitive configuration is stored in `.env`, which is gitignored. Anyone cloning this repository must create their own `.env` file from the provided template.
+All credentials are stored in `.env` (gitignored). Clone and create your own `.env` from `.env.example`.
 
-See [docs/SECRETS_SETUP.md](docs/SECRETS_SETUP.md) for complete setup instructions.
+See [Setup Guide](docs/SETUP.md) for configuration details.
 
-## Directory Structure
-
-```
-/home/aachten/docker/
-├── docker-compose.yml          # Master compose file (all services)
-├── .env                        # Environment variables (gitignored - YOU CREATE THIS)
-├── .env.example                # Template for .env file (tracked in Git)
-├── README.md                   # This file
-├── docs/
-│   └── SECRETS_SETUP.md        # Comprehensive secrets setup guide
-├── scripts/
-│   └── validate_secrets.sh     # Validation script for .env
-├── influxdb/                   # InfluxDB configs (if needed)
-├── grafana/
-│   └── grafana.ini             # Grafana configuration
-├── prometheus/
-│   └── prometheus.yml          # Prometheus scrape config
-├── mosquitto/
-│   └── mosquitto.conf          # MQTT broker config
-├── nginx-proxy-manager/        # (data in /home/aachten/nginx-proxy-manager/)
-├── homeassistant/              # (data in /home/aachten/homeassistant/)
-└── cloudflared/                # Cloudflare tunnel (token in .env)
-```
-
-## Services
-
-| Service | Port(s) | Purpose |
-|---------|---------|---------|
-| InfluxDB | 8086 | Time-series database for ESP sensor data |
-| **InfluxDB 3 Core** | **8181** | **Next-gen time-series database (evaluation/migration)** |
-| **InfluxDB 3 Explorer** | **8888** | **Web UI for InfluxDB 3 Core** |
-| Grafana | 3000 | Dashboards and visualization |
-| Prometheus | 9090 | Metrics collection |
-| Node Exporter | 9100 | System metrics |
-| cAdvisor | 8081 | Container metrics |
-| Home Assistant | 8123 | Home automation |
-| Mosquitto | 1883 | MQTT broker |
-| Nginx Proxy Manager | 81, 8080, 8443 | Reverse proxy |
-| Cloudflared | - | Cloudflare tunnel |
+---
 
 ## Common Commands
 
-### Start all services
 ```bash
-cd ~/docker
-sudo docker compose up -d
-```
+# Start all services
+docker compose up -d
 
-### Stop all services
-```bash
-cd ~/docker
-sudo docker compose down
-```
-
-### View running services
-```bash
-cd ~/docker
-sudo docker compose ps
-```
-
-### View logs
-```bash
-# All services
-sudo docker compose logs -f
-
-# Specific service
-sudo docker compose logs -f influxdb
-sudo docker compose logs -f grafana
-```
-
-### Restart a service
-```bash
-sudo docker compose restart influxdb
-```
-
-### Update images and restart
-```bash
-cd ~/docker
-sudo docker compose pull
-sudo compose up -d
-```
-
-### Check resource usage
-```bash
-sudo docker stats
-```
-
-## Volumes
-
-Data is persisted in Docker volumes:
-
-```bash
-# List volumes
-sudo docker volume ls
-
-# Inspect a volume
-sudo docker volume inspect docker_influxdb-data
-
-# Backup a volume
-sudo docker run --rm -v docker_influxdb-data:/data -v ~/backups:/backup alpine tar czf /backup/influxdb-backup.tar.gz /data
-```
-
-## Backup & Restore
-
-### Backup everything
-```bash
-cd ~/docker
-sudo docker compose down
-sudo tar czf ~/docker-backup-$(date +%Y%m%d).tar.gz ~/docker /var/lib/docker/volumes/docker_*
-sudo docker compose up -d
-```
-
-### Restore from backup
-```bash
-cd ~/docker
-sudo docker compose down
-sudo tar xzf ~/docker-backup-YYYYMMDD.tar.gz -C /
-sudo docker compose up -d
-```
-
-## Troubleshooting
-
-### Service won't start
-```bash
-# Check logs
-sudo docker compose logs [service-name]
-
-# Restart service
-sudo docker compose restart [service-name]
-
-# Recreate service
-sudo docker compose up -d --force-recreate [service-name]
-```
-
-### Port conflicts
-```bash
-# Check what's using a port
-sudo netstat -tulpn | grep :8086
-```
-
-### Clean up old containers
-```bash
-# Remove stopped containers
-sudo docker container prune
-
-# Remove unused volumes (BE CAREFUL!)
-sudo docker volume prune
-```
-
-## Network
-
-All services (except those with `network_mode: host`) are on the `monitoring` bridge network and can communicate using their service names:
-
-- `http://influxdb:8086`
-- `http://grafana:3000`
-- `http://prometheus:9090`
-- etc.
-
-## Environment Variables
-
-Sensitive data is stored in `.env` file:
-- `CLOUDFLARE_TUNNEL_TOKEN` - Cloudflare tunnel authentication
-- `INFLUXDB_ADMIN_PASSWORD` - InfluxDB admin password
-- `INFLUXDB_ORG_ID` - InfluxDB organization ID
-- `INFLUXDB_ADMIN_TOKEN` - InfluxDB API token
-
-**Never commit .env to version control!**
-
-## Migration from Old Setup
-
-The migration script has already been run. Old directories:
-- `~/git/grafana/` → Configs copied to `~/docker/grafana/`
-- `~/prometheus/` → Configs copied to `~/docker/prometheus/`
-- `~/git/mqtt-docker/` → Configs copied to `~/docker/mosquitto/`
-- `~/influxdb-docker/` → Superseded by unified setup
-- `~/nginx-proxy-manager/` → Data directory still referenced
-- `~/homeassistant/` → Data directory still referenced
-
-Old directories can be removed after verifying everything works.
-
-## Related Projects
-
-- **ESP Temperature Sensors**: https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor
-  - 4 deployed ESP8266/ESP32 devices sending temperature data to InfluxDB
-  - See their [Secrets Setup Guide](https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor/blob/main/docs/guides/SECRETS_SETUP.md)
-
-## Documentation
-
-- **[Setup Guide](docs/SETUP_GUIDE.md)** - Complete installation and configuration
-- **[Operations Guide](docs/OPERATIONS_GUIDE.md)** - Daily operations, monitoring, and maintenance
-- [Making Repository Public Checklist](MAKING_PUBLIC_CHECKLIST.md) - Steps to safely make this repo public
-
-## Quick Operations
-
-### Dashboard Management
-
-```bash
-# Export all Grafana dashboards
-./scripts/export_grafana_dashboards.sh
-
-# Import dashboards from JSON
-./scripts/import_grafana_dashboards.sh
-
-# Automated daily backup (2 AM cron)
-./scripts/backup_grafana_dashboards.sh
-```
-
-### System Monitoring
-
-```bash
-# Check all service status
+# Check status
 ./scripts/status.sh
 
 # View logs
-docker compose logs -f
+docker compose logs -f <service>
 
-# Resource usage
-docker stats
+# Restart service
+docker compose restart <service>
+
+# Update all
+docker compose pull && docker compose up -d
 ```
+
+---
+
+## Backup
+
+**Automated:** Daily at 3:00 AM to NAS  
+**Manual:** `sudo bash ./scripts/backup_to_nas.sh`  
+**Restore:** `sudo bash ./scripts/restore_from_nas.sh`
+
+See [Operations Guide](docs/OPERATIONS.md) for details.
+
+---
 
 ## Support
 
-For issues or questions:
-- **ESP Device Firmware**: [github.com/aachtenberg/esp12f_ds18b20_temp_sensor](https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor)
-- **Pi Infrastructure**: This repository
-- **InfluxDB**: [docs.influxdata.com/influxdb/v2.7/](https://docs.influxdata.com/influxdb/v2.7/)
-- **Grafana**: [grafana.com/docs/](https://grafana.com/docs/)
-- **Docker**: [docs.docker.com/](https://docs.docker.com/)
+- **ESP Sensor Firmware:** https://github.com/aachtenberg/esp12f_ds18b20_temp_sensor
+- **Documentation:** [Setup](docs/SETUP.md) | [Operations](docs/OPERATIONS.md) | [Reference](docs/REFERENCE.md)
+- **Issues:** https://github.com/aachtenberg/raspberry-pi-docker/issues

@@ -73,8 +73,10 @@ services:
       - '9100:9100'
     command:
       - '--path.rootfs=/host'
+      - '--collector.textfile.directory=/textfile_collector'
     volumes:
       - /:/host:ro,rslave
+      - /var/lib/node_exporter/textfile_collector:/textfile_collector:ro
     networks:
       - monitoring
 
@@ -184,6 +186,7 @@ services:
       - --object-store=file
       - --data-dir=/var/lib/influxdb3/data
       - --http-bind=0.0.0.0:8181
+      - --plugin-dir=/var/lib/influxdb3/plugins
     environment:
       - TZ=UTC
 
@@ -197,6 +200,8 @@ services:
     container_name: telegraf
     restart: unless-stopped
     network_mode: host
+    ports:
+      - "9273:9273"  # Expose Telegraf metrics endpoint
     volumes:
       - ./telegraf/telegraf.conf:/etc/telegraf/telegraf.conf:ro
     environment:
@@ -239,6 +244,27 @@ services:
       - portainer-data:/data
     networks:
       - monitoring
+
+  # ============================================================================
+  # GRAFANA PDC AGENT - Grafana Cloud Remote Data Collection
+  # ============================================================================
+  # Grafana Private Data Center (PDC) Agent for remote sensor data collection
+  # Collects metrics from local infrastructure and sends to Grafana Cloud
+  pdc-agent:
+    image: grafana/pdc-agent:latest
+    container_name: pdc-agent
+    restart: unless-stopped
+    command:
+      - -token=${GRAFANA_PDC_TOKEN}
+      - -cluster=${GRAFANA_PDC_CLUSTER}
+      - -gcloud-hosted-grafana-id=${GRAFANA_PDC_GCLOUD_HOSTED_GRAFANA_ID}
+    environment:
+      - TZ=UTC
+    networks:
+      - monitoring
+    depends_on:
+      - prometheus
+      - grafana
 
 # ==============================================================================
 # VOLUMES

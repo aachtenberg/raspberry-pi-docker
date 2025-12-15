@@ -1,0 +1,11 @@
+[Unit]
+Description=Daily Docker Infrastructure Backup Timer (raspberrypi2)
+Requires=docker-backup.service
+
+[Timer]
+OnCalendar=*-*-* 03:00:00
+Persistent=true
+Unit=docker-backup.service
+
+[Install]
+WantedBy=timers.target
