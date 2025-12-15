@@ -1,8 +1,9 @@
 # Copilot Instructions for raspberry-pi-docker (AI agents)
 
 ## What this is
-- Raspberry Pi home automation + monitoring stack orchestrated by `docker-compose.yml`; services live under `grafana/`, `prometheus/`, `nginx-proxy-manager/`, `mosquitto/`, `homeassistant/`, `cloudflared/`, `influxdb/`, and new `influxdb3-core` + `influxdb3-explorer` services.
-- Core data flow: ESP8266/ESP32 sensors → InfluxDB 2.7 (8086) and/or InfluxDB 3 Core (8181) → Grafana dashboards (3000); Prometheus/cAdvisor/Node Exporter for system metrics; Nginx Proxy Manager + Cloudflare Tunnel for remote access.
+- Raspberry Pi home automation + monitoring stack orchestrated by `docker-compose.yml`; services live under `prometheus/`, `nginx-proxy-manager/`, `mosquitto/`, `homeassistant/`, `cloudflared/`, `influxdb/`, `influxdb3-core`, `influxdb3-explorer`, and `telegraf/`.
+- Core data flow: ESP8266/ESP32 sensors → MQTT (1883) → Telegraf → InfluxDB 3 Core (8181) → **Grafana Cloud** (via pdc-agent); Prometheus/cAdvisor/Node Exporter for system metrics; Nginx Proxy Manager + Cloudflare Tunnel for remote access.
+- **Note**: Local Grafana container (port 3000) is **deprecated** in favor of Grafana Cloud. Using `pdc-agent` (Private Data Center agent) to ship metrics to Grafana Cloud for public dashboard sharing and alerting capabilities. InfluxDB 3 Core doesn't support public dashboard sharing with local Grafana, and we didn't want to downgrade to InfluxDB 2.
 
 ## Non-negotiables
 - Use `docker compose` (no hyphen) for all commands. Validate with `docker compose config -q` before applying.
@@ -11,11 +12,13 @@
 
 ## Key files & locations
 - Orchestration: `docker-compose.yml` (all services), `.env` (local secrets), `.env.example` (template).
-- Grafana dashboards: `grafana/dashboards/*.json` (export/import via scripts; avoid manual edits when possible).
+- Grafana dashboards: `grafana/dashboards/*.json` (legacy local Grafana exports; now using Grafana Cloud).
 - Prometheus configs: `prometheus/prometheus.yml`.
+- Telegraf config: `telegraf/telegraf.conf` (MQTT → InfluxDB 3 bridge).
 - Nginx Proxy Manager hosts: `nginx-proxy-manager/data/nginx/proxy_host/*.conf` (numbered files, tracked in git).
-- Docs: `docs/SETUP_GUIDE.md`, `docs/OPERATIONS_GUIDE.md`, `docs/INFLUXDB3_SETUP.md` (auth-required API usage), `MAKING_PUBLIC_CHECKLIST.md`.
-- Scripts: `scripts/*.sh` (export/import/backup dashboards, validate secrets, status, update-all).
+- Backup: `scripts/backup_to_nas.sh` (automated daily at 3 AM), `scripts/restore_from_nas.sh`; NAS persistently mounted at `/mnt/nas-backup`.
+- Docs: `docs/SETUP_GUIDE.md`, `docs/OPERATIONS_GUIDE.md`, `docs/INFLUXDB3_SETUP.md`, `docs/BACKUP_GUIDE.md` (complete backup/restore procedures), `MAKING_PUBLIC_CHECKLIST.md`.
+- Scripts: `scripts/*.sh` (backup/restore, validate secrets, status, update-all).
 
 ## InfluxDB specifics
 - InfluxDB 2.7: init via env vars in compose using `.env` values. API on 8086.
@@ -26,9 +29,10 @@
 ## Workflows / common commands
 - Start/stop: `docker compose up -d [services]`, `docker compose down`.
 - Logs: `docker compose logs -f <service>`; status: `./scripts/status.sh` or `docker compose ps`.
-- Dashboards: export/import via `./scripts/export_grafana_dashboards.sh` / `./scripts/import_grafana_dashboards.sh`; backup via `./scripts/backup_grafana_dashboards.sh`.
+- Dashboards: Managed in Grafana Cloud (dashboards.grafana.com). Legacy local exports in `grafana/dashboards/*.json`.
+- Backup/restore: `sudo bash ./scripts/backup_to_nas.sh` (manual), automated daily at 3 AM via systemd; restore: `sudo bash ./scripts/restore_from_nas.sh`. See `docs/BACKUP_GUIDE.md`.
 - Secrets check: `./scripts/validate_secrets.sh` (requires `.env`).
-- Service restart examples: `docker compose restart grafana`, `docker compose restart influxdb3-core`.
+- Service restart examples: `docker compose restart pdc-agent`, `docker compose restart influxdb3-core`, `docker compose restart telegraf`.
 
 ## Nginx Proxy Manager pattern
 - Host configs live in `nginx-proxy-manager/data/nginx/proxy_host/*.conf`; each file = one host; numbered sequentially. Add/modify, then reload: `docker compose exec -T nginx-proxy-manager nginx -s reload`. Test with `curl -H "Host: domain" http://localhost:8080/`. Commit the numbered file (force-add if needed).
@@ -56,8 +60,26 @@
 - **Legend tables**: Set `displayMode: "table"`, add `calcs: ["min", "max", "median", "last"]`, and include in `values` array for multi-column legend display.
 - **Device grouping**: When selecting time, device, and value fields from FlightSQL, device becomes a natural dimension; hide it with `custom.hideFrom: { legend: true }` to avoid legend pollution.
 
+## Backup system
+- **Automated backups**: Daily at 3:00 AM via systemd timer (`docker-backup.timer`).
+- **NAS mount**: Persistent via `/etc/fstab` at `/mnt/nas-backup` (//192.168.0.1/G).
+- **What's backed up**: Docker volumes (Grafana-legacy, Prometheus, InfluxDB3, Portainer, Mosquitto), bind-mounted directories (Home Assistant, Nginx Proxy Manager), repository configs, `.env` file.
+- **What's NOT backed up**: Docker images (pulled fresh), containers (rebuilt from compose), networks (from compose definition).
+- **Retention**: 30 days automatic cleanup.
+- **Scripts**: `scripts/backup_to_nas.sh`, `scripts/restore_from_nas.sh`.
+- **Docs**: `docs/BACKUP_GUIDE.md` (complete backup/restore/disaster-recovery guide).
+
+## Grafana Cloud migration notes
+- **Local Grafana container is deprecated** (still running but not primary visualization).
+- Using **Grafana Cloud** for dashboards and alerting (reason: InfluxDB 3 Core + local Grafana doesn't support public dashboard sharing; didn't want to downgrade to InfluxDB 2).
+- **pdc-agent** (Grafana Private Data Center agent) ships local metrics to Grafana Cloud.
+- PDC agent config: `GRAFANA_PDC_TOKEN`, `GRAFANA_PDC_CLUSTER`, `GRAFANA_PDC_GCLOUD_HOSTED_GRAFANA_ID` in `.env`.
+- Dashboards managed at: https://dashboards.grafana.com (or your Grafana Cloud instance).
+- Future: Can leverage Grafana Cloud alerting capabilities.
+
 ## Helpful references
 - `docs/INFLUXDB3_SETUP.md` for tested auth + API examples.
 - `docs/OPERATIONS_GUIDE.md` and `docs/SETUP_GUIDE.md` for end-to-end procedures.
-- `docs/influxv3-sql-example.json` for working temperature dashboard panel JSON reference.
+- `docs/BACKUP_GUIDE.md` for complete backup/restore/disaster recovery procedures.
+- `docs/influxv3-sql-example.json` for working temperature dashboard panel JSON reference (legacy local Grafana).
 - `MAKING_PUBLIC_CHECKLIST.md` for sanitization steps if sharing.

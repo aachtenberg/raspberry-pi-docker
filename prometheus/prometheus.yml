@@ -14,12 +14,36 @@ scrape_configs:
           instance: 'raspberry-pi'
           host: '192.168.0.167'
 
+  - job_name: 'raspberry-pi2'
+    static_configs:
+      - targets: ['192.168.0.147:9100']
+        labels:
+          instance: 'raspberry-pi2'
+          host: '192.168.0.147'
+
   - job_name: 'docker'
     static_configs:
       - targets: ['cadvisor:8080']
         labels:
           instance: 'raspberry-pi'
           host: '192.168.0.167'
+    metric_relabel_configs:
+      # Use container name as container_name for easier queries
+      - source_labels: [name]
+        target_label: container_name
+      # Use Docker Compose project name if available
+      - source_labels: [container_label_com_docker_compose_project]
+        target_label: project
+      # Drop all the verbose container_label_* labels to reduce cardinality
+      - action: labeldrop
+        regex: 'container_label_.*'
+
+  - job_name: 'docker-pi2'
+    static_configs:
+      - targets: ['192.168.0.147:8080']
+        labels:
+          instance: 'raspberry-pi2'
+          host: '192.168.0.147'
     metric_relabel_configs:
       # Use container name as container_name for easier queries
       - source_labels: [name]
@@ -53,3 +77,11 @@ scrape_configs:
     authorization:
       type: Bearer
       credentials_file: /etc/prometheus/influxdb3_token
+
+  - job_name: 'telegraf'
+    static_configs:
+      - targets: ['localhost:9273']
+        labels:
+          instance: 'raspberry-pi'
+          service: 'telegraf'
+    scrape_interval: 15s
