@@ -42,38 +42,6 @@ services:
       retries: 3
       start_period: 10s
 
-  autoheal:
-    image: willfarrell/autoheal:latest
-    container_name: autoheal
-    restart: unless-stopped
-    environment:
-      - AUTOHEAL_CONTAINER_LABEL=all
-      - AUTOHEAL_INTERVAL=5
-      - AUTOHEAL_START_PERIOD=0
-      - AUTOHEAL_DEFAULT_STOP_TIMEOUT=10
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /etc/localtime:/etc/localtime:ro
-    networks:
-      - monitoring
-
-  # ==========================================================================
-  # OLLAMA - Local LLM Runtime (runs on raspberrypi2)
-  # ==========================================================================
-  ollama:
-    image: ollama/ollama:latest
-    container_name: ollama
-    restart: unless-stopped
-    ports:
-      - '11434:11434'
-    volumes:
-      - ollama-data:/root/.ollama
-    networks:
-      - monitoring
-
-volumes:
-  ollama-data:
-
 networks:
   monitoring:
     driver: bridge
