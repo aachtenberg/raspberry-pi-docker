@@ -316,7 +316,9 @@ services:
   # AI MONITOR - Prometheus triage via local Ollama
   # ============================================================================
   ai-monitor:
-    image: python:3.11-slim
+    build:
+      context: ./ai-monitor
+      dockerfile: Dockerfile
     container_name: ai-monitor
     restart: unless-stopped
     ports:
@@ -334,11 +336,7 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash-exp}
     volumes:
-      - ./ai-monitor:/app:ro
       - /var/run/docker.sock:/var/run/docker.sock
-    working_dir: /app
-    command: >
-      sh -lc "python -m pip install --no-cache-dir -r requirements.txt && python -u monitor.py"
     depends_on:
       - prometheus
     networks:
