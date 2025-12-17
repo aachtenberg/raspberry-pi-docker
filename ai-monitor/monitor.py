@@ -116,8 +116,6 @@ LAST_RUN_TIMESTAMP = Gauge(
 class AiMonitor:
     def __init__(self) -> None:
         self.prometheus_url = os.getenv("PROMETHEUS_URL", "http://prometheus:9090").rstrip("/")
-        self.ollama_url = os.getenv("OLLAMA_URL", "http://ollama:11434").rstrip("/")
-        self.ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:1.5b")
         self.interval_seconds = _env_int("AI_MONITOR_INTERVAL_SECONDS", 60)
         self.execute = _env_bool("AI_MONITOR_EXECUTE", False)
         self.self_heal_docker_health = _env_bool("AI_MONITOR_SELF_HEAL_DOCKER_HEALTH", True)
@@ -126,14 +124,13 @@ class AiMonitor:
         self.restart_exited = _env_bool("AI_MONITOR_RESTART_EXITED", True)
         self.llm_enabled = _env_bool("AI_MONITOR_LLM_ENABLED", True)
         self.prom_timeout_seconds = _env_int("AI_MONITOR_PROM_TIMEOUT_SECONDS", 5)
-        self.ollama_timeout_seconds = _env_int("AI_MONITOR_OLLAMA_TIMEOUT_SECONDS", 30)
         self.allowed_containers = {
             c.strip() for c in os.getenv("AI_MONITOR_ALLOWED_CONTAINERS", "").split(",") if c.strip()
         }
         
-        # LLM backend selection (priority: Claude > Gemini > Ollama)
+        # LLM backend selection (priority: Claude > Gemini)
         self.claude_api_key = os.getenv("CLAUDE_API_KEY")
-        self.claude_model = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
+        self.claude_model = os.getenv("CLAUDE_MODEL", "claude-3-haiku-20240307")
         self.use_claude = bool(self.claude_api_key and ANTHROPIC_AVAILABLE)
         if self.use_claude:
             self._anthropic_client = Anthropic(api_key=self.claude_api_key)
@@ -261,38 +258,15 @@ class AiMonitor:
         # Stable ordering for predictable behavior
         return sorted(set(candidates))
 
-    # -------------------------------- Ollama ----------------------------------
-    def _ollama_tags(self) -> List[str]:
-        try:
-            response = requests.get(f"{self.ollama_url}/api/tags", timeout=10)
-            response.raise_for_status()
-            models = response.json().get("models", [])
-            return [m.get("name", "") for m in models if m.get("name")]
-        except Exception:
-            return []
-
-    def _ollama_pull(self, model: str) -> None:
-        _log("info", "Pulling Ollama model (first run can take a while)", model=model)
-        response = requests.post(
-            f"{self.ollama_url}/api/pull",
-            json={"name": model, "stream": False},
-            timeout=3600,
-        )
-        response.raise_for_status()
-
-    def ensure_model(self) -> None:
-        tags = self._ollama_tags()
-        if any(t == self.ollama_model or t.startswith(self.ollama_model + ":") for t in tags):
-            return
-        self._ollama_pull(self.ollama_model)
-
+    # --------------------------------- LLM ------------------------------------
     def ask_llm_for_triage(self, snapshot: Dict[str, Any]) -> Optional[Triage]:
         if self.use_claude:
             return self._ask_claude_for_triage(snapshot)
         elif self.use_gemini:
             return self._ask_gemini_for_triage(snapshot)
         else:
-            return self._ask_ollama_for_triage(snapshot)
+            _log("warning", "No LLM API key configured", available_backends=["claude", "gemini"])
+            return None
 
     def _ask_claude_for_triage(self, snapshot: Dict[str, Any]) -> Optional[Triage]:
         prompt = (
@@ -423,71 +397,6 @@ class AiMonitor:
             _log("error", "Gemini triage failed", error=str(e))
             return None
 
-    def _ask_ollama_for_triage(self, snapshot: Dict[str, Any]) -> Optional[Triage]:
-        prompt = (
-            "You are an SRE assistant for a Raspberry Pi docker-compose stack. "
-            "Given the JSON snapshot, produce a concise triage response. "
-            "Return ONLY valid JSON that matches this schema:\n"
-            "{\"summary\": string, \"severity\": \"low\"|\"medium\"|\"high\", "
-            "\"suspected_causes\": string[], "
-            "\"recommended_actions\": [{\"type\": \"restart_container\"|\"alert\"|\"none\", \"target\": string|null, \"reason\": string|null}], "
-            "\"confidence\": number }\n\n"
-            "Constraints:\n"
-            "- Be conservative: prefer alert/none over restarts.\n"
-            "- If you recommend a restart_container, set target to the exact container name.\n"
-            "- If everything looks fine, severity=low and action=none.\n\n"
-            f"SNAPSHOT:\n{json.dumps(snapshot, ensure_ascii=False)}"
-        )
-
-        try:
-            response = requests.post(
-                f"{self.ollama_url}/api/generate",
-                json={
-                    "model": self.ollama_model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "format": "json",
-                },
-                timeout=self.ollama_timeout_seconds,
-            )
-            response.raise_for_status()
-            raw = response.json().get("response", "").strip()
-            if not raw:
-                return None
-            # Some small local models occasionally return slightly-off JSON.
-            # Normalize to our schema instead of failing hard.
-            data = json.loads(raw)
-
-            confidence = data.get("confidence")
-            if isinstance(confidence, (int, float)):
-                if confidence > 1 and confidence <= 100:
-                    data["confidence"] = float(confidence) / 100.0
-
-            suspected = data.get("suspected_causes")
-            if isinstance(suspected, list):
-                normalized: List[str] = []
-                for item in suspected:
-                    if isinstance(item, str):
-                        normalized.append(item)
-                    elif isinstance(item, dict):
-                        normalized.append(
-                            str(item.get("reason") or item.get("cause") or json.dumps(item, ensure_ascii=False))
-                        )
-                    else:
-                        normalized.append(str(item))
-                data["suspected_causes"] = normalized
-
-            TRIAGE_CALLS_TOTAL.labels(backend="ollama", status="success").inc()
-            return Triage.model_validate(data)
-        except requests.exceptions.Timeout:
-            TRIAGE_CALLS_TOTAL.labels(backend="ollama", status="timeout").inc()
-            _log("error", "Ollama triage failed", error="timeout")
-            return None
-        except Exception as e:
-            TRIAGE_CALLS_TOTAL.labels(backend="ollama", status="error").inc()
-            _log("error", "Ollama triage failed", error=str(e))
-            return None
-
     # --------------------------------- Loop -----------------------------------
     def run_once(self) -> None:
         snapshot = self.gather_snapshot()
@@ -591,15 +500,6 @@ class AiMonitor:
             execute=self.execute,
             allowed_containers=sorted(self.allowed_containers),
         )
-
-        # Try model pull on startup; if ollama isn't ready, loop until it is.
-        while True:
-            try:
-                self.ensure_model()
-                break
-            except Exception as e:
-                _log("warn", "Ollama not ready yet; retrying", error=str(e))
-                time.sleep(5)
 
         while True:
             try:

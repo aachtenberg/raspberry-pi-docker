@@ -301,8 +301,6 @@ services:
       - '8000:8000'  # Prometheus metrics endpoint
     environment:
       - PROMETHEUS_URL=${AI_MONITOR_PROMETHEUS_URL:-http://prometheus:9090}
-      - OLLAMA_URL=${AI_MONITOR_OLLAMA_URL:-http://ollama:11434}
-      - OLLAMA_MODEL=${OLLAMA_MODEL:-qwen2.5:1.5b}
       - AI_MONITOR_INTERVAL_SECONDS=${AI_MONITOR_INTERVAL_SECONDS:-60}
       - AI_MONITOR_EXECUTE=${AI_MONITOR_EXECUTE:-false}
       - AI_MONITOR_ALLOWED_CONTAINERS=${AI_MONITOR_ALLOWED_CONTAINERS:-}
