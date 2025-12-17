@@ -289,21 +289,7 @@ services:
       - grafana
 
   # ============================================================================
-  # AUTOHEAL - REMOVED (replaced by ai-monitor with intelligent self-healing)
-  # ============================================================================
-  # Autoheal was too aggressive and lacked context awareness
-  # AI monitor provides intelligent self-healing with:
-  # - Allowlist protection (won't restart mosquitto/ESP devices)
-  # - Cooldown periods (600s) to prevent restart loops
-  # - LLM triage for root cause diagnostics
-  # - Prometheus metrics integration for informed decisions
-
-  # ============================================================================
-  # OLLAMA - Local LLM Runtime (Pi 5 friendly)
-  # ============================================================================
-
-  # ============================================================================
-  # AI MONITOR - Prometheus triage via local Ollama
+  # AI MONITOR - Self-healing with LLM diagnostics
   # ============================================================================
   ai-monitor:
     build:
