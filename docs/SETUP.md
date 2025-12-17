@@ -67,7 +67,7 @@ Get your tunnel token from [Cloudflare Zero Trust Dashboard](https://one.dash.cl
 3. Copy the token
 
 ```bash
-CLOUDFLARE_TUNNEL_TOKEN=<redacted>
+CLOUDFLARE_TUNNEL_TOKEN=<your_cloudflare_tunnel_token>
 ```
 
 #### 2. InfluxDB 3 Core
