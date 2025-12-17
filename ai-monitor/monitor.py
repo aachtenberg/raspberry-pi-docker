@@ -144,6 +144,15 @@ class AiMonitor:
 
         self._docker_client = docker.DockerClient(base_url="unix://var/run/docker.sock")
         self._last_restart: Dict[str, float] = {}
+        
+        # Predictive monitoring
+        self.predictive_enabled = _env_bool("AI_MONITOR_PREDICTIVE_ENABLED", False)
+        self.predictive_interval = _env_int("AI_MONITOR_PREDICTIVE_INTERVAL_SECONDS", 86400)  # Daily
+        self._last_predictive_check = 0.0
+        
+        # Incident reports
+        self.incident_reports_enabled = _env_bool("AI_MONITOR_INCIDENT_REPORTS_ENABLED", True)
+        self.incident_reports_dir = os.getenv("AI_MONITOR_INCIDENT_REPORTS_DIR", "/app/incidents")
 
     # ----------------------------- Prometheus ---------------------------------
     def prom_query(self, query: str, timeout_seconds: int = 10) -> Dict[str, Any]:
@@ -190,11 +199,19 @@ class AiMonitor:
                 }
 
         # Docker health snapshot (local ground truth)
-        results["docker_health"] = self._docker_health_snapshot()
+        # Include logs when gathering for triage (not for routine checks)
+        results["docker_health"] = self._docker_health_snapshot(include_logs=False)
         return results
+    
+    def gather_snapshot_with_logs(self) -> Dict[str, Any]:
+        """Gather snapshot including container logs for failed containers."""
+        snapshot = self.gather_snapshot()
+        # Replace docker health with version that includes logs
+        snapshot["docker_health"] = self._docker_health_snapshot(include_logs=True)
+        return snapshot
 
     # ------------------------------- Docker -----------------------------------
-    def _docker_health_snapshot(self) -> Dict[str, Any]:
+    def _docker_health_snapshot(self, include_logs: bool = False) -> Dict[str, Any]:
         snapshot: Dict[str, Any] = {"containers": []}
         try:
             containers = self._docker_client.containers.list(all=True)
@@ -202,14 +219,24 @@ class AiMonitor:
                 attrs = c.attrs or {}
                 state = (attrs.get("State") or {})
                 health = (state.get("Health") or {}) if isinstance(state, dict) else {}
-                snapshot["containers"].append(
-                    {
-                        "name": c.name,
-                        "status": state.get("Status"),
-                        "health": health.get("Status"),
-                        "exit_code": state.get("ExitCode"),
-                    }
-                )
+                
+                container_info = {
+                    "name": c.name,
+                    "status": state.get("Status"),
+                    "health": health.get("Status"),
+                    "exit_code": state.get("ExitCode"),
+                }
+                
+                # Include logs for unhealthy/exited containers if requested
+                if include_logs and (container_info["health"] == "unhealthy" or 
+                                    container_info["status"] in ["exited", "dead"]):
+                    try:
+                        logs = c.logs(tail=50, timestamps=False).decode('utf-8', errors='ignore')
+                        container_info["recent_logs"] = logs[-2000:]  # Last 2KB of logs
+                    except Exception:
+                        container_info["recent_logs"] = "(logs unavailable)"
+                
+                snapshot["containers"].append(container_info)
         except Exception as e:
             snapshot["error"] = str(e)
         return snapshot
@@ -257,6 +284,90 @@ class AiMonitor:
 
         # Stable ordering for predictable behavior
         return sorted(set(candidates))
+
+    # -------------------------- Predictive Monitoring -------------------------
+    def _check_predictive_triggers(self) -> Optional[str]:
+        """Check if any metrics show concerning trends. Returns reason if LLM should be called."""
+        try:
+            # Check memory growth
+            mem_query = 'delta(docker_container_mem_usage[1h])'
+            result = self.prom_query(mem_query, timeout_seconds=5)
+            for series in result.get("data", {}).get("result", []):
+                delta_bytes = float(series.get("value", [0, 0])[1])
+                if delta_bytes > 100_000_000:  # 100MB/hour growth
+                    container = series.get("metric", {}).get("container_label_com_docker_compose_service", "unknown")
+                    return f"Memory growth: {container} +{delta_bytes/1e6:.0f}MB/hour"
+            
+            # Check disk usage
+            disk_query = 'node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100 < 20'
+            result = self.prom_query(disk_query, timeout_seconds=5)
+            if result.get("data", {}).get("result", []):
+                return "Disk space below 20%"
+            
+            # Check restart frequency
+            restart_query = 'changes(up[1h]) > 5'
+            result = self.prom_query(restart_query, timeout_seconds=5)
+            if result.get("data", {}).get("result", []):
+                return "High restart frequency detected"
+                
+        except Exception as e:
+            _log("warn", "Predictive check failed", error=str(e))
+        
+        return None
+
+    def _save_incident_report(self, triage: 'Triage', snapshot: Dict[str, Any]) -> None:
+        """Save incident report as markdown file."""
+        try:
+            os.makedirs(self.incident_reports_dir, exist_ok=True)
+            
+            timestamp = datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
+            filename = f"{self.incident_reports_dir}/incident_{timestamp}.md"
+            
+            # Build markdown report
+            report = f"""# Incident Report
+**Time:** {datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")}  
+**Severity:** {triage.severity}  
+**Confidence:** {triage.confidence:.0%}
+
+## Summary
+{triage.summary}
+
+## Suspected Causes
+"""
+            for cause in triage.suspected_causes:
+                report += f"- {cause}\n"
+            
+            report += "\n## Recommended Actions\n"
+            for action in triage.recommended_actions:
+                report += f"- **{action.type}**"
+                if action.target:
+                    report += f" → {action.target}"
+                if action.reason:
+                    report += f": {action.reason}"
+                report += "\n"
+            
+            # Add key metrics
+            report += "\n## System Snapshot\n"
+            down = snapshot.get("down_targets", {}).get("result", [])
+            if down:
+                report += f"- **Down targets:** {len(down)}\n"
+            
+            docker_health = snapshot.get("docker_health", {})
+            containers = docker_health.get("containers", [])
+            unhealthy = [c for c in containers if c.get("health") == "unhealthy"]
+            exited = [c for c in containers if c.get("status") in ["exited", "dead"]]
+            
+            if unhealthy:
+                report += f"- **Unhealthy containers:** {', '.join(c['name'] for c in unhealthy)}\n"
+            if exited:
+                report += f"- **Exited containers:** {', '.join(c['name'] for c in exited)}\n"
+            
+            with open(filename, 'w') as f:
+                f.write(report)
+            
+            _log("info", "Incident report saved", filename=filename)
+        except Exception as e:
+            _log("error", "Failed to save incident report", error=str(e))
 
     # --------------------------------- LLM ------------------------------------
     def ask_llm_for_triage(self, snapshot: Dict[str, Any]) -> Optional[Triage]:
@@ -399,6 +510,25 @@ class AiMonitor:
 
     # --------------------------------- Loop -----------------------------------
     def run_once(self) -> None:
+        """
+        Execute a single monitoring cycle: gather system snapshot, check health, and optionally take remediation actions.
+        This method performs the following steps:
+        1. Collects a snapshot of system state (Prometheus targets, Docker containers)
+        2. Updates health metrics (healthy/unhealthy container counts)
+        3. Checks for containers needing restart and performs self-healing if enabled
+        4. If no remediation was taken and issues exist, requests LLM triage analysis
+        5. Executes recommended actions from LLM (e.g., container restarts) if execute mode is enabled
+        The method implements a "fast-path" optimization: if all targets are up and Docker 
+        containers are healthy, it skips LLM analysis. It also skips LLM triage if self-healing 
+        actions were just performed to avoid analyzing stale pre-restart state.
+        Side effects:
+            - Updates Prometheus metrics (LAST_RUN_TIMESTAMP, UNHEALTHY_CONTAINERS, HEALTHY_CONTAINERS)
+            - May restart containers if self_heal_docker_health and execute are enabled
+            - May execute LLM-recommended actions if llm_enabled and execute are enabled
+            - Logs all significant events and actions taken
+        Returns:
+            None
+        """
         snapshot = self.gather_snapshot()
         LAST_RUN_TIMESTAMP.set(time.time())
 
@@ -439,6 +569,22 @@ class AiMonitor:
         if not down_targets and not unhealthy:
             if not exited:
                 _log("info", "Healthy snapshot", checks="up + docker health")
+                
+                # Check predictive triggers if enabled and interval elapsed
+                if self.predictive_enabled:
+                    now = time.time()
+                    if now - self._last_predictive_check >= self.predictive_interval:
+                        self._last_predictive_check = now
+                        trigger_reason = self._check_predictive_triggers()
+                        if trigger_reason:
+                            _log("info", "Predictive trigger detected", reason=trigger_reason)
+                            # Use snapshot with logs for predictive analysis
+                            pred_snapshot = self.gather_snapshot_with_logs()
+                            pred_snapshot["predictive_trigger"] = trigger_reason
+                            triage = self.ask_llm_for_triage(pred_snapshot)
+                            if triage and self.incident_reports_enabled:
+                                self._save_incident_report(triage, pred_snapshot)
+                
                 return
             _log("warn", "Containers exited", containers=[c.get("name") for c in exited if c.get("name")])
             return
@@ -446,7 +592,9 @@ class AiMonitor:
         if not self.llm_enabled:
             return
 
-        triage = self.ask_llm_for_triage(snapshot)
+        # Gather snapshot with logs for better triage
+        snapshot_with_logs = self.gather_snapshot_with_logs()
+        triage = self.ask_llm_for_triage(snapshot_with_logs)
         if not triage:
             _log("warn", "No triage returned")
             return
@@ -459,6 +607,10 @@ class AiMonitor:
             summary=triage.summary,
             actions=[a.model_dump() for a in triage.recommended_actions],
         )
+        
+        # Save incident report
+        if self.incident_reports_enabled:
+            self._save_incident_report(triage, snapshot_with_logs)
 
         if not self.execute:
             return
