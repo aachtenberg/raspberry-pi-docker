@@ -17,6 +17,12 @@ try:
 except ImportError:
     ANTHROPIC_AVAILABLE = False
 
+try:
+    import google.generativeai as genai
+    GEMINI_AVAILABLE = True
+except ImportError:
+    GEMINI_AVAILABLE = False
+
 
 def _env_bool(name: str, default: bool = False) -> bool:
     value = os.getenv(name)
@@ -125,12 +131,19 @@ class AiMonitor:
             c.strip() for c in os.getenv("AI_MONITOR_ALLOWED_CONTAINERS", "").split(",") if c.strip()
         }
         
-        # Claude API support
+        # LLM backend selection (priority: Claude > Gemini > Ollama)
         self.claude_api_key = os.getenv("CLAUDE_API_KEY")
         self.claude_model = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
         self.use_claude = bool(self.claude_api_key and ANTHROPIC_AVAILABLE)
         if self.use_claude:
             self._anthropic_client = Anthropic(api_key=self.claude_api_key)
+        
+        self.gemini_api_key = os.getenv("GEMINI_API_KEY")
+        self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
+        self.use_gemini = bool(self.gemini_api_key and GEMINI_AVAILABLE and not self.use_claude)
+        if self.use_gemini:
+            genai.configure(api_key=self.gemini_api_key)
+            self._gemini_model = genai.GenerativeModel(self.gemini_model)
 
         self._docker_client = docker.DockerClient(base_url="unix://var/run/docker.sock")
         self._last_restart: Dict[str, float] = {}
@@ -276,6 +289,8 @@ class AiMonitor:
     def ask_llm_for_triage(self, snapshot: Dict[str, Any]) -> Optional[Triage]:
         if self.use_claude:
             return self._ask_claude_for_triage(snapshot)
+        elif self.use_gemini:
+            return self._ask_gemini_for_triage(snapshot)
         else:
             return self._ask_ollama_for_triage(snapshot)
 
@@ -346,6 +361,66 @@ class AiMonitor:
         except Exception as e:
             TRIAGE_CALLS_TOTAL.labels(backend="claude", status="error").inc()
             _log("error", "Claude triage failed", error=str(e))
+            return None
+
+    def _ask_gemini_for_triage(self, snapshot: Dict[str, Any]) -> Optional[Triage]:
+        prompt = (
+            "You are an SRE assistant for a Raspberry Pi docker-compose stack. "
+            "Given the JSON snapshot, produce a concise triage response. "
+            "Return ONLY valid JSON that matches this schema:\n"
+            '{"summary": string, "severity": "low"|"medium"|"high", '
+            '"suspected_causes": string[], '
+            '"recommended_actions": [{"type": "restart_container"|"alert"|"none", "target": string|null, "reason": string|null}], '
+            '"confidence": number }\n\n'
+            "Constraints:\n"
+            "- Be conservative: prefer alert/none over restarts.\n"
+            "- If you recommend a restart_container, set target to the exact container name.\n"
+            "- If everything looks fine, severity=low and action=none.\n\n"
+            f"SNAPSHOT:\n{json.dumps(snapshot, ensure_ascii=False)}"
+        )
+
+        try:
+            response = self._gemini_model.generate_content(
+                prompt,
+                generation_config=genai.GenerationConfig(
+                    temperature=0.1,
+                    max_output_tokens=1024,
+                )
+            )
+            raw = response.text.strip()
+            if not raw:
+                return None
+            
+            # Extract JSON from markdown if present
+            if "```json" in raw:
+                raw = raw.split("```json")[1].split("```")[0].strip()
+            elif "```" in raw:
+                raw = raw.split("```")[1].split("```")[0].strip()
+            
+            data = json.loads(raw)
+            
+            # Normalize field names (same as Claude)
+            if "suspected_causes" in data and isinstance(data["suspected_causes"], str):
+                data["suspected_causes"] = [data["suspected_causes"]]
+            
+            if "recommended_actions" in data:
+                normalized = []
+                for action in data["recommended_actions"]:
+                    if isinstance(action, dict):
+                        normalized.append(action)
+                    elif isinstance(action, str):
+                        normalized.append({"type": "alert", "target": None, "reason": action})
+                data["recommended_actions"] = normalized
+            
+            TRIAGE_CALLS_TOTAL.labels(backend="gemini", status="success").inc()
+            return Triage.model_validate(data)
+        except requests.exceptions.Timeout:
+            TRIAGE_CALLS_TOTAL.labels(backend="gemini", status="timeout").inc()
+            _log("error", "Gemini triage failed", error="timeout")
+            return None
+        except Exception as e:
+            TRIAGE_CALLS_TOTAL.labels(backend="gemini", status="error").inc()
+            _log("error", "Gemini triage failed", error=str(e))
             return None
 
     def _ask_ollama_for_triage(self, snapshot: Dict[str, Any]) -> Optional[Triage]:
@@ -490,12 +565,21 @@ class AiMonitor:
         Thread(target=start_http_server, args=(metrics_port,), daemon=True).start()
         _log("info", "Prometheus metrics server started", port=metrics_port)
         
-        llm_backend = "claude" if self.use_claude else "ollama"
+        if self.use_claude:
+            llm_backend = "claude"
+            llm_model = self.claude_model
+        elif self.use_gemini:
+            llm_backend = "gemini"
+            llm_model = self.gemini_model
+        else:
+            llm_backend = "ollama"
+            llm_model = self.ollama_model
+        
         llm_config = {
             "backend": llm_backend,
-            "model": self.claude_model if self.use_claude else self.ollama_model,
+            "model": llm_model,
         }
-        if not self.use_claude:
+        if llm_backend == "ollama":
             llm_config["ollama_url"] = self.ollama_url
         
         _log(

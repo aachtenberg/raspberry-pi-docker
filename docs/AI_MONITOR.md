@@ -71,11 +71,17 @@ AI_MONITOR_MAX_RESTARTS_PER_RUN=2
 # WARNING: Do NOT include mosquitto-broker (ESP devices can't reconnect)
 AI_MONITOR_ALLOWED_CONTAINERS=telegraf,prometheus
 
-# LLM Backend - Claude API (recommended)
-CLAUDE_API_KEY=sk-ant-api03-...
-CLAUDE_MODEL=claude-3-haiku-20240307  # Fast, cost-effective
+# LLM Backend Selection (priority: Claude > Gemini > Ollama)
 
-# LLM Backend - Ollama (fallback, runs on secondary Pi)
+# Claude API (recommended - fast, reliable, $0.25/1M tokens)
+CLAUDE_API_KEY=sk-ant-api03-...
+CLAUDE_MODEL=claude-3-haiku-20240307
+
+# Gemini API (cheaper alternative - $0.075/1M tokens, 70% less)
+GEMINI_API_KEY=AIza...
+GEMINI_MODEL=gemini-2.0-flash-exp
+
+# Ollama (fallback, runs on secondary Pi)
 AI_MONITOR_OLLAMA_URL=http://<SECONDARY_PI_IP>:11434
 AI_MONITOR_OLLAMA_MODEL=qwen2.5:1.5b
 AI_MONITOR_OLLAMA_TIMEOUT_SECONDS=90
@@ -163,11 +169,12 @@ Panels:
 
 **Solution**: Remove mosquitto from allowlist. If broker fails, Claude will alert via triage, but won't auto-restart. Manual intervention required.
 
-### Why Claude over local Ollama?
-- **Speed**: Claude Haiku ~11s vs Ollama qwen2.5:1.5b >90s (timeout)
-- **Reliability**: Claude 100% success rate vs Ollama frequent timeouts
-- **Cost**: Claude Haiku is cheap enough for this use case ($0.25/1M input tokens)
+### Why Cloud LLMs over local Ollama?
+- **Speed**: Claude ~11s, Gemini ~3-5s vs Ollama qwen2.5:1.5b >90s (timeout)
+- **Reliability**: Cloud LLMs 100% success rate vs Ollama frequent timeouts
+- **Cost**: Negligible for this use case - ~$0.15-0.50/month
 - **Quality**: Better structured output, higher confidence scores
+- **Backend priority**: Claude (if key present) → Gemini → Ollama
 
 ### Why 10-minute cooldown?
 Prevents restart loops for services with persistent issues (e.g., config errors, resource exhaustion). Gives time for alerts and manual investigation.
