@@ -289,24 +289,14 @@ services:
       - grafana
 
   # ============================================================================
-  # AUTOHEAL - Automatic Container Health Monitor & Restart
+  # AUTOHEAL - REMOVED (replaced by ai-monitor with intelligent self-healing)
   # ============================================================================
-  # Monitors Docker health checks and automatically restarts unhealthy containers
-  # Checks every 5 seconds, respects start_period from health checks
-  autoheal:
-    image: willfarrell/autoheal:latest
-    container_name: autoheal
-    restart: unless-stopped
-    environment:
-      - AUTOHEAL_CONTAINER_LABEL=all
-      - AUTOHEAL_INTERVAL=5
-      - AUTOHEAL_START_PERIOD=0
-      - AUTOHEAL_DEFAULT_STOP_TIMEOUT=10
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - /etc/localtime:/etc/localtime:ro
-    networks:
-      - monitoring
+  # Autoheal was too aggressive and lacked context awareness
+  # AI monitor provides intelligent self-healing with:
+  # - Allowlist protection (won't restart mosquitto/ESP devices)
+  # - Cooldown periods (600s) to prevent restart loops
+  # - LLM triage for root cause diagnostics
+  # - Prometheus metrics integration for informed decisions
 
   # ============================================================================
   # OLLAMA - Local LLM Runtime (Pi 5 friendly)
