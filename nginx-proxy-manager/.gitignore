@@ -1,0 +1,7 @@
+# Ignore all runtime data; only keep proxy host configs under version control
+/data/*
+!/data/nginx/
+/data/nginx/*
+!/data/nginx/proxy_host/
+/data/nginx/proxy_host/*
+!/data/nginx/proxy_host/*.conf
