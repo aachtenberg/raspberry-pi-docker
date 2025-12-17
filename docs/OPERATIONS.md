@@ -70,6 +70,33 @@ docker compose up -d
 
 ## Monitoring
 
+### AI Monitor - Self-Healing System
+
+**Autonomous monitoring and remediation agent** (see [AI_MONITOR.md](./AI_MONITOR.md) for full docs)
+
+The AI monitor continuously checks container health and automatically restarts failed services with guardrails:
+- **Allowlisted services**: telegraf, prometheus (safe to auto-restart)
+- **Protected services**: mosquitto-broker (ESP devices can't reconnect), influxdb3-core, nginx-proxy-manager
+- **Cooldown**: 10 minutes per container
+- **LLM triage**: Claude API provides human-readable explanations of issues
+
+**Check AI monitor status:**
+```bash
+# View logs
+docker compose logs -f ai-monitor
+
+# Check metrics
+curl http://localhost:8000/metrics | grep ai_monitor
+
+# Recent restarts
+curl -s http://localhost:8000/metrics | grep "ai_monitor_restarts_total"
+
+# Triage outcomes
+curl -s http://localhost:8000/metrics | grep "ai_monitor_triage_calls_total"
+```
+
+**Grafana dashboard**: AI Monitor - Self-Heal Metrics
+
 ### Grafana Cloud Dashboards
 
 **Primary monitoring interface:** Grafana Cloud (configured via pdc-agent)
@@ -141,6 +168,10 @@ docker compose exec influxdb3-core influxdb3 query temperature_data \
 
 ### Telegraf Data Flow
 
+**Current MQTT subscriptions:**
+- `esp-sensor-hub/+/temperature` → InfluxDB3 `temperature_data` database (ESP temperature sensors)
+- `surveillance/#` → InfluxDB3 `surveillance` database (ESP32 cameras)
+
 **Verify Telegraf is writing:**
 ```bash
 docker compose logs telegraf --tail 50 | grep "wrote"
@@ -150,8 +181,22 @@ Expected: `wrote N metrics` every 10 seconds
 
 **Check MQTT messages:**
 ```bash
-docker compose exec mosquitto mosquitto_sub -t '#' -v | head -20
+# All topics
+docker exec mosquitto-broker mosquitto_sub -t '#' -v | head -20
+
+# ESP temperature sensors only
+docker exec mosquitto-broker mosquitto_sub -t 'esp-sensor-hub/+/temperature' -v
+
+# Surveillance cameras only
+docker exec mosquitto-broker mosquitto_sub -t 'surveillance/#' -v
 ```
+
+**Check Telegraf Prometheus metrics:**
+```bash
+curl -s http://localhost:9273/metrics | grep esp_temperature_celsius
+```
+
+Expected: Current temperature readings from Main-Cottage, Spa, Pump-House, Small-Garage
 
 ---
 

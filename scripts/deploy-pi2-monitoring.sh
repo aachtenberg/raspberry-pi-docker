@@ -19,6 +19,10 @@ ssh "$PI_USER@$PI_HOST" "mkdir -p $DOCKER_DIR/raspberry-pi2"
 echo "Copying docker-compose file..."
 scp ./raspberry-pi2/docker-compose.yml "$PI_USER@$PI_HOST:$DOCKER_DIR/raspberry-pi2/"
 
+# Copy telegraf config (required by compose)
+echo "Copying telegraf config..."
+scp ./raspberry-pi2/telegraf.conf "$PI_USER@$PI_HOST:$DOCKER_DIR/raspberry-pi2/"
+
 # Start containers
 echo "Starting containers..."
 ssh "$PI_USER@$PI_HOST" "cd $DOCKER_DIR/raspberry-pi2 && docker compose up -d"
@@ -35,4 +39,4 @@ echo "  System metrics: curl http://$PI_HOST:9100/metrics"
 echo "  Docker metrics: curl http://$PI_HOST:8080/metrics"
 echo ""
 echo "Then restart Prometheus here to pick up new targets:"
-echo "  cd /home/aachten/docker && docker-compose restart prometheus"
+echo "  cd /home/aachten/docker && docker compose restart prometheus"

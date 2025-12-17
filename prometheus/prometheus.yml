@@ -21,39 +21,13 @@ scrape_configs:
           instance: 'raspberry-pi2'
           host: '192.168.0.147'
 
-  - job_name: 'docker'
+  - job_name: 'telegraf-pi2'
     static_configs:
-      - targets: ['cadvisor:8080']
-        labels:
-          instance: 'raspberry-pi'
-          host: '192.168.0.167'
-    metric_relabel_configs:
-      # Use container name as container_name for easier queries
-      - source_labels: [name]
-        target_label: container_name
-      # Use Docker Compose project name if available
-      - source_labels: [container_label_com_docker_compose_project]
-        target_label: project
-      # Drop all the verbose container_label_* labels to reduce cardinality
-      - action: labeldrop
-        regex: 'container_label_.*'
-
-  - job_name: 'docker-pi2'
-    static_configs:
-      - targets: ['192.168.0.147:8080']
+      - targets: ['192.168.0.147:9273']
         labels:
           instance: 'raspberry-pi2'
-          host: '192.168.0.147'
-    metric_relabel_configs:
-      # Use container name as container_name for easier queries
-      - source_labels: [name]
-        target_label: container_name
-      # Use Docker Compose project name if available
-      - source_labels: [container_label_com_docker_compose_project]
-        target_label: project
-      # Drop all the verbose container_label_* labels to reduce cardinality
-      - action: labeldrop
-        regex: 'container_label_.*'
+          service: 'telegraf'
+    scrape_interval: 15s
 
   # InfluxDB v2 - DISABLED (migrated to v3)
   # - job_name: 'influxdb'
@@ -80,8 +54,16 @@ scrape_configs:
 
   - job_name: 'telegraf'
     static_configs:
-      - targets: ['localhost:9273']
+      - targets: ['telegraf:9273']
         labels:
           instance: 'raspberry-pi'
           service: 'telegraf'
+    scrape_interval: 15s
+
+  - job_name: 'ai-monitor'
+    static_configs:
+      - targets: ['ai-monitor:8000']
+        labels:
+          instance: 'raspberry-pi'
+          service: 'ai-monitor'
     scrape_interval: 15s
