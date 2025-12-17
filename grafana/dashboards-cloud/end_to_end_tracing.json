@@ -54,7 +54,7 @@
           {
             "matcher": {
               "id": "byName",
-              "options": "trace_id"
+              "options": "trace_id_clean"
             },
             "properties": [
               {
@@ -69,6 +69,22 @@
                     "url": "https://jaeger1.xgrunt.com/trace/${__value.raw}"
                   }
                 ]
+              },
+              {
+                "id": "custom.hidden",
+                "value": false
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "trace_id"
+            },
+            "properties": [
+              {
+                "id": "custom.hidden",
+                "value": true
               }
             ]
           },
@@ -133,7 +149,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  device,\n  trace_id,\n  celsius,\n  time as last_seen,\n  chip_id\nFROM esp_temperature\nWHERE trace_id IS NOT NULL\nORDER BY time DESC\nLIMIT 10",
+          "rawSql": "SELECT \n  device,\n  replace(trace_id, '-', '') as trace_id_clean,\n  trace_id,\n  celsius,\n  time as last_seen,\n  chip_id\nFROM esp_temperature\nWHERE trace_id IS NOT NULL\nORDER BY time DESC\nLIMIT 10",
           "refId": "A"
         }
       ],
@@ -585,6 +601,10 @@
           "selected": false,
           "text": "All",
           "value": "$__all"
+        },
+        "datasource": {
+          "type": "grafana-influxdb-flightsql-datasource",
+          "uid": "influxdb"
         },
         "definition": "SELECT DISTINCT device FROM esp_temperature ORDER BY device",
         "description": null,
