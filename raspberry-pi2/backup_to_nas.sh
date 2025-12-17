@@ -80,6 +80,7 @@ log "Creating backup directory structure..."
 mkdir -p "${BACKUP_DIR}"/{volumes,configs,metadata}
 
 # Backup Docker volumes for raspberrypi2 monitoring services
+# No grafana/local volumes on pi2; back up only present prefixed volumes
 log "Backing up Docker volumes..."
 # List all volumes with raspberrypi2 prefix
 VOLUMES=$(docker volume ls --format "{{.Name}}" | grep "^raspberry-pi2_" || echo "")
