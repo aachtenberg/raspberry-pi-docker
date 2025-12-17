@@ -110,8 +110,8 @@
             "uid": "cf6z7j8gxto1sc"
           },
           "editorMode": "code",
-          "expr": "ai_monitor_healthy_containers{instance=\"raspberry-pi\"}",
-          "legendFormat": "Healthy",
+          "expr": "ai_monitor_total_healthy_containers{instance=\"raspberry-pi\"}",
+          "legendFormat": "Healthy (All)",
           "range": true,
           "refId": "A"
         },
@@ -121,15 +121,97 @@
             "uid": "cf6z7j8gxto1sc"
           },
           "editorMode": "code",
-          "expr": "ai_monitor_unhealthy_containers{instance=\"raspberry-pi\"}",
+          "expr": "ai_monitor_total_unhealthy_containers{instance=\"raspberry-pi\"}",
           "hide": false,
-          "legendFormat": "Unhealthy",
+          "legendFormat": "Unhealthy (All)",
           "range": true,
           "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cf6z7j8gxto1sc"
+          },
+          "editorMode": "code",
+          "expr": "ai_monitor_healthy_containers{instance=\"raspberry-pi\"}",
+          "legendFormat": "Healthy (Allowlist)",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cf6z7j8gxto1sc"
+          },
+          "editorMode": "code",
+          "expr": "ai_monitor_unhealthy_containers{instance=\"raspberry-pi\"}",
+          "hide": false,
+          "legendFormat": "Unhealthy (Allowlist)",
+          "range": true,
+          "refId": "D"
         }
       ],
-      "title": "Container Health Status",
+      "description": "Source of truth is ai-monitor. Service-level healthchecks are removed. All = full fleet; Allowlist = restart scope.",
+      "title": "AI Monitor: Fleet vs Allowlist Health",
       "type": "bargauge"
+    },
+    {
+      "datasource": {
+        "type": "prometheus",
+        "uid": "cf6z7j8gxto1sc"
+      },
+      "description": "Current list of unhealthy or exited containers as reported by ai-monitor.",
+      "fieldConfig": {
+        "defaults": {
+          "color": {
+            "mode": "thresholds"
+          },
+          "custom": {},
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": null
+              }
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 25
+      },
+      "id": 7,
+      "options": {
+        "frameIndex": 0,
+        "showHeader": true,
+        "sortBy": []
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cf6z7j8gxto1sc"
+          },
+          "editorMode": "code",
+          "expr": "ai_monitor_unhealthy_container{instance=\"raspberry-pi\"} > 0",
+          "legendFormat": "{{container}}",
+          "range": true,
+          "refId": "A"
+        }
+      ],
+      "title": "Unhealthy Containers",
+      "transformations": [
+        { "id": "labelsToFields", "options": { "mode": "columns" } },
+        { "id": "organize", "options": { "indexByName": { "Time": 0, "Value": 2, "container": 1 } } }
+      ],
+      "type": "table"
     },
     {
       "datasource": {

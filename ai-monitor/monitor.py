@@ -107,6 +107,19 @@ UNHEALTHY_CONTAINERS = Gauge(
     "ai_monitor_unhealthy_containers",
     "Number of unhealthy/exited containers in allowlist",
 )
+UNHEALTHY_BY_CONTAINER = Gauge(
+    "ai_monitor_unhealthy_container",
+    "Unhealthy or exited container indicator (1 if unhealthy/exited else 0)",
+    ["container"],
+)
+TOTAL_HEALTHY_CONTAINERS = Gauge(
+    "ai_monitor_total_healthy_containers",
+    "Number of healthy containers (all containers, not just allowlist)",
+)
+TOTAL_UNHEALTHY_CONTAINERS = Gauge(
+    "ai_monitor_total_unhealthy_containers",
+    "Number of unhealthy/exited containers (all containers, not just allowlist)",
+)
 LAST_RUN_TIMESTAMP = Gauge(
     "ai_monitor_last_run_timestamp",
     "Timestamp of last monitor run",
@@ -153,6 +166,14 @@ class AiMonitor:
         # Incident reports
         self.incident_reports_enabled = _env_bool("AI_MONITOR_INCIDENT_REPORTS_ENABLED", True)
         self.incident_reports_dir = os.getenv("AI_MONITOR_INCIDENT_REPORTS_DIR", "/app/incidents")
+        # Incident gating (to avoid false positives)
+        self.incident_min_severity = os.getenv("AI_MONITOR_INCIDENT_MIN_SEVERITY", "medium").strip().lower()
+        self.incident_min_confidence = _env_float("AI_MONITOR_INCIDENT_MIN_CONFIDENCE", 0.5)
+        self.incident_require_evidence = _env_bool("AI_MONITOR_INCIDENT_REQUIRE_EVIDENCE", True)
+
+        # Predictive memory thresholds (tunable via env)
+        self.mem_growth_bytes = _env_int("AI_MONITOR_MEM_GROWTH_BYTES", 300_000_000)  # 300MB
+        self.mem_growth_window_hours = _env_int("AI_MONITOR_MEM_GROWTH_WINDOW_HOURS", 2)  # 2h
 
     # ----------------------------- Prometheus ---------------------------------
     def prom_query(self, query: str, timeout_seconds: int = 10) -> Dict[str, Any]:
@@ -290,13 +311,15 @@ class AiMonitor:
         """Check if any metrics show concerning trends. Returns reason if LLM should be called."""
         try:
             # Check memory growth
-            mem_query = 'delta(docker_container_mem_usage[1h])'
+            mem_query = f'delta(docker_container_mem_usage[{self.mem_growth_window_hours}h])'
             result = self.prom_query(mem_query, timeout_seconds=5)
             for series in result.get("data", {}).get("result", []):
                 delta_bytes = float(series.get("value", [0, 0])[1])
-                if delta_bytes > 100_000_000:  # 100MB/hour growth
+                if delta_bytes > float(self.mem_growth_bytes):
                     container = series.get("metric", {}).get("container_label_com_docker_compose_service", "unknown")
-                    return f"Memory growth: {container} +{delta_bytes/1e6:.0f}MB/hour"
+                    return (
+                        f"Memory growth: {container} +{delta_bytes/1e6:.0f}MB/{self.mem_growth_window_hours}h"
+                    )
             
             # Check disk usage
             disk_query = 'node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"} * 100 < 20'
@@ -368,6 +391,46 @@ class AiMonitor:
             _log("info", "Incident report saved", filename=filename)
         except Exception as e:
             _log("error", "Failed to save incident report", error=str(e))
+
+    def _should_save_incident(self, triage: 'Triage', snapshot: Dict[str, Any]) -> bool:
+        """Decide whether to persist an incident report based on severity, confidence, and evidence."""
+        try:
+            sev_order = {"low": 1, "medium": 2, "high": 3}
+            min_required = sev_order.get(self.incident_min_severity, 2)
+            current = sev_order.get((triage.severity or "low").lower(), 1)
+            if current < min_required:
+                return False
+
+            if isinstance(triage.confidence, (int, float)) and triage.confidence < self.incident_min_confidence:
+                return False
+
+            if not self.incident_require_evidence:
+                return True
+
+            # Require concrete evidence of an issue
+            down = snapshot.get("down_targets", {}).get("result", [])
+            docker_health = snapshot.get("docker_health", {}).get("containers", [])
+            unhealthy = [c for c in docker_health if (c.get("health") or "").lower() == "unhealthy"]
+            exited = [c for c in docker_health if (c.get("status") or "").lower() in {"exited", "dead"}]
+            if down or unhealthy or exited:
+                return True
+
+            # Special-case predictive memory-only alerts: be conservative
+            trigger = snapshot.get("predictive_trigger") or ""
+            if isinstance(trigger, str) and trigger.lower().startswith("memory growth"):
+                # Only persist memory-only incidents if severity is high or confidence very high
+                if current >= sev_order.get("high", 3) or (isinstance(triage.confidence, (int, float)) and triage.confidence >= 0.85):
+                    return True
+                return False
+
+            # For other predictive triggers (e.g., disk space), allow save if triage suggests action
+            for act in triage.recommended_actions:
+                if act.type and act.type not in {"none"}:
+                    return True
+            return False
+        except Exception:
+            # On error, be conservative and don't save
+            return False
 
     # --------------------------------- LLM ------------------------------------
     def ask_llm_for_triage(self, snapshot: Dict[str, Any]) -> Optional[Triage]:
@@ -535,6 +598,24 @@ class AiMonitor:
         # fast-path: if nothing down and docker health is ok, we can avoid LLM calls
         down_targets = snapshot.get("down_targets", {}).get("result", [])
         docker_health = snapshot.get("docker_health", {}).get("containers", [])
+        
+        # Track ALL containers for read-only monitoring
+        all_unhealthy = [c for c in docker_health if c.get("health") == "unhealthy"]
+        all_exited = [c for c in docker_health if (c.get("status") or "").lower() in {"exited", "dead"}]
+        TOTAL_UNHEALTHY_CONTAINERS.set(len(all_unhealthy) + len(all_exited))
+        TOTAL_HEALTHY_CONTAINERS.set(len(docker_health) - len(all_unhealthy) - len(all_exited))
+
+        # Update per-container unhealthy gauge (1 if unhealthy/exited else 0)
+        for c in docker_health:
+            name = c.get("name")
+            if not name:
+                continue
+            health = (c.get("health") or "").lower() if isinstance(c.get("health"), str) else ""
+            status = (c.get("status") or "").lower() if isinstance(c.get("status"), str) else ""
+            value = 1 if (health == "unhealthy" or status in {"exited", "dead"}) else 0
+            UNHEALTHY_BY_CONTAINER.labels(container=name).set(value)
+        
+        # Track allowlisted containers (for self-heal actions)
         relevant = (
             [c for c in docker_health if c.get("name") in self.allowed_containers]
             if self.allowed_containers
@@ -543,7 +624,7 @@ class AiMonitor:
         unhealthy = [c for c in relevant if c.get("health") == "unhealthy"]
         exited = [c for c in relevant if (c.get("status") or "").lower() in {"exited", "dead"}]
         
-        # Update health gauges
+        # Update allowlist health gauges
         UNHEALTHY_CONTAINERS.set(len(unhealthy) + len(exited))
         HEALTHY_CONTAINERS.set(len(relevant) - len(unhealthy) - len(exited))
 
@@ -583,7 +664,11 @@ class AiMonitor:
                             pred_snapshot["predictive_trigger"] = trigger_reason
                             triage = self.ask_llm_for_triage(pred_snapshot)
                             if triage and self.incident_reports_enabled:
-                                self._save_incident_report(triage, pred_snapshot)
+                                if self._should_save_incident(triage, pred_snapshot):
+                                    self._save_incident_report(triage, pred_snapshot)
+                                else:
+                                    _log("info", "Predictive triage benign; skipping incident report",
+                                         severity=triage.severity, confidence=triage.confidence)
                 
                 return
             _log("warn", "Containers exited", containers=[c.get("name") for c in exited if c.get("name")])
@@ -608,9 +693,12 @@ class AiMonitor:
             actions=[a.model_dump() for a in triage.recommended_actions],
         )
         
-        # Save incident report
-        if self.incident_reports_enabled:
+        # Save incident report (only if justified)
+        if self.incident_reports_enabled and self._should_save_incident(triage, snapshot_with_logs):
             self._save_incident_report(triage, snapshot_with_logs)
+        elif self.incident_reports_enabled:
+            _log("info", "Triage benign; skipping incident report",
+                 severity=triage.severity, confidence=triage.confidence)
 
         if not self.execute:
             return

@@ -91,7 +91,7 @@ Advanced topics, architecture details, integrations, and special configurations 
 - `portainer-data` - Portainer configuration
 
 **Bind mounts** (host directories):
-- `/home/aachten/homeassistant` → Home Assistant config
+
 - `/storage/nginx-proxy-manager` → NPM data & SSL certs
 - `/storage/influxdb` → InfluxDB 2.x data (legacy)
 

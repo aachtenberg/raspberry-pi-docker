@@ -2,9 +2,9 @@
 
 ## Overview
 
-The AI monitor is an autonomous agent that monitors Docker container health and Prometheus metrics, providing:
+The AI monitor is an autonomous agent that monitors Docker containers and Prometheus metrics, providing:
 - **Self-healing**: Automatic restart of unhealthy containers with guardrails
-- **LLM triage**: Human-readable explanations of infrastructure issues via Claude API or local Ollama
+- **LLM triage**: Human-readable explanations of infrastructure issues via Claude or Gemini
 - **Prometheus metrics**: Observability into the monitoring system itself
 
 ## Architecture
@@ -23,31 +23,45 @@ The AI monitor is an autonomous agent that monitors Docker container health and 
 ## Features
 
 ### Self-Heal
-- Monitors container health via Docker socket and Prometheus `up==0` queries
+- Monitors via Docker socket (container state) and Prometheus `up==0` queries
 - Automatically restarts containers in allowlist if unhealthy or exited
 - **Guardrails**:
   - 10-minute cooldown per container (prevents restart loops)
   - Max 2 restarts per monitoring cycle
   - Only restarts explicitly allowlisted services
 
-**Current allowlist**: `telegraf`, `prometheus`  
+Note: We do not rely on Docker Compose service-level healthchecks. AI Monitor is the source of truth for health.
+
+**Current allowlist**: `telegraf`, `prometheus`
+
 **Protected** (not auto-restarted): `mosquitto-broker` (ESP devices can't auto-reconnect)
 
 ### LLM Triage
-- Gathers snapshot of Prometheus down targets, Docker health, and resource usage
-- Sends to Claude API (or Ollama fallback) for analysis
+- Gathers snapshot of Prometheus down targets, Docker state, and resource usage (with last 50 lines of logs for failing containers)
+- Sends to Claude API (primary) or Gemini (fallback) for analysis
 - Returns structured JSON with:
   - `severity`: low/medium/high
   - `confidence`: 0.0-1.0
   - `summary`: Human-readable explanation
   - `recommended_actions`: Specific remediation steps
 
+### Predictive Monitoring
+- Detects early warning signals (high restart frequency, disk below threshold, memory growth)
+- Memory growth trigger defaults: +300MB over 2h (tunable via env)
+- Only calls the LLM when triggers fire (keeps token usage low)
+
+### Incident Reports
+- Saves markdown reports under `ai-monitor/incidents/` with triage summary, actions, and evidence
+ - Guardrails: require evidence (down targets or unhealthy/exited containers), or high severity/confidence for memory-only alerts
+
 ### Observability
 Exposes Prometheus metrics on port 8000:
 - `ai_monitor_restarts_total{container="..."}` - Total restarts per container
-- `ai_monitor_triage_calls_total{backend="claude|ollama",status="success|error|timeout"}` - LLM triage outcomes
-- `ai_monitor_healthy_containers` - Current healthy container count
-- `ai_monitor_unhealthy_containers` - Current unhealthy container count
+- `ai_monitor_triage_calls_total{backend="claude|gemini",status="success|error|timeout"}` - LLM triage outcomes
+- `ai_monitor_healthy_containers` - Healthy count (allowlist only)
+- `ai_monitor_unhealthy_containers` - Unhealthy/exited count (allowlist only)
+- `ai_monitor_total_healthy_containers` - Healthy count (all containers)
+- `ai_monitor_total_unhealthy_containers` - Unhealthy/exited count (all containers)
 - `ai_monitor_last_run_timestamp` - Last monitoring cycle timestamp
 
 ## Configuration
@@ -71,15 +85,25 @@ AI_MONITOR_MAX_RESTARTS_PER_RUN=2
 # WARNING: Do NOT include mosquitto-broker (ESP devices can't reconnect)
 AI_MONITOR_ALLOWED_CONTAINERS=telegraf,prometheus
 
-# LLM Backend Selection (priority: Claude > Gemini > Ollama)
+# LLM Backend Selection (priority: Claude > Gemini)
 
-# Claude API (recommended - fast, reliable, $0.25/1M tokens)
+# Claude API (primary - fast, reliable, ~$0.25/1M tokens)
 CLAUDE_API_KEY=sk-ant-api03-...
 CLAUDE_MODEL=claude-3-haiku-20240307
 
-# Gemini API (cheaper alternative - $0.075/1M tokens, 70% less)
+# Gemini API (cheaper alternative - ~$0.075/1M tokens)
 GEMINI_API_KEY=AIza...
 GEMINI_MODEL=gemini-2.0-flash-exp
+
+# Predictive monitoring & incidents
+AI_MONITOR_PREDICTIVE_ENABLED=true
+AI_MONITOR_PREDICTIVE_INTERVAL_SECONDS=86400
+AI_MONITOR_INCIDENT_REPORTS_ENABLED=true
+AI_MONITOR_MEM_GROWTH_BYTES=300000000           # 300MB
+AI_MONITOR_MEM_GROWTH_WINDOW_HOURS=2            # 2 hours window
+AI_MONITOR_INCIDENT_MIN_SEVERITY=medium         # low|medium|high
+AI_MONITOR_INCIDENT_MIN_CONFIDENCE=0.5          # 0.0–1.0
+AI_MONITOR_INCIDENT_REQUIRE_EVIDENCE=true       # require down/unhealthy/exited
 
 # Ollama (fallback, runs on secondary Pi)
 AI_MONITOR_OLLAMA_URL=http://<SECONDARY_PI_IP>:11434

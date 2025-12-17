@@ -105,7 +105,7 @@ GRAFANA_PDC_CLUSTER=your_cluster_name
 GRAFANA_PDC_GCLOUD_HOSTED_GRAFANA_ID=your_grafana_instance_id
 ```
 
-**Note:** Legacy local Grafana (port 3000) is deprecated but still available for local testing.
+**Note:** Local Grafana has been removed. Use Grafana Cloud for all visualization.
 
 #### 4. Telegraf
 
@@ -123,11 +123,7 @@ INFLUXDB3_ADMIN_TOKEN=<influxdb3_token>
 PORTAINER_ADMIN_PASSWORD=YourPortainerPassword
 ```
 
-**Grafana Local (legacy, optional):**
-```bash
-GRAFANA_API_KEY=<grafana_api_key>
-GRAFANA_ADMIN_API_KEY=<grafana_admin_api_key>
-```
+
 
 ### Validate Configuration
 
@@ -337,7 +333,7 @@ docker compose logs cloudflared | grep -i "connected\|registered"
 **4. Configure tunnel routes in Cloudflare dashboard:**
 - Go to [Cloudflare Zero Trust](https://one.dash.cloudflare.com/)
 - **Access** → **Tunnels** → Your tunnel → **Public Hostnames**
-- Add routes for services (e.g., `grafana.yourdomain.com` → `http://localhost:3000`)
+- Add routes for services (e.g., `prometheus.yourdomain.com` → `http://localhost:9090`)
 
 ---
 
@@ -361,7 +357,7 @@ docker compose ps
 | Prometheus | http://localhost:9090 | None |
 | Home Assistant | http://localhost:8123 | Setup wizard |
 | Nginx Proxy Manager | http://localhost:81 | admin@example.com / changeme |
-| Grafana (legacy local) | http://localhost:3000 | admin / admin |
+| Grafana Cloud | https://dashboards.grafana.com | SSO login |
 
 ### Verify Data Flow
 
@@ -492,7 +488,7 @@ docker compose restart cloudflared
 
 - **Never commit `.env`** - it contains all secrets
 - Use strong, unique passwords for all services
-- Change default passwords immediately (NPM, Home Assistant, Grafana)
+- Change default passwords immediately (NPM, Home Assistant)
 - Regenerate tokens if accidentally exposed
 - Keep Docker images updated: `docker compose pull`
 - Monitor access logs in Nginx Proxy Manager

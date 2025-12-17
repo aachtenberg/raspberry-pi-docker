@@ -6,6 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Removed
+- **Local Grafana container** - Deprecated in favor of Grafana Cloud
+  - Removed grafana service from docker-compose.yml
+  - Removed grafana-data volume
+  - All visualization now via Grafana Cloud (pdc-agent)
+  - Updated all documentation to remove grafana references
+
 ### Added
 - **AI Monitor** - Autonomous self-healing and triage system
   - Monitors container health via Docker socket and Prometheus
@@ -48,6 +55,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - **ESP temperature sensor data flow restored**
   - Root cause: mosquitto-broker restart at 2025-12-16 17:14 EST broke ESP connections
   - ESP devices connected but not auto-reconnecting after broker restart
+
+- **pdc-agent crash loop after power outage**
+  - Root cause: grafana/pdc-agent:latest (v0.0.50) has broken OpenSSL libraries on ARM64
+  - Symptom: `invalid SSH version: failed to run ssh -V command: exit status 127`
+  - Library error: `Error relocating /usr/lib/libcrypto.so.3: symbol not found`
+  - Solution: Pinned to grafana/pdc-agent:0.0.48 with working OpenSSL 3.5.4
+  - Note: Issue occurred after power outage because Docker pulled broken `:latest` image
+  - Documented in docker-compose.yml with version pin comment
   - Solution: Manual mosquitto restart + protection from future auto-restarts
   - Verification: Temperature data flowing to InfluxDB3 and Grafana Cloud
 

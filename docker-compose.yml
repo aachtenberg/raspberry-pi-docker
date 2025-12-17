@@ -26,25 +26,6 @@ services:
   #     - monitoring
 
   # ============================================================================
-  # GRAFANA - Visualization & Dashboards
-  # ============================================================================
-  grafana:
-    image: grafana/grafana:latest
-    container_name: grafana
-    restart: unless-stopped
-    ports:
-      - '3000:3000'
-    volumes:
-      - ./grafana/grafana.ini:/etc/grafana/grafana.ini
-      - grafana-data:/var/lib/grafana
-    environment:
-      - GF_PLUGINS_PREINSTALL=grafana-mqtt-datasource@1.1.0
-    networks:
-      - monitoring
-    depends_on:
-      - prometheus
-
-  # ============================================================================
   # PROMETHEUS STACK - Metrics
   # ============================================================================
   prometheus:
@@ -64,12 +45,6 @@ services:
       - '--web.console.templates=/usr/share/prometheus/consoles'
     networks:
       - monitoring
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
 
   node-exporter:
     image: prom/node-exporter:latest
@@ -87,26 +62,6 @@ services:
       - monitoring
 
   # ============================================================================
-  # HOME ASSISTANT - Home Automation
-  # ============================================================================
-  homeassistant:
-    image: ghcr.io/home-assistant/home-assistant:stable
-    container_name: homeassistant
-    restart: unless-stopped
-    network_mode: host
-    privileged: true
-    volumes:
-      - /home/aachten/homeassistant:/config
-      - /etc/localtime:/etc/localtime:ro
-      - /run/dbus:/run/dbus:ro
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8123/"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 90s
-
-  # ============================================================================
   # MQTT BROKER - Mosquitto
   # ============================================================================
   mosquitto:
@@ -122,12 +77,6 @@ services:
       - mosquitto-log:/mosquitto/log
     networks:
       - monitoring
-    healthcheck:
-      test: ["CMD", "timeout", "5", "mosquitto_sub", "-h", "localhost", "-t", "$$SYS/#", "-C", "1", "-i", "healthcheck"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 10s
 
   # ============================================================================
   # NGINX PROXY MANAGER - Reverse Proxy
@@ -165,12 +114,6 @@ services:
     environment:
       - TUNNEL_TOKEN=${CLOUDFLARE_TUNNEL_TOKEN}
     network_mode: host
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/ready"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
 
   # ============================================================================
   # INFLUXDB 3 CORE - Next Generation Time Series Database
@@ -196,12 +139,6 @@ services:
       - --plugin-dir=/var/lib/influxdb3/plugins
     environment:
       - TZ=UTC
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8181/health"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 60s
 
   # ============================================================================
   # TELEGRAF - MQTT to InfluxDB 3 Bridge
@@ -224,12 +161,6 @@ services:
       - INFLUXDB3_ADMIN_TOKEN=${INFLUXDB3_ADMIN_TOKEN}
     depends_on:
       - mosquitto
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9273/metrics"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 20s
 
   # ============================================================================
   # INFLUXDB 3 EXPLORER UI
@@ -272,8 +203,9 @@ services:
   # ============================================================================
   # Grafana Private Data Center (PDC) Agent for remote sensor data collection
   # Collects metrics from local infrastructure and sends to Grafana Cloud
+  # NOTE: Pinned to 0.0.48 due to broken libcrypto in 0.0.50 on ARM64
   pdc-agent:
-    image: grafana/pdc-agent:latest
+    image: grafana/pdc-agent:0.0.48
     container_name: pdc-agent
     restart: unless-stopped
     command:
@@ -286,7 +218,6 @@ services:
       - monitoring
     depends_on:
       - prometheus
-      - grafana
 
   # ============================================================================
   # AI MONITOR - Self-healing with LLM diagnostics
@@ -319,6 +250,60 @@ services:
       - prometheus
     networks:
       - monitoring
+
+  # ============================================================================
+  # OPENTELEMETRY COLLECTOR - Trace Ingestion
+  # ============================================================================
+  otel-collector:
+    image: otel/opentelemetry-collector:latest
+    container_name: otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    volumes:
+      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
+    networks:
+      - monitoring
+    depends_on:
+      - jaeger
+
+  # ============================================================================
+  # JAEGER - Trace Visualization
+  # ============================================================================
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    container_name: jaeger
+    restart: unless-stopped
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "14250:14250"  # gRPC ingest
+      - "14268:14268"  # HTTP ingest
+      - "9411:9411"    # Zipkin ingest (optional)
+    networks:
+      - monitoring
+
+  # ============================================================================
+  # MQTT OTEL BRIDGE - Trace Generation from MQTT
+  # ============================================================================
+  mqtt-otel-bridge:
+    build:
+      context: ./mqtt-otel-bridge
+      dockerfile: Dockerfile
+    container_name: mqtt-otel-bridge
+    restart: unless-stopped
+    environment:
+      - MQTT_BROKER=mosquitto-broker
+      - MQTT_PORT=1883
+      - MQTT_TOPIC=esp-sensor-hub/#
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
+      - OTEL_SERVICE_NAME=mqtt-otel-bridge
+    networks:
+      - monitoring
+    depends_on:
+      - mosquitto
+      - otel-collector
 
 # ==============================================================================
 # VOLUMES
