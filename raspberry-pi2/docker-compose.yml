@@ -1,4 +1,4 @@
-# Docker Compose for raspberrypi2 (192.168.0.147)
+# Docker Compose for raspberrypi2 (set your LAN host/IP, e.g., raspberrypi2.local)
 # Monitoring exporters only - system and Docker metrics
 
 services:
