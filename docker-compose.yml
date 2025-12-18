@@ -163,26 +163,6 @@ services:
       - mosquitto
 
   # ============================================================================
-  # INFLUXDB 3 EXPLORER UI
-  # ============================================================================
-  # Web UI for querying and managing InfluxDB 3 Core
-  influxdb3-explorer:
-    image: influxdata/influxdb3-ui:latest
-    container_name: influxdb3-explorer
-    restart: unless-stopped
-    ports:
-      - '8888:80'  # UI at http://<host>:8888
-    volumes:
-      - influxdb3-explorer-db:/db
-    environment:
-      - MODE=admin
-      - SESSION_SECRET_KEY=${INFLUXDB3_UI_SESSION_KEY}
-    networks:
-      - monitoring
-    depends_on:
-      - influxdb3-core
-
-  # ============================================================================
   # PORTAINER - Docker Management UI
   # ============================================================================
   portainer:
@@ -312,7 +292,6 @@ volumes:
   influxdb-data:
   influxdb-config:
   influxdb3-data:
-  influxdb3-explorer-db:
   grafana-data:
   prometheus-data:
   mosquitto-data:

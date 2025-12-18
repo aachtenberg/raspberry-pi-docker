@@ -170,8 +170,6 @@ docker compose exec influxdb3-core influxdb3 query temperature_data \
   "SELECT COUNT(*) FROM esp_temperature"
 ```
 
-**Explorer UI:** `http://localhost:8888`
-
 ### Telegraf Data Flow
 
 **Current MQTT subscriptions:**

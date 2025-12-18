@@ -67,7 +67,6 @@ InfluxDB 3 Core is the default. InfluxDB 2.7 support is retained as an optional 
 ### InfluxDB 3 Core (default)
 
 - **API**: `http://localhost:8181`
-- **Explorer UI**: `http://localhost:8888`
 - **Reference**: [InfluxDB 3 Setup Guide](docs/INFLUXDB3_SETUP.md)
 
 ### InfluxDB 2.7 (optional)
@@ -85,11 +84,8 @@ docker compose -f docker-compose.yml -f docker-compose.influxdb2.yml up -d influ
 ### Quick Start with InfluxDB 3
 
 ```bash
-# Start InfluxDB 3 services
-docker compose up -d influxdb3-core influxdb3-explorer
-
-# Access Explorer UI
-# Open http://localhost:8888 in your browser
+# Start InfluxDB 3 Core
+docker compose up -d influxdb3-core
 
 # Check service status
 docker compose ps | grep influxdb3
@@ -113,7 +109,6 @@ cp .env.example .env
 | Service | Port | Purpose |
 |---------|------|---------|
 | InfluxDB 3 Core | 8181 | Time-series database |
-| InfluxDB 3 Explorer | 8888 | Web UI for queries |
 | Grafana (local) | 3000 | Dashboards (deprecated, use Cloud) |
 | Prometheus | 9090 | Metrics collection |
 | Home Assistant | 8123 | Home automation |

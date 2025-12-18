@@ -141,7 +141,7 @@ Run the validation script to check for missing values:
 
 **1. Start the service:**
 ```bash
-docker compose up -d influxdb3-core influxdb3-explorer
+docker compose up -d influxdb3-core
 ```
 
 **2. Create admin token:**
@@ -168,11 +168,6 @@ docker compose exec influxdb3-core influxdb3 create database surveillance --toke
 **4. Verify databases:**
 ```bash
 docker compose exec influxdb3-core influxdb3 show databases --token "${TOKEN}"
-```
-
-**5. Access Explorer UI:**
-```
-http://localhost:8888
 ```
 
 **Optional - Switch to InfluxDB 2.7:**
@@ -353,7 +348,6 @@ docker compose ps
 
 | Service | URL | Default Credentials |
 |---------|-----|---------------------|
-| InfluxDB 3 Explorer | http://localhost:8888 | None (no auth) |
 | Prometheus | http://localhost:9090 | None |
 | Home Assistant | http://localhost:8123 | Setup wizard |
 | Nginx Proxy Manager | http://localhost:81 | admin@example.com / changeme |
