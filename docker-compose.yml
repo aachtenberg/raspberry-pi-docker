@@ -224,6 +224,9 @@ services:
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash-exp}
     volumes:
+      # Docker socket (write access required for container restart self-healing)
+      # Security note: Grants full Docker daemon control. For read-only monitoring
+      # without restarts, append :ro and set AI_MONITOR_EXECUTE=false
       - /var/run/docker.sock:/var/run/docker.sock
       - ./ai-monitor/incidents:/app/incidents  # Incident reports
     depends_on:

@@ -13,6 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
   - All visualization now via Grafana Cloud (pdc-agent)
   - Updated all documentation to remove grafana references
 
+- **InfluxDB 3 Explorer UI** - Removed unused web interface
+  - Removed influxdb3-explorer service from docker-compose.yml
+  - Removed influxdb3-explorer-db volume
+  - Removed Explorer UI references from documentation (port 8888)
+  - InfluxDB 3 API access via CLI and Grafana Cloud sufficient for operations
+
 ### Added
 - **AI Monitor** - Autonomous self-healing and triage system
   - Monitors container health via Docker socket and Prometheus

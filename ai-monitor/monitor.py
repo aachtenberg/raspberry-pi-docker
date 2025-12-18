@@ -439,7 +439,15 @@ class AiMonitor:
         elif self.use_gemini:
             return self._ask_gemini_for_triage(snapshot)
         else:
-            _log("warning", "No LLM API key configured", available_backends=["claude", "gemini"])
+            _log(
+                "warning",
+                (
+                    "No LLM backend configured: monitoring continues without AI-generated triage. "
+                    "Health checks and self-healing will still function using rule-based logic. "
+                    "Configure CLAUDE_API_KEY or GEMINI_API_KEY to enable LLM-powered incident analysis."
+                ),
+                available_backends=["claude", "gemini"],
+            )
             return None
 
     def _ask_claude_for_triage(self, snapshot: Dict[str, Any]) -> Optional[Triage]:
