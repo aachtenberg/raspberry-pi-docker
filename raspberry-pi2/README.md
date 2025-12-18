@@ -1,6 +1,6 @@
 # Raspberry Pi 2 Monitoring Setup
 
-Configuration for raspberrypi2 (192.168.0.147) - lightweight monitoring exporters only.
+Configuration for raspberrypi2 (set your LAN host/IP, e.g., raspberrypi2.local) - lightweight monitoring exporters only.
 
 ## Services
 
@@ -29,9 +29,9 @@ This will:
 
 ```bash
 cd ~/docker
-scp -r raspberry-pi2/ aachten@192.168.0.147:/home/aachten/docker/
+scp -r raspberry-pi2/ aachten@raspberrypi2.local:/home/aachten/docker/
 
-ssh aachten@192.168.0.147
+ssh aachten@raspberrypi2.local
 cd ~/docker/raspberry-pi2
 docker compose up -d
 ```
@@ -122,13 +122,13 @@ On main Pi (raspberrypi), Prometheus scrapes these targets:
 ```yaml
 - job_name: 'raspberry-pi2'
   static_configs:
-    - targets: ['192.168.0.147:9100']  # node-exporter
+    - targets: ['raspberrypi2.local:9100']  # node-exporter
       labels:
         instance: 'raspberry-pi2'
 
 - job_name: 'cadvisor-pi2'
   static_configs:
-    - targets: ['192.168.0.147:8080']  # cadvisor
+    - targets: ['raspberrypi2.local:8080']  # cadvisor
       labels:
         instance: 'raspberry-pi2'
 ```

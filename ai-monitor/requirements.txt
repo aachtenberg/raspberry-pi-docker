@@ -1,0 +1,6 @@
+requests==2.32.3
+pydantic==2.9.2
+docker==7.1.0
+prometheus_client==0.21.0
+anthropic==0.42.0
+google-generativeai==0.8.3

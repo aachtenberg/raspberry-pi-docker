@@ -1,4 +1,4 @@
-# Docker Compose for raspberrypi2 (192.168.0.147)
+# Docker Compose for raspberrypi2 (set your LAN host/IP, e.g., raspberrypi2.local)
 # Monitoring exporters only - system and Docker metrics
 
 services:
@@ -16,23 +16,31 @@ services:
       - /var/lib/node_exporter/textfile_collector:/textfile_collector:ro
     networks:
       - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:9100/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
-  cadvisor:
-    image: gcr.io/cadvisor/cadvisor:v0.50.0
-    container_name: cadvisor
+  telegraf:
+    image: telegraf:latest
+    container_name: telegraf
     restart: unless-stopped
+    user: "0:984"  # Run as root with docker group to access Docker socket
     ports:
-      - '8080:8080'
-    volumes:
-      - /:/rootfs:ro
-      - /var/run:/var/run:ro
-      - /sys:/sys:ro
-      - /var/lib/docker/:/var/lib/docker:ro
-    privileged: true
-    devices:
-      - /dev/kmsg
+      - "9273:9273"  # Expose Telegraf metrics endpoint
     networks:
       - monitoring
+    volumes:
+      - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9273/metrics"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
 networks:
   monitoring:

@@ -1,9 +1,9 @@
 # Copilot Instructions for raspberry-pi-docker (AI agents)
 
 ## What this is
-- Raspberry Pi home automation + monitoring stack orchestrated by `docker-compose.yml`; services live under `prometheus/`, `nginx-proxy-manager/`, `mosquitto/`, `homeassistant/`, `cloudflared/`, `influxdb/`, `influxdb3-core`, `influxdb3-explorer`, and `telegraf/`.
+- Raspberry Pi monitoring stack orchestrated by `docker-compose.yml`; services live under `prometheus/`, `nginx-proxy-manager/`, `mosquitto/`, `cloudflared/`, `influxdb/`, `influxdb3-core`, and `telegraf/`.
 - Core data flow: ESP8266/ESP32 sensors → MQTT (1883) → Telegraf → InfluxDB 3 Core (8181) → **Grafana Cloud** (via pdc-agent); Prometheus/cAdvisor/Node Exporter for system metrics; Nginx Proxy Manager + Cloudflare Tunnel for remote access.
-- **Note**: Local Grafana container (port 3000) is **deprecated** in favor of Grafana Cloud. Using `pdc-agent` (Private Data Center agent) to ship metrics to Grafana Cloud for public dashboard sharing and alerting capabilities. InfluxDB 3 Core doesn't support public dashboard sharing with local Grafana, and we didn't want to downgrade to InfluxDB 2.
+- **Note**: Local Grafana container has been **removed**. All visualization via Grafana Cloud using `pdc-agent` (Private Data Center agent) to ship metrics for public dashboard sharing and alerting capabilities. InfluxDB 3 Core doesn't support public dashboard sharing with local Grafana.
 
 ## Non-negotiables
 - Use `docker compose` (no hyphen) for all commands. Validate with `docker compose config -q` before applying.
@@ -22,7 +22,7 @@
 
 ## InfluxDB specifics
 - InfluxDB 2.7: init via env vars in compose using `.env` values. API on 8086.
-- InfluxDB 3 Core (8181): **authentication required**. Create admin token inside container: `docker compose exec influxdb3-core influxdb3 create token --admin`; store in local `.env` as `INFLUXDB3_ADMIN_TOKEN` (do not commit). Explorer UI on 8888 (`MODE=admin`).
+- InfluxDB 3 Core (8181): **authentication required**. Create admin token inside container: `docker compose exec influxdb3-core influxdb3 create token --admin`; store in local `.env` as `INFLUXDB3_ADMIN_TOKEN` (do not commit).
 - **Telegraf bridge** (new): MQTT → InfluxDB 3 via `telegraf/telegraf.conf`; subscribes `homeassistant/sensor/+/state`, transforms JSON, writes to `homeassistant` bucket. Enable with `INFLUXDB3_ADMIN_TOKEN` in `.env` and `docker compose up -d telegraf`.
 - Grafana datasource for v3: use FlightSQL, URL `http://influxdb3-core:8181`; bearer token if accessed externally.
 

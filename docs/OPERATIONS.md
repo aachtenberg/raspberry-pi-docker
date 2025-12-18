@@ -70,6 +70,39 @@ docker compose up -d
 
 ## Monitoring
 
+### Health Model
+- AI Monitor is the single source of truth for container health.
+- Docker Compose service-level `healthcheck:` entries are intentionally removed.
+- Health is derived from Prometheus `up` and Docker container state (running/exited).
+- View health in Grafana Cloud on the AI Monitor dashboard, not via `docker ps --health`.
+
+### AI Monitor - Self-Healing System
+
+**Autonomous monitoring and remediation agent** (see [AI_MONITOR.md](./AI_MONITOR.md) for full docs)
+
+The AI monitor continuously checks container health and automatically restarts failed services with guardrails:
+- **Allowlisted services**: telegraf, prometheus (safe to auto-restart)
+- **Protected services**: mosquitto-broker (ESP devices can't reconnect), influxdb3-core, nginx-proxy-manager
+- **Cooldown**: 10 minutes per container
+- **LLM triage**: Claude API provides human-readable explanations of issues
+
+**Check AI monitor status:**
+```bash
+# View logs
+docker compose logs -f ai-monitor
+
+# Check metrics
+curl http://localhost:8000/metrics | grep ai_monitor
+
+# Recent restarts
+curl -s http://localhost:8000/metrics | grep "ai_monitor_restarts_total"
+
+# Triage outcomes
+curl -s http://localhost:8000/metrics | grep "ai_monitor_triage_calls_total"
+```
+
+**Grafana dashboard**: AI Monitor - Self-Heal Metrics
+
 ### Grafana Cloud Dashboards
 
 **Primary monitoring interface:** Grafana Cloud (configured via pdc-agent)
@@ -137,9 +170,11 @@ docker compose exec influxdb3-core influxdb3 query temperature_data \
   "SELECT COUNT(*) FROM esp_temperature"
 ```
 
-**Explorer UI:** `http://localhost:8888`
-
 ### Telegraf Data Flow
+
+**Current MQTT subscriptions:**
+- `esp-sensor-hub/+/temperature` → InfluxDB3 `temperature_data` database (ESP temperature sensors)
+- `surveillance/#` → InfluxDB3 `surveillance` database (ESP32 cameras)
 
 **Verify Telegraf is writing:**
 ```bash
@@ -150,8 +185,22 @@ Expected: `wrote N metrics` every 10 seconds
 
 **Check MQTT messages:**
 ```bash
-docker compose exec mosquitto mosquitto_sub -t '#' -v | head -20
+# All topics
+docker exec mosquitto-broker mosquitto_sub -t '#' -v | head -20
+
+# ESP temperature sensors only
+docker exec mosquitto-broker mosquitto_sub -t 'esp-sensor-hub/+/temperature' -v
+
+# Surveillance cameras only
+docker exec mosquitto-broker mosquitto_sub -t 'surveillance/#' -v
 ```
+
+**Check Telegraf Prometheus metrics:**
+```bash
+curl -s http://localhost:9273/metrics | grep esp_temperature_celsius
+```
+
+Expected: Current temperature readings from Main-Cottage, Spa, Pump-House, Small-Garage
 
 ---
 
@@ -169,7 +218,7 @@ docker compose exec mosquitto mosquitto_sub -t '#' -v | head -20
 - **Setup:** See [raspberry-pi2/README.md](../raspberry-pi2/README.md)
 
 **What's backed up:**
-- Docker volumes (Grafana, Prometheus, InfluxDB3, Portainer, Mosquitto)
+- Docker volumes (Prometheus, InfluxDB3, Portainer, Mosquitto)
 - Bind-mounted directories (Home Assistant, Nginx Proxy Manager)
 - Repository configs (docker-compose.yml, scripts, configs)
 - `.env` file (unencrypted)
@@ -203,12 +252,12 @@ sudo bash ./scripts/backup_to_nas.sh
 /mnt/nas-backup/docker-backups/raspberrypi/YYYYMMDD-HHMMSS/
 ├── checksums.txt
 ├── volumes/
-│   ├── docker_grafana-data-*.tar.gz
+
 │   ├── docker_prometheus-data-*.tar.gz
 │   ├── docker_influxdb3-data-*.tar.gz
 │   └── ...
 └── configs/
-    ├── homeassistant/
+
     ├── nginx-proxy-manager/
     └── docker-repo/
 ```
@@ -316,7 +365,6 @@ docker compose restart prometheus
 | Container | UID:GID | User |
 |-----------|---------|------|
 | prometheus | 65534:65534 | nobody:nogroup |
-| grafana | 472:472 | grafana:grafana |
 | mosquitto | 1883:1883 | mosquitto:mosquitto |
 | influxdb3-core | 1000:1000 | aachten:aachten |
 | nginx-proxy-manager | 0:0 | root:root |
@@ -485,6 +533,20 @@ docker inspect pdc-agent --format 'RestartPolicy: {{.HostConfig.RestartPolicy.Na
 ```
 
 Should show: `unless-stopped`
+
+**Known issue: SSH version error on ARM64**
+
+If you see `invalid SSH version: failed to run ssh -V command: exit status 127`:
+- **Root cause**: grafana/pdc-agent:latest (v0.0.50) has broken OpenSSL libraries on ARM64
+- **Symptom**: Container crash loop with libcrypto.so.3 symbol errors
+- **Solution**: Version is pinned to 0.0.48 in docker-compose.yml
+- **Occurred**: After power outages when Docker auto-pulls :latest
+
+```bash
+# Verify you're using pinned version
+docker inspect pdc-agent --format '{{.Config.Image}}'
+# Should show: grafana/pdc-agent:0.0.48
+```
 
 ---
 

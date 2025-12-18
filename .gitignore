@@ -26,6 +26,9 @@ logs/
 # Track nginx configs but exclude sensitive/large files
 /nginx-proxy-manager/letsencrypt/
 # See nginx-proxy-manager/.gitignore for data/ exclusions
+!nginx-proxy-manager/data/
+!nginx-proxy-manager/data/nginx/proxy_host/
+!nginx-proxy-manager/data/nginx/proxy_host/*.conf
 
 # Home Assistant Data
 # Large config directory - separate repo if needed

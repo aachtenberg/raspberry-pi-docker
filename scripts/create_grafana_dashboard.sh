@@ -101,12 +101,12 @@ RESPONSE=$(curl -s -X POST -H "Authorization: Bearer $GRAFANA_CLOUD_API_KEY" \
 # Check response
 STATUS=$(echo "$RESPONSE" | jq -r '.status // empty')
 URL=$(echo "$RESPONSE" | jq -r '.url // empty')
-UID=$(echo "$RESPONSE" | jq -r '.uid // empty')
+DASH_UID=$(echo "$RESPONSE" | jq -r '.uid // empty')
 
 if [[ "$STATUS" == "success" ]] && [[ -n "$URL" ]]; then
     echo ""
     echo "✅ Dashboard created/updated successfully!"
-    echo "   UID: $UID"
+    echo "   UID: $DASH_UID"
     echo "   URL: $GRAFANA_CLOUD_URL$URL"
     echo ""
 else

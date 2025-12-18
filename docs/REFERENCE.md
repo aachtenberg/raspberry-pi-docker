@@ -63,7 +63,6 @@ Advanced topics, architecture details, integrations, and special configurations 
 | Service | Internal Port | Host Port | Purpose |
 |---------|---------------|-----------|---------|
 | InfluxDB 3 Core | 8086 | 8181 | Time-series database API |
-| InfluxDB 3 Explorer | 80 | 8888 | Web UI for InfluxDB 3 |
 | Prometheus | 9090 | 9090 | Metrics scraping |
 | Node Exporter | 9100 | 9100 | System metrics |
 | cAdvisor | 8080 | 8081 | Container metrics |
@@ -91,7 +90,7 @@ Advanced topics, architecture details, integrations, and special configurations 
 - `portainer-data` - Portainer configuration
 
 **Bind mounts** (host directories):
-- `/home/aachten/homeassistant` → Home Assistant config
+
 - `/storage/nginx-proxy-manager` → NPM data & SSL certs
 - `/storage/influxdb` → InfluxDB 2.x data (legacy)
 
