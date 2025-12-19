@@ -30,6 +30,15 @@ services:
       - ./telegraf.conf:/etc/telegraf/telegraf.conf:ro
       - /var/run/docker.sock:/var/run/docker.sock:ro
 
+  camera-nginx:
+    image: nginx:alpine
+    container_name: camera-nginx
+    restart: unless-stopped
+    network_mode: "host"
+    volumes:
+      - ./camera-nginx-config/default.conf:/etc/nginx/conf.d/default.conf:ro
+    # Note: With network_mode: host, listening on 8089 on all interfaces
+
 networks:
   monitoring:
     driver: bridge
