@@ -96,3 +96,28 @@ echo "Next steps:"
 echo "  1. Review changes: docker compose config"
 echo "  2. Start services: docker compose up -d"
 echo "  3. Check logs: docker compose logs -f"
+
+# Additional repo-level checks (no secrets committed)
+echo ""
+echo "🔒 Running repository secret checks..."
+
+# 1) prometheus/influxdb3_token must be placeholder
+if [ -f prometheus/influxdb3_token ]; then
+    CONTENT=$(cat prometheus/influxdb3_token)
+    if [ "$CONTENT" != "INFLUXDB3_TOKEN_PLACEHOLDER" ]; then
+        echo "❌ ERROR: prometheus/influxdb3_token contains non-placeholder content"
+        echo "   Replace with INFLUXDB3_TOKEN_PLACEHOLDER before committing."
+        exit 1
+    fi
+    echo "✅ prometheus/influxdb3_token is placeholder"
+fi
+
+# 2) Scan staged diffs for common secret patterns
+if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+    if git diff --cached | grep -E '(password|secret|api_key|token).*=.*[a-zA-Z0-9_-]{20,}|apiv3_[A-Za-z0-9_-]+' >/dev/null 2>&1; then
+        echo "❌ ERROR: Staged changes include secret-like content"
+        echo "   Unstage and remove secrets. Use .env for local configuration."
+        exit 1
+    fi
+    echo "✅ No secret-like content found in staged changes"
+fi

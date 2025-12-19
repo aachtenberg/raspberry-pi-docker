@@ -36,15 +36,30 @@ if echo "$STAGED_FILES" | grep -qE '^\.env$|/\.env$'; then
 fi
 echo "✅ No .env file in staged changes"
 
-# Check 2: Warn about potential secrets
+# Check 2: Block common secret patterns in staged content
+BLOCKED_PATTERNS='(password|secret|api_key|token).*=.*[a-zA-Z0-9_-]{20,}|apiv3_[A-Za-z0-9_-]+'
 for file in $STAGED_FILES; do
     if [ -f "$file" ]; then
-        if git diff --cached "$file" | grep -iE '(password|secret|api_key|token).*=.*[a-zA-Z0-9_-]{20,}' > /dev/null 2>&1; then
-            echo "⚠️  WARNING: Potential secrets in $file - review carefully"
+        if git diff --cached "$file" | grep -E "$BLOCKED_PATTERNS" > /dev/null 2>&1; then
+            echo "❌ ERROR: Secret-like content detected in $file"
+            echo "   Staged diff matches blocked patterns: $BLOCKED_PATTERNS"
+            echo "   Please remove secrets and use .env or placeholders."
+            exit 1
         fi
     fi
 done
-echo "✅ Secret pattern check completed"
+echo "✅ No blocked secret patterns detected"
+
+# Check 2b: Ensure prometheus/influxdb3_token contains placeholder only
+if echo "$STAGED_FILES" | grep -q '^prometheus/influxdb3_token$'; then
+    TOKEN_CONTENT=$(git show :prometheus/influxdb3_token || true)
+    if [ "$TOKEN_CONTENT" != "INFLUXDB3_TOKEN_PLACEHOLDER" ]; then
+        echo "❌ ERROR: prometheus/influxdb3_token must contain INFLUXDB3_TOKEN_PLACEHOLDER"
+        echo "   Do not commit real InfluxDB 3 tokens."
+        exit 1
+    fi
+    echo "✅ prometheus/influxdb3_token is placeholder"
+fi
 
 # Check 3: Validate docker-compose.yml syntax
 if echo "$STAGED_FILES" | grep -q 'docker-compose.yml'; then
