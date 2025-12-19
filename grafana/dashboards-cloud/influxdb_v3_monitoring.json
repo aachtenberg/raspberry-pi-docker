@@ -690,7 +690,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(influxdb_iox_query_log_total[$__rate_interval])",
+          "expr": "rate(influxdb_iox_query_log_total[$__rate_interval]) or on() vector(0)",
           "instant": false,
           "legendFormat": "Total Queries",
           "queryType": "range",
@@ -702,7 +702,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(influxdb_iox_query_log_error_total[$__rate_interval])",
+          "expr": "rate(influxdb_iox_query_log_error_total[$__rate_interval]) or on() vector(0)",
           "instant": false,
           "legendFormat": "Query Errors",
           "queryType": "range",
@@ -806,7 +806,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(influxdb3_write_errors_total[$__rate_interval])",
+          "expr": "rate(influxdb3_write_errors_total[$__rate_interval]) or on() vector(0)",
           "instant": false,
           "legendFormat": "Write Errors",
           "queryType": "range",
@@ -911,7 +911,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=\"192.168.0.167:9100\"}[$__rate_interval])) * 100)",
+          "expr": "100 - (avg by (instance) (rate(node_cpu_seconds_total{mode=\"idle\",instance=~\"$influx_instance\"}[$__rate_interval])) * 100)",
           "instant": false,
           "legendFormat": "CPU Usage",
           "queryType": "range",
@@ -923,7 +923,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "(1 - (node_memory_MemAvailable_bytes{instance=\"192.168.0.167:9100\"} / node_memory_MemTotal_bytes{instance=\"192.168.0.167:9100\"})) * 100",
+          "expr": "(1 - (node_memory_MemAvailable_bytes{instance=~\"$influx_instance\"} / node_memory_MemTotal_bytes{instance=~\"$influx_instance\"})) * 100",
           "instant": false,
           "legendFormat": "Memory Usage",
           "queryType": "range",
@@ -1023,7 +1023,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(influxdb_iox_grpc_requests_total{method=~\".*Query.*\"}[$__rate_interval])",
+          "expr": "rate(influxdb_iox_grpc_requests_total{method=~\".*Query.*\"}[$__rate_interval]) or on() vector(0)",
           "instant": false,
           "legendFormat": "gRPC Query Requests",
           "queryType": "range",
@@ -1035,7 +1035,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(influxdb_iox_grpc_requests_total{method=~\".*Write.*\"}[$__rate_interval])",
+          "expr": "rate(influxdb_iox_grpc_requests_total{method=~\".*Write.*\"}[$__rate_interval]) or on() vector(0)",
           "instant": false,
           "legendFormat": "gRPC Write Requests",
           "queryType": "range",
@@ -1135,7 +1135,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(influxdb_iox_plan_cache_hits_total[$__rate_interval])",
+          "expr": "rate(influxdb_iox_plan_cache_hits_total[$__rate_interval]) or on() vector(0)",
           "instant": false,
           "legendFormat": "Plan Cache Hits",
           "queryType": "range",
@@ -1147,7 +1147,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(influxdb_iox_plan_cache_misses_total[$__rate_interval])",
+          "expr": "rate(influxdb_iox_plan_cache_misses_total[$__rate_interval]) or on() vector(0)",
           "instant": false,
           "legendFormat": "Plan Cache Misses",
           "queryType": "range",
@@ -1159,7 +1159,7 @@
       "type": "timeseries"
     },
     {
-      "description": "Telegraf MQTT bridge ingest metrics",
+      "description": "Telegraf ingest health from internal metrics (writes, drops, errors, MQTT msgs)",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1247,9 +1247,9 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(telegraf_write_requests{job=\"telegraf\"}[$__rate_interval])",
+          "expr": "rate(internal_write_metrics_written{job=\"telegraf\"}[$__rate_interval]) or on() vector(0)",
           "instant": false,
-          "legendFormat": "Write Requests",
+          "legendFormat": "Metrics Written",
           "queryType": "range",
           "range": true,
           "refId": "A"
@@ -1259,9 +1259,9 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(telegraf_write_points{job=\"telegraf\"}[$__rate_interval])",
+          "expr": "rate(internal_write_errors{job=\"telegraf\"}[$__rate_interval]) or on() vector(0)",
           "instant": false,
-          "legendFormat": "Points Written",
+          "legendFormat": "Write Errors",
           "queryType": "range",
           "range": true,
           "refId": "B"
@@ -1271,12 +1271,24 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(telegraf_outputs_write_errors{job=\"telegraf\"}[$__rate_interval])",
+          "expr": "rate(internal_write_metrics_dropped{job=\"telegraf\"}[$__rate_interval]) or on() vector(0)",
           "instant": false,
-          "legendFormat": "Write Errors",
+          "legendFormat": "Metrics Dropped",
           "queryType": "range",
           "range": true,
           "refId": "C"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "cf6z7j8gxto1sc"
+          },
+          "expr": "rate(internal_mqtt_consumer_messages_received{job=\"telegraf\"}[$__rate_interval]) or on() vector(0)",
+          "instant": false,
+          "legendFormat": "MQTT Messages",
+          "queryType": "range",
+          "range": true,
+          "refId": "D"
         }
       ],
       "title": "Telegraf Ingest Health",
@@ -1403,7 +1415,30 @@
   "schemaVersion": 42,
   "tags": [],
   "templating": {
-    "list": []
+    "list": [
+      {
+        "current": {},
+        "datasource": {
+          "type": "prometheus",
+          "uid": "cf6z7j8gxto1sc"
+        },
+        "definition": "label_values(node_exporter_build_info, instance)",
+        "hide": 0,
+        "includeAll": false,
+        "label": "Node Exporter Instance",
+        "multi": false,
+        "name": "influx_instance",
+        "options": [],
+        "query": {
+          "query": "label_values(node_exporter_build_info, instance)",
+          "refId": "PromVar"
+        },
+        "refresh": 1,
+        "regex": "",
+        "skipUrlSync": false,
+        "type": "query"
+      }
+    ]
   },
   "time": {
     "from": "now-5m",

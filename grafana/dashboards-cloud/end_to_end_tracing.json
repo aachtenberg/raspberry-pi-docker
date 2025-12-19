@@ -149,7 +149,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  device,\n  replace(trace_id, '-', '') as trace_id_clean,\n  trace_id,\n  celsius,\n  time as last_seen,\n  chip_id\nFROM esp_temperature\nWHERE trace_id IS NOT NULL\nORDER BY time DESC\nLIMIT 10",
+          "rawSql": "SELECT \n  device,\n  replace(trace_id, '-', '') as trace_id_clean,\n  trace_id,\n  celsius,\n  time as last_seen,\n  chip_id\nFROM esp_temperature\nWHERE trace_id IS NOT NULL\n  AND time >= $__timeFrom\n  AND time <= $__timeTo\nORDER BY time DESC\nLIMIT 10",
           "refId": "A"
         }
       ],
@@ -357,7 +357,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT \n  EXTRACT(EPOCH FROM (NOW() - MAX(time))) as seconds_since_last_message\nFROM esp_temperature\nWHERE device = 'Small-Garage'\n  AND trace_id IS NOT NULL",
+          "rawSql": "SELECT \n  EXTRACT(EPOCH FROM (NOW() - MAX(time))) as seconds_since_last_message\nFROM esp_temperature\nWHERE device = 'Small-Garage'\n  AND trace_id IS NOT NULL\n  AND time >= $__timeFrom\n  AND time <= $__timeTo",
           "refId": "A"
         }
       ],

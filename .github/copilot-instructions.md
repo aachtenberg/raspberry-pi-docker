@@ -1,9 +1,9 @@
 # Copilot Instructions for raspberry-pi-docker (AI agents)
 
 ## What this is
-- Raspberry Pi monitoring stack orchestrated by `docker-compose.yml`; services live under `prometheus/`, `nginx-proxy-manager/`, `mosquitto/`, `cloudflared/`, `influxdb/`, `influxdb3-core`, and `telegraf/`.
+- Raspberry Pi monitoring stack orchestrated by `docker-compose.yml`; services live under `prometheus/`, `nginx-proxy-manager/`, `mosquitto/`, `cloudflared/`, `influxdb3-core`, and `telegraf/`.
 - Core data flow: ESP8266/ESP32 sensors → MQTT (1883) → Telegraf → InfluxDB 3 Core (8181) → **Grafana Cloud** (via pdc-agent); Prometheus/cAdvisor/Node Exporter for system metrics; Nginx Proxy Manager + Cloudflare Tunnel for remote access.
-- **Note**: Local Grafana container has been **removed**. All visualization via Grafana Cloud using `pdc-agent` (Private Data Center agent) to ship metrics for public dashboard sharing and alerting capabilities. InfluxDB 3 Core doesn't support public dashboard sharing with local Grafana.
+- **Note**: Using **InfluxDB 3 Core** (not v2) for time-series storage. Local Grafana container has been **removed**; all visualization via Grafana Cloud using `pdc-agent` (Private Data Center agent) for public dashboard sharing and alerting.
 
 ## Non-negotiables
 - Use `docker compose` (no hyphen) for all commands. Validate with `docker compose config -q` before applying.
@@ -20,26 +20,54 @@
 - Docs: `docs/SETUP_GUIDE.md`, `docs/OPERATIONS_GUIDE.md`, `docs/INFLUXDB3_SETUP.md`, `docs/BACKUP_GUIDE.md` (complete backup/restore procedures), `MAKING_PUBLIC_CHECKLIST.md`.
 - Scripts: `scripts/*.sh` (backup/restore, validate secrets, status, update-all).
 
-## InfluxDB specifics
-- InfluxDB 2.7: init via env vars in compose using `.env` values. API on 8086.
-- InfluxDB 3 Core (8181): **authentication required**. Create admin token inside container: `docker compose exec influxdb3-core influxdb3 create token --admin`; store in local `.env` as `INFLUXDB3_ADMIN_TOKEN` (do not commit).
-- **Telegraf bridge** (new): MQTT → InfluxDB 3 via `telegraf/telegraf.conf`; subscribes `homeassistant/sensor/+/state`, transforms JSON, writes to `homeassistant` bucket. Enable with `INFLUXDB3_ADMIN_TOKEN` in `.env` and `docker compose up -d telegraf`.
-- Grafana datasource for v3: use FlightSQL, URL `http://influxdb3-core:8181`; bearer token if accessed externally.
+## InfluxDB 3 Core specifics
+- **Authentication required**: Create admin token inside container: `docker compose exec influxdb3-core influxdb3 create token --admin`; store in local `.env` as `INFLUXDB3_ADMIN_TOKEN` (do not commit).
+- **API endpoint**: Port 8181 (HTTP); metrics at `/metrics` (for Prometheus scraping with bearer auth).
+- **Telegraf bridge**: MQTT → InfluxDB 3 via `telegraf/telegraf.conf`; subscribes `homeassistant/sensor/+/state`, transforms JSON, writes to `homeassistant` bucket. Enable with `INFLUXDB3_ADMIN_TOKEN` in `.env` and `docker compose up -d telegraf`.
+- **Grafana datasource**: Use FlightSQL plugin, URL `http://influxdb3-core:8181`; requires bearer token for external access.
+- **Networking**: Must be on `monitoring` bridge network (not host mode) for DNS resolution from other containers.
 
 ## Workflows / common commands
 - Start/stop: `docker compose up -d [services]`, `docker compose down`.
 - Logs: `docker compose logs -f <service>`; status: `./scripts/status.sh` or `docker compose ps`.
-- Dashboards: Managed in Grafana Cloud (dashboards.grafana.com). Legacy local exports in `grafana/dashboards/*.json`.
+- Dashboards: Managed in Grafana Cloud (dashboards.grafana.com). Upload via `./scripts/create_grafana_dashboard.sh <json-file> [folder]`; uses `GRAFANA_CLOUD_API_KEY` from `.env`. Legacy local exports in `grafana/dashboards/*.json`.
 - Backup/restore: `sudo bash ./scripts/backup_to_nas.sh` (manual), automated daily at 3 AM via systemd; restore: `sudo bash ./scripts/restore_from_nas.sh`. See `docs/BACKUP_GUIDE.md`.
 - Secrets check: `./scripts/validate_secrets.sh` (requires `.env`).
 - Service restart examples: `docker compose restart pdc-agent`, `docker compose restart influxdb3-core`, `docker compose restart telegraf`.
+
+## Tool discovery philosophy
+- **Always check `scripts/` directory first** before manually implementing tasks; many operations have dedicated scripts with proper error handling and correct environment variables.
+- When user asks for an operation (e.g., "upload dashboard", "backup data"), search for existing scripts before writing manual commands.
+- Existing scripts often use the correct API keys/tokens from `.env`; manual curl commands may use wrong/deprecated variables.
+- Common mistake: Using `GRAFANA_API_KEY` or `GRAFANA_ADMIN_API_KEY` instead of the correct `GRAFANA_CLOUD_API_KEY` that scripts actually use.
+
+## Environment Variables (Canonical)
+- Grafana Cloud
+	- `GRAFANA_CLOUD_URL`: Base URL of the instance, e.g. https://aachten.grafana.net
+	- `GRAFANA_CLOUD_API_KEY`: Service Account token used by scripts (minimum: dashboard write via API). Used by `scripts/create_grafana_dashboard.sh` for folders and dashboard upserts.
+	- `GRAFANA_PDC_TOKEN`, `GRAFANA_PDC_CLUSTER`, `GRAFANA_PDC_GCLOUD_HOSTED_GRAFANA_ID`: Required by `pdc-agent` to ship Prometheus metrics to Grafana Cloud.
+
+- InfluxDB 3 Core
+	- `INFLUXDB3_ADMIN_TOKEN`: Required for Telegraf writes and authenticated metrics scraping; generated inside the container. Do not commit.
+
+- AI Monitor / Prometheus (selected)
+	- `PROMETHEUS_URL` (default `http://prometheus:9090`) for `ai-monitor`.
+	- `AI_MONITOR_*` knobs for cadence, execution, allowlist, etc. (see `ai-monitor/monitor.py`).
+	- `AI_MONITOR_HTTP_CHECKS`: Synthetic HTTP checks for app-level monitoring. Format: semicolon-separated list of checks. Each check: `url|expected_status_code[|Header=value]`. Example: `http://nginx-proxy-manager:81|200;http://app:8080|200|Authorization=Bearer%20token`. Results published as Prometheus metrics `ai_http_check_ok{target="..."}` (0=fail, 1=pass) and `ai_http_check_latency_ms{target="..."}`. LLM triage triggered on state changes (OK→FAIL).
+
+### Deprecated/Do Not Use
+- `GRAFANA_API_KEY`, `GRAFANA_ADMIN_API_KEY`, `GRAFANA_TOKEN` — not used by any current scripts. Use `GRAFANA_CLOUD_API_KEY` instead.
+
+### Required patterns
+- Dashboard uploads: always use `./scripts/create_grafana_dashboard.sh <json> [folder]` which reads `GRAFANA_CLOUD_API_KEY` and wraps payloads correctly for `/api/dashboards/db`.
+- Never put secrets in repo; `.env` is local-only and ignored. Use `.env.example` placeholders if documenting.
 
 ## Nginx Proxy Manager pattern
 - Host configs live in `nginx-proxy-manager/data/nginx/proxy_host/*.conf`; each file = one host; numbered sequentially. Add/modify, then reload: `docker compose exec -T nginx-proxy-manager nginx -s reload`. Test with `curl -H "Host: domain" http://localhost:8080/`. Commit the numbered file (force-add if needed).
 
 ## Conventions / style
 - Shell: `#!/bin/bash`, `set -e` (or `set -euo pipefail`), 2-space YAML, keep JSON dashboards as exported (avoid reformatting).
-- Network: all services on `monitoring` bridge unless otherwise noted; refer to services by container name (`http://influxdb:8086`, `http://influxdb3-core:8181`, etc.).
+- Network: all services on `monitoring` bridge unless otherwise noted; refer to services by container name (`http://influxdb3-core:8181`, `http://prometheus:9090`, etc.).
 - Avoid embedding real tokens in docs; use placeholders like `INFLUXDB3_TOKEN_PLACEHOLDER...`.
 - **Git branches**: Use `feature/` or `feat/` prefix for feature branches (e.g., `feature/mqtt-bridge`, `feat/dashboard-redesign`). Branch names trigger secrets workflow and pre-commit hooks for validation.
 
@@ -69,13 +97,13 @@
 - **Scripts**: `scripts/backup_to_nas.sh`, `scripts/restore_from_nas.sh`.
 - **Docs**: `docs/BACKUP_GUIDE.md` (complete backup/restore/disaster-recovery guide).
 
-## Grafana Cloud migration notes
-- **Local Grafana container is deprecated** (still running but not primary visualization).
-- Using **Grafana Cloud** for dashboards and alerting (reason: InfluxDB 3 Core + local Grafana doesn't support public dashboard sharing; didn't want to downgrade to InfluxDB 2).
-- **pdc-agent** (Grafana Private Data Center agent) ships local metrics to Grafana Cloud.
+## Grafana Cloud architecture
+- **Local Grafana container removed**; all visualization via Grafana Cloud.
+- Using **Grafana Cloud** for dashboards and alerting (reason: InfluxDB 3 Core requires FlightSQL datasource which works better with Grafana Cloud for public dashboard sharing).
+- **pdc-agent** (Grafana Private Data Center agent) ships local Prometheus metrics to Grafana Cloud.
 - PDC agent config: `GRAFANA_PDC_TOKEN`, `GRAFANA_PDC_CLUSTER`, `GRAFANA_PDC_GCLOUD_HOSTED_GRAFANA_ID` in `.env`.
-- Dashboards managed at: https://dashboards.grafana.com (or your Grafana Cloud instance).
-- Future: Can leverage Grafana Cloud alerting capabilities.
+- Dashboards managed at: https://aachten.grafana.net (your Grafana Cloud instance).
+- Upload dashboards: `./scripts/create_grafana_dashboard.sh <json-file> [folder]` using `GRAFANA_CLOUD_API_KEY` from `.env`.
 
 ## Helpful references
 - `docs/INFLUXDB3_SETUP.md` for tested auth + API examples.

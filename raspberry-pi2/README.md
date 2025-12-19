@@ -1,11 +1,11 @@
 # Raspberry Pi 2 Monitoring Setup
 
-Configuration for raspberrypi2 (set your LAN host/IP, e.g., raspberrypi2.local) - lightweight monitoring exporters only.
+Configuration for raspberrypi2 (set your LAN host/IP, e.g., raspberrypi2.local) - lightweight monitoring exporters only. No Ollama or autoheal services run here anymore.
 
 ## Services
 
 - **node-exporter** (port 9100) - System metrics
-- **cAdvisor** (port 8080) - Docker container metrics
+- **telegraf** (port 9273) - Exposes local host and Docker metrics to Prometheus
 
 ## Quick Setup
 

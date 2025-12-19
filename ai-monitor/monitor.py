@@ -124,6 +124,16 @@ LAST_RUN_TIMESTAMP = Gauge(
     "ai_monitor_last_run_timestamp",
     "Timestamp of last monitor run",
 )
+HTTP_CHECK_OK = Gauge(
+    "ai_http_check_ok",
+    "HTTP check pass/fail (1=ok, 0=fail)",
+    ["target"],
+)
+HTTP_CHECK_LATENCY = Gauge(
+    "ai_http_check_latency_ms",
+    "HTTP check latency in milliseconds",
+    ["target"],
+)
 
 
 class AiMonitor:
@@ -174,6 +184,61 @@ class AiMonitor:
         # Predictive memory thresholds (tunable via env)
         self.mem_growth_bytes = _env_int("AI_MONITOR_MEM_GROWTH_BYTES", 300_000_000)  # 300MB
         self.mem_growth_window_hours = _env_int("AI_MONITOR_MEM_GROWTH_WINDOW_HOURS", 2)  # 2h
+        
+        # HTTP synthetic checks
+        self.http_checks = self._parse_http_checks(os.getenv("AI_MONITOR_HTTP_CHECKS", ""))
+        self._last_http_check_results: Dict[str, Dict[str, Any]] = {}
+
+    def _parse_http_checks(self, checks_str: str) -> List[Dict[str, Any]]:
+        """Parse AI_MONITOR_HTTP_CHECKS env var. Format: url|expected_status[|header=value] ; url2|expected_status[|header=value]"""
+        checks = []
+        if not checks_str.strip():
+            return checks
+        for check_entry in checks_str.split(";"):
+            parts = [p.strip() for p in check_entry.split("|")]
+            if len(parts) < 2:
+                continue
+            url = parts[0]
+            expected_status = int(parts[1])
+            headers = {}
+            for i in range(2, len(parts)):
+                if "=" in parts[i]:
+                    k, v = parts[i].split("=", 1)
+                    headers[k.strip()] = v.strip()
+            checks.append({"url": url, "expected_status": expected_status, "headers": headers})
+        return checks
+
+    def _run_http_checks(self) -> Dict[str, Dict[str, Any]]:
+        """Run HTTP checks and return results. Also update Prometheus metrics."""
+        results = {}
+        for check in self.http_checks:
+            target = check["url"]
+            try:
+                start = time.time()
+                response = requests.get(check["url"], headers=check["headers"], timeout=3)
+                latency_ms = int((time.time() - start) * 1000)
+                ok = response.status_code == check["expected_status"]
+                result = {
+                    "target": target,
+                    "ok": ok,
+                    "status": response.status_code,
+                    "expected": check["expected_status"],
+                    "latency_ms": latency_ms,
+                }
+                results[target] = result
+                HTTP_CHECK_OK.labels(target=target).set(1 if ok else 0)
+                HTTP_CHECK_LATENCY.labels(target=target).set(latency_ms)
+            except Exception as e:
+                results[target] = {
+                    "target": target,
+                    "ok": False,
+                    "status": None,
+                    "expected": check["expected_status"],
+                    "latency_ms": None,
+                    "error": str(e),
+                }
+                HTTP_CHECK_OK.labels(target=target).set(0)
+        return results
 
     # ----------------------------- Prometheus ---------------------------------
     def prom_query(self, query: str, timeout_seconds: int = 10) -> Dict[str, Any]:
@@ -222,6 +287,9 @@ class AiMonitor:
         # Docker health snapshot (local ground truth)
         # Include logs when gathering for triage (not for routine checks)
         results["docker_health"] = self._docker_health_snapshot(include_logs=False)
+        
+        # HTTP synthetic checks
+        results["http_checks"] = self._run_http_checks()
         return results
     
     def gather_snapshot_with_logs(self) -> Dict[str, Any]:
@@ -602,6 +670,28 @@ class AiMonitor:
         """
         snapshot = self.gather_snapshot()
         LAST_RUN_TIMESTAMP.set(time.time())
+
+        # Check HTTP synthetics for failures and trigger triage if state changed or persistent failure
+        http_checks = snapshot.get("http_checks", {})
+        http_failures = {t: r for t, r in http_checks.items() if not r.get("ok", False)}
+        if http_failures:
+            prev_failures = {t: r for t, r in self._last_http_check_results.items() if not r.get("ok", False)}
+            if http_failures != prev_failures:
+                # State change detected; gather with logs and triage
+                _log("warn", "HTTP check failure detected", failures={t: r.get("status") or r.get("error") for t, r in http_failures.items()})
+                if self.llm_enabled:
+                    snapshot_with_logs = self.gather_snapshot_with_logs()
+                    snapshot_with_logs["http_check_failures"] = http_failures
+                    triage = self.ask_llm_for_triage(snapshot_with_logs)
+                    if triage:
+                        _log("info", "HTTP failure triage", severity=triage.severity, summary=triage.summary, actions=[a.model_dump() for a in triage.recommended_actions])
+                        if self.incident_reports_enabled and self._should_save_incident(triage, snapshot_with_logs):
+                            self._save_incident_report(triage, snapshot_with_logs)
+                        if self.execute:
+                            for action in triage.recommended_actions:
+                                if action.type == "restart_container" and action.target:
+                                    self._restart_container(action.target)
+        self._last_http_check_results = http_checks.copy()
 
         # fast-path: if nothing down and docker health is ok, we can avoid LLM calls
         down_targets = snapshot.get("down_targets", {}).get("result", [])

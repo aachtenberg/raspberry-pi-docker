@@ -104,11 +104,6 @@ AI_MONITOR_MEM_GROWTH_WINDOW_HOURS=2            # 2 hours window
 AI_MONITOR_INCIDENT_MIN_SEVERITY=medium         # low|medium|high
 AI_MONITOR_INCIDENT_MIN_CONFIDENCE=0.5          # 0.0–1.0
 AI_MONITOR_INCIDENT_REQUIRE_EVIDENCE=true       # require down/unhealthy/exited
-
-# Ollama (fallback, runs on secondary Pi)
-AI_MONITOR_OLLAMA_URL=http://<SECONDARY_PI_IP>:11434
-AI_MONITOR_OLLAMA_MODEL=qwen2.5:1.5b
-AI_MONITOR_OLLAMA_TIMEOUT_SECONDS=90
 ```
 
 ### Adding/Removing Services from Allowlist
@@ -160,7 +155,7 @@ Panels:
 - Health status gauge (healthy vs unhealthy containers)
 - Total restarts by container
 - Restart rate over time
-- LLM triage call outcomes (by backend: claude/ollama)
+- LLM triage call outcomes (by backend: claude/gemini)
 - Health timeline
 
 ## Troubleshooting
@@ -176,11 +171,6 @@ Panels:
 - Verify API key: `docker compose exec ai-monitor env | grep CLAUDE_API_KEY`
 - Test manually: `docker compose exec ai-monitor python -c "import anthropic; print(anthropic.Anthropic(api_key='...').models.list())"`
 
-### Ollama triage timeouts
-- Local Ollama (qwen2.5:1.5b) consistently times out (>90s) on complex prompts
-- **Solution**: Use Claude API instead (faster, ~11s response time)
-- Ollama runs on secondary Pi (port 11434) for testing only
-
 ### Metrics not showing in Prometheus
 1. Check scrape config: `prometheus/prometheus.yml` should have `ai-monitor:8000` target
 2. Verify metrics endpoint: `curl http://localhost:8000/metrics`
@@ -193,12 +183,12 @@ Panels:
 
 **Solution**: Remove mosquitto from allowlist. If broker fails, Claude will alert via triage, but won't auto-restart. Manual intervention required.
 
-### Why Cloud LLMs over local Ollama?
-- **Speed**: Claude ~11s, Gemini ~3-5s vs Ollama qwen2.5:1.5b >90s (timeout)
-- **Reliability**: Cloud LLMs 100% success rate vs Ollama frequent timeouts
+### Why Cloud LLMs only (no local Ollama)?
+- **Speed**: Claude ~11s, Gemini ~3-5s; local Ollama was >90s and frequently timed out
+- **Reliability**: Cloud LLMs ~100% success; local Ollama frequently failed
 - **Cost**: Negligible for this use case - ~$0.15-0.50/month
 - **Quality**: Better structured output, higher confidence scores
-- **Backend priority**: Claude (if key present) → Gemini → Ollama
+- **Backend priority**: Claude (if key present) → Gemini
 
 ### Why 10-minute cooldown?
 Prevents restart loops for services with persistent issues (e.g., config errors, resource exhaustion). Gives time for alerts and manual investigation.
@@ -209,7 +199,6 @@ Prevents restart loops for services with persistent issues (e.g., config errors,
 - **Grafana Cloud**: Visualizes ai-monitor metrics and container health
 - **Docker**: ai-monitor mounts `/var/run/docker.sock` for health checks and restarts
 - **Telegraf**: Allowlisted service, gets auto-restarted if fails
-- **Ollama** (optional): Runs on raspberrypi2, provides fallback LLM triage
 
 ## Future Enhancements
 
