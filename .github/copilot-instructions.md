@@ -97,6 +97,25 @@
 - **Scripts**: `scripts/backup_to_nas.sh`, `scripts/restore_from_nas.sh`.
 - **Docs**: `docs/BACKUP_GUIDE.md` (complete backup/restore/disaster-recovery guide).
 
+## Raspberry Pi Topology (Current)
+- **Pi 1 (raspberrypi.local @ 192.168.0.167)**: Monitoring stack (Prometheus, InfluxDB 3 Core, Telegraf, Mosquitto), Nginx Proxy Manager, Cloudflare Tunnel, PDC agent.
+- **Pi 2 (raspberrypi2.local @ 192.168.0.147)**: Camera Dashboard stack (PostgreSQL, Node.js API, Web UI, SFTP, Mediamtx). Volumes at `/storage`; NAS mounted at `/mnt/nas-backup`.
+- **Pi 3 (raspberrypi3.local @ 192.168.0.248)**: Idle/standby for scaling.
+- **All**: Cabled to router; `/mnt/nas-backup` Samba mount for shared backups and surveillance captures.
+
+## SSH & User Conventions
+- **Username**: `aachten` (SSH equivalence configured on all Pis).
+- **Reference /etc/hosts** for hostname → IP mappings when connecting remotely.
+- **Storage on Pi 2**: Use `/storage` for volumes (e.g., camera-dashboard at `/storage/camera-dashboard`).
+
+## Camera Dashboard Integration
+- **Plan**: See `docs/SURVEILLANCE_DASHBOARD_PLAN.md` in raspberry-pi-docker for complete phased rollout (Phases 0–10).
+- **Repo**: `camera-dashboard` (https://github.com/aachtenberg/camera-dashboard.git) cloned to `/storage/camera-dashboard/` on Pi 2.
+- **Services**: PostgreSQL, Express API (`/api`), web UI (`/`), SFTP (port 2222), Mediamtx (HLS/WebRTC on port 8888).
+- **NPM vhost**: Pi 1's Nginx Proxy Manager proxies `/`, `/api`, `/streams/*` to Pi 2 stack.
+- **MQTT → Telegraf → InfluxDB 3**: Camera motion events flow to Grafana Cloud analytics.
+- **Image storage**: `/mnt/nas-backup/surveillance/captures/{device}/` shared across Pis via Samba.
+
 ## Grafana Cloud architecture
 - **Local Grafana container removed**; all visualization via Grafana Cloud.
 - Using **Grafana Cloud** for dashboards and alerting (reason: InfluxDB 3 Core requires FlightSQL datasource which works better with Grafana Cloud for public dashboard sharing).
@@ -109,5 +128,6 @@
 - `docs/INFLUXDB3_SETUP.md` for tested auth + API examples.
 - `docs/OPERATIONS_GUIDE.md` and `docs/SETUP_GUIDE.md` for end-to-end procedures.
 - `docs/BACKUP_GUIDE.md` for complete backup/restore/disaster recovery procedures.
+- `docs/SURVEILLANCE_DASHBOARD_PLAN.md` for camera dashboard phased implementation plan.
 - `docs/influxv3-sql-example.json` for working temperature dashboard panel JSON reference (legacy local Grafana).
 - `MAKING_PUBLIC_CHECKLIST.md` for sanitization steps if sharing.
