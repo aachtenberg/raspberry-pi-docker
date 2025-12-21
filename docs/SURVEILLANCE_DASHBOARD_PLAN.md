@@ -4,7 +4,7 @@
 - **Goal**: A unified web interface to view ≥5 cameras (live grid + per-camera live + motion gallery) and manage historical captures, using existing Raspberry Pi infrastructure.
 - **Topology**: 
   - **Pi 1** (existing): Mosquitto, Telegraf, InfluxDB 3 Core, Prometheus, Nginx Proxy Manager, Cloudflare Tunnel
-  - **Pi 2** (new stack): PostgreSQL, Node/Express API, Web UI (SPA), SFTP server, Streaming server (Mediamtx)
+  - **Pi 2** (current stack): PostgreSQL, Node/Express API, Web UI (iframe-only), SFTP server
   - **Pi 3**: Idle/standby for future scaling or batch jobs
 - **Storage**: Shared NAS mount at `/mnt/nas-backup` (captures under `/mnt/nas-backup/surveillance/captures/{device}/`).
 - **Visualization**: Grafana Cloud via FlightSQL to InfluxDB 3; local Grafana is deprecated.
@@ -18,54 +18,48 @@
 - Prefer Grafana Cloud over local Grafana; use FlightSQL for InfluxDB 3.
 
 ## Architecture & Data Flow
-- **Event pipeline**: Cameras publish MQTT `surveillance/+/motion` → Telegraf → InfluxDB 3 → Grafana Cloud analytics.
-- **Image pipeline**: Cameras upload JPEGs to Pi 2 SFTP → NAS path `/surveillance/captures/{device}/` → API indexes filenames in PostgreSQL.
-- **Live streaming**: Hardware IP cameras (RTSP) ingested by **Mediamtx** on Pi 2 → exposed as **HLS/LL‑HLS** (Option A, default) or **WebRTC** (Option B) to the browser via NPM on Pi 1.
+- **Event pipeline**: MQTT signaling planned (`surveillance/+/motion|image|status`) → Telegraf → InfluxDB 3 → Grafana Cloud (not yet wired; depends on sample payloads).
+- **Image pipeline**: ESP32/other cameras upload JPEGs to Pi 2 SFTP → NAS path `/surveillance/captures/{device}/` → API to index/serve (image indexing still pending).
+- **Live streaming**: Deferred. Mediamtx and HLS/WebRTC are removed from the active stack; revisit only if we add RTSP IP cams later.
 
 ## Phases
 
-### Phase 0 — Discovery & Pre‑Requisites
+### Phase 0 — Discovery & Pre‑Requisites *(Status: DONE)*
 - Confirm Pi 1 NPM setup (host/container), available vhost, Cloudflare Tunnel status.
 - Verify `/mnt/nas-backup` on Pi 2 (read/write) and permissions for containers.
 - Choose dashboard hostname (e.g., `camera-dashboard.local` or public via Tunnel).
 - **Acceptance**: Paths verified, hostname decided, secrets approach documented.
 
-### Phase 1 — Storage & SFTP Ingestion
-- Add SFTP container on Pi 2; mount `/mnt/nas-backup/surveillance/captures`.
-- Per‑camera SSH keys; directory scheme `/captures/{device}/YYYY/MM/DD/filename.jpg`.
-- Retention policy (14–30 days) with nightly purge/archive job.
-- **Deliverables**: Compose service, directory layout, key management docs.
-- **Acceptance**: Upload from a test camera lands on NAS; retention job runs.
+### Phase 1 — Storage & SFTP Ingestion *(Status: DONE)*
+- SFTP container on Pi 2 running; mount `/mnt/nas-backup/surveillance/captures` → `/camera-uploads`.
+- Per‑camera SSH keys: ESP32 key authorized; directories created (`/camera-uploads/IDKCam`, `/camera-uploads/Surveillance Cam`).
+- Retention job still pending (14–30 day purge/archive not yet wired).
+- **Acceptance**: Uploads land on NAS confirmed (multiple JPEGs from ESP32 in `/camera-uploads/IDKCam/`).
 
-### Phase 2 — Metadata DB & API
-- PostgreSQL schema: `cameras(id, name, rtsp_url, enabled)`, `motion_events(id, device_id, ts, score, image_path)`, `images(id, device_id, ts, path, size, motion_triggered)`; indexes on `(device_id, ts)`.
-- Node/Express API: `GET /api/cameras`, `GET /api/events`, `GET /api/images`, `GET /api/health`; auth (token/basic) behind NPM.
-- **Deliverables**: SQL migrations, API routes, health checks.
-- **Acceptance**: API returns sample data; metadata links resolve to NAS paths.
+### Phase 2 — Metadata DB & API *(Status: PARTIAL)*
+- PostgreSQL + Pool configured; `cameras` table auto-created; API routes: `GET /api/health`, `GET /api/cameras`, `POST /api/cameras`, `DELETE /api/cameras/:id`.
+- Not yet implemented: `motion_events`, `images` tables; indexing NAS files; auth in front of API.
+- **Acceptance (current)**: API returns cameras from DB and health ok — ✅. **Open**: image/event metadata.
 
-### Phase 3 — Web UI (Gallery & Timeline)
-- SPA with views: **Live Grid**, **Per‑Camera Page**, **Motion Gallery** (filter by device/date), **Timeline**.
-- Lightbox viewer for JPEGs; pagination; basic auth via NPM.
-- **Deliverables**: UI build, asset caching, responsive layout.
-- **Acceptance**: Gallery displays captured images per device; filters work.
+### Phase 3 — Web UI (Gallery & Timeline) *(Status: NOT STARTED)*
+- Current UI is iframe-only (MJPEG) without gallery. Need gallery/timeline backed by indexed NAS files.
+- Add lightbox, filters, pagination; basic auth via NPM.
+- **Acceptance**: Gallery displays captured images per device/date with working filters.
 
-### Phase 4 — Live Streaming (Unified Live View)
-- **Default (Option A)**: HLS/LL‑HLS via **Mediamtx**. Ingest RTSP from each camera; re‑mux H.264 → HLS (avoid transcoding where possible). Expose `/streams/{camera}/index.m3u8`.
-- **Alternative (Option B)**: WebRTC via Mediamtx/SRS for near‑real‑time. Requires signaling endpoints; consider STUN/TURN if needed.
-- Grid view shows 5 camera players; per‑camera page has full player with stats.
-- **Deliverables**: Compose service for Mediamtx; stream configs; UI players.
-- **Acceptance**: All 5 cameras playable in grid; acceptable latency/profile.
+### Phase 4 — Live Streaming (Unified Live View) *(Status: DEFERRED)*
+- Mediamtx removed from stack; no HLS/WebRTC in current scope. Revisit if IP cams/RTSP are added.
+- **Acceptance**: Not in scope until revisited.
 
-### Phase 5 — Exposure & Remote Access
+### Phase 5 — Exposure & Remote Access *(Status: NOT STARTED)*
 - Pi 1 NPM vhost: proxy `/` → UI, `/api` → API, `/streams/*` → Mediamtx HTTP on Pi 2.
 - Enable gzip, static asset caching, and basic auth; rate‑limit requests.
 - Cloudflare Tunnel publishes the vhost publicly (optional); keep RTSP private.
 - **Acceptance**: External access works via Tunnel; auth enforced; no RTSP exposed.
 
-### Phase 6 — Analytics (Grafana Cloud)
-- Ensure Telegraf consumes `surveillance/#` and writes to InfluxDB 3.
-- Build Grafana Cloud panels via FlightSQL (motion heatmaps, time‑of‑day patterns).
-- **Acceptance**: Dashboards show motion trends by camera; queries perform.
+### Phase 6 — Analytics (Grafana Cloud) *(Status: NOT STARTED)*
+- Telegraf → InfluxDB 3 wiring for `surveillance/#` pending sample MQTT payloads.
+- Grafana Cloud dashboards TBD.
+- **Acceptance**: Motion trends visible via FlightSQL once data exists.
 
 ### Phase 7 — Security & Compliance
 - Secrets: `.env` local only; `.env.example` placeholders; validate via scripts.
