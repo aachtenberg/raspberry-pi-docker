@@ -4,6 +4,7 @@
 - Raspberry Pi monitoring stack orchestrated by `docker-compose.yml`; services live under `prometheus/`, `nginx-proxy-manager/`, `mosquitto/`, `cloudflared/`, `influxdb3-core`, and `telegraf/`.
 - Core data flow: ESP8266/ESP32 sensors → MQTT (1883) → Telegraf → InfluxDB 3 Core (8181) → **Grafana Cloud** (via pdc-agent); Prometheus/cAdvisor/Node Exporter for system metrics; Nginx Proxy Manager + Cloudflare Tunnel for remote access.
 - **Note**: Using **InfluxDB 3 Core** (not v2) for time-series storage. Local Grafana container has been **removed**; all visualization via Grafana Cloud using `pdc-agent` (Private Data Center agent) for public dashboard sharing and alerting.
+- **Mosquitto Monitoring**: Telegraf collects $SYS metrics (every 10s) → Prometheus → Grafana Cloud dashboard tracks connected clients, message rates, network throughput, queue stats, memory usage.
 
 ## Non-negotiables
 - Use `docker compose` (no hyphen) for all commands. Validate with `docker compose config -q` before applying.
@@ -26,6 +27,7 @@
 - **Telegraf bridge**: MQTT → InfluxDB 3 via `telegraf/telegraf.conf`; subscribes `homeassistant/sensor/+/state`, transforms JSON, writes to `homeassistant` bucket. Enable with `INFLUXDB3_ADMIN_TOKEN` in `.env` and `docker compose up -d telegraf`.
 - **Grafana datasource**: Use FlightSQL plugin, URL `http://influxdb3-core:8181`; requires bearer token for external access.
 - **Networking**: Must be on `monitoring` bridge network (not host mode) for DNS resolution from other containers.
+- **CLI query syntax**: `docker compose exec influxdb3-core influxdb3 query --database <db> --token "$INFLUXDB3_ADMIN_TOKEN" "SELECT * FROM <measurement> LIMIT 5"` (note the `--database` flag is required with current CLI).
 
 ## Workflows / common commands
 - Start/stop: `docker compose up -d [services]`, `docker compose down`.
@@ -70,6 +72,7 @@
 - Network: all services on `monitoring` bridge unless otherwise noted; refer to services by container name (`http://influxdb3-core:8181`, `http://prometheus:9090`, etc.).
 - Avoid embedding real tokens in docs; use placeholders like `INFLUXDB3_TOKEN_PLACEHOLDER...`.
 - **Git branches**: Use `feature/` or `feat/` prefix for feature branches (e.g., `feature/mqtt-bridge`, `feat/dashboard-redesign`). Branch names trigger secrets workflow and pre-commit hooks for validation.
+- **File permissions**: Mosquitto container changes ownership of mounted configs to UID 1883:1883; use `sudo chown aachten:aachten` if editing fails.
 
 ## Pitfalls to avoid
 - Do not use `docker-compose` binary; use `docker compose` v2.

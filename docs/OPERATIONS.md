@@ -202,6 +202,57 @@ curl -s http://localhost:9273/metrics | grep esp_temperature_celsius
 
 Expected: Current temperature readings from Main-Cottage, Spa, Pump-House, Small-Garage
 
+### Mosquitto Broker Monitoring
+
+**MQTT Broker Health Dashboard:**
+- View in Grafana Cloud: https://aachten.grafana.net/d/mosquitto-broker/mosquitto-mqtt-broker
+- Tracks: Connected clients, message rates, network throughput, queue stats, memory usage, uptime
+
+**Check broker status:**
+```bash
+# View connected clients
+curl -s http://localhost:9273/metrics | grep 'mosquitto{topic="broker/clients/connected"}'
+
+# View message rates (messages/sec)
+curl -s http://localhost:9273/metrics | grep 'mosquitto{topic="broker/messages/received"}' -A1
+curl -s http://localhost:9273/metrics | grep 'mosquitto{topic="broker/messages/sent"}' -A1
+
+# Check broker uptime (seconds)
+curl -s http://localhost:9273/metrics | grep 'mosquitto{topic="broker/uptime"}'
+
+# View memory usage
+curl -s http://localhost:9273/metrics | grep 'mosquitto{topic="broker/heap/current"}'
+```
+
+**Restart broker (protected service):**
+```bash
+# WARNING: Causes ESP sensor reconnection flood
+docker compose restart mosquitto
+
+# View reconnection activity
+docker compose logs -f mosquitto | grep "New connection"
+```
+
+**Check broker configuration:**
+```bash
+# View active config
+docker compose exec mosquitto cat /mosquitto/config/mosquitto.conf
+
+# Test config syntax
+docker compose exec mosquitto mosquitto -c /mosquitto/config/mosquitto.conf -t
+
+# Note: Config files owned by UID 1883 - use sudo chown if editing fails
+```
+
+**Monitor protocol errors:**
+```bash
+# Check for client disconnections
+docker compose logs mosquitto --since 24h | grep "Socket error"
+
+# Check for protocol violations
+docker compose logs mosquitto --since 24h | grep "Protocol error"
+```
+
 ---
 
 ## Backup & Restore

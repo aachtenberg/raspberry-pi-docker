@@ -282,7 +282,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "docker_backup_status",
+          "expr": "docker_backup_status or prometheus_docker_backup_status",
           "instant": false,
           "legendFormat": "{{hostname}}",
           "queryType": "range",
@@ -349,7 +349,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "docker_backup_size_bytes",
+          "expr": "docker_backup_size_bytes or prometheus_docker_backup_size_bytes",
           "instant": false,
           "legendFormat": "{{hostname}}",
           "queryType": "range",
@@ -678,7 +678,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "docker_backup_duration_seconds",
+          "expr": "docker_backup_duration_seconds or prometheus_docker_backup_duration_seconds",
           "instant": false,
           "legendFormat": "{{hostname}}",
           "queryType": "range",
@@ -904,7 +904,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "(time() - docker_backup_last_success_timestamp) / 3600",
+          "expr": "(time() - (docker_backup_last_success_timestamp or prometheus_docker_backup_last_success_timestamp)) / 3600",
           "instant": false,
           "legendFormat": "{{hostname}}",
           "queryType": "range",

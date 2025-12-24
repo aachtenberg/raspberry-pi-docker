@@ -64,11 +64,13 @@ Advanced topics, architecture details, integrations, and special configurations 
 |---------|---------------|-----------|---------|
 | InfluxDB 3 Core | 8086 | 8181 | Time-series database API |
 | Prometheus | 9090 | 9090 | Metrics scraping |
+| Telegraf | 9273 | 9273 | Prometheus metrics export |
 | Node Exporter | 9100 | 9100 | System metrics |
 | cAdvisor | 8080 | 8081 | Container metrics |
 | Grafana (local) | 3000 | 3000 | Dashboards (deprecated) |
 | Home Assistant | 8123 | 8123 | Home automation |
 | Mosquitto | 1883 | 1883 | MQTT broker |
+| Mosquitto WebSocket | 9001 | 9001 | MQTT over WebSocket |
 | Nginx Proxy Manager | 80/443 | 8080/8443 | Reverse proxy |
 | NPM Admin UI | 81 | 81 | NPM web interface |
 
@@ -103,8 +105,10 @@ Advanced topics, architecture details, integrations, and special configurations 
 **Data flow:**
 ```
 MQTT Broker
+  ├─ $SYS/# → Prometheus (broker health metrics)
   ├─ homeassistant/sensor/+/state → homeassistant database
   ├─ surveillance/camera/+/snapshot → surveillance database
+  ├─ esp-sensor-hub/+/status → temperature_data database (battery + health)
   └─ esp-sensor-hub/+/temperature → temperature_data database
 ```
 
@@ -118,6 +122,7 @@ MQTT Broker
   servers = ["tcp://mosquitto:1883"]
   topics = [
     "homeassistant/sensor/+/state",
+    "esp-sensor-hub/+/status",
     "esp-sensor-hub/+/temperature"
   ]
   data_format = "json"
@@ -138,7 +143,7 @@ MQTT Broker
   url = "http://influxdb3-core:8181/api/v1/write?db=temperature_data"
   method = "POST"
   data_format = "influx"
-  namepass = ["esp_temperature"]
+  namepass = ["esp_temperature", "esp_status"]
   [outputs.http.headers]
     Authorization = "Bearer ${INFLUXDB3_ADMIN_TOKEN}"
 ```
@@ -200,13 +205,20 @@ esp-sensor-hub/{device_id}/temperature
 
 esp-sensor-hub/{device_id}/events
   payload: {"device": "Big-Garage", "event": "startup", "chip_id": "ABC123"}
+
+esp-sensor-hub/{device_id}/status
+  payload: {"device": "Spa", "battery_voltage": 4.12, "battery_percent": 94, "wifi_rssi": -60, "uptime_seconds": 215, ...}
 ```
 
 **InfluxDB 3 Schema:**
 ```
 measurement: esp_temperature
-tags: device, chip_id
-fields: celsius, fahrenheit
+  tags: device, chip_id
+  fields: celsius, fahrenheit
+
+measurement: esp_status
+  tags: device, chip_id
+  fields: battery_voltage, battery_percent, wifi_rssi, uptime_seconds, free_heap, sensor_healthy, wifi_connected, wifi_reconnects, sensor_read_failures, timestamp, seq_num
 time: timestamp
 ```
 

@@ -14,16 +14,9 @@ scrape_configs:
           instance: 'raspberry-pi'
           host: '192.168.0.167'
 
-  - job_name: 'raspberry-pi2'
-    static_configs:
-      - targets: ['192.168.0.147:9100']
-        labels:
-          instance: 'raspberry-pi2'
-          host: 'raspberrypi2.local'
-
   - job_name: 'telegraf-pi2'
     static_configs:
-      - targets: ['192.168.0.147:9273']
+      - targets: ['192.168.0.146:9273']
         labels:
           instance: 'raspberry-pi2'
           service: 'telegraf'
@@ -60,10 +53,19 @@ scrape_configs:
           service: 'telegraf'
     scrape_interval: 15s
 
-  - job_name: 'ai-monitor'
+  - job_name: 'mosquitto'
     static_configs:
-      - targets: ['ai-monitor:8000']
+      - targets: ['mosquitto-exporter:9234']
         labels:
           instance: 'raspberry-pi'
-          service: 'ai-monitor'
+          service: 'mosquitto'
     scrape_interval: 15s
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['192.168.0.146:9187']
+        labels:
+          instance: 'raspberry-pi2'
+          service: 'postgresql'
+    scrape_interval: 15s
+

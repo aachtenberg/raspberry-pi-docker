@@ -112,7 +112,7 @@ cp .env.example .env
 | Grafana (local) | 3000 | Dashboards (deprecated, use Cloud) |
 | Prometheus | 9090 | Metrics collection |
 | Home Assistant | 8123 | Home automation |
-| Mosquitto | 1883 | MQTT broker |
+| Mosquitto | 1883, 9001 | MQTT broker (MQTT + WebSocket) |
 | Nginx Proxy Manager | 81, 8080 | Reverse proxy |
 
 ---
