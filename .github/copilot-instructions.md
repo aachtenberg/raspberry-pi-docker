@@ -102,7 +102,7 @@
 
 ## Raspberry Pi Topology (Current)
 - **Pi 1 (raspberrypi.local @ 192.168.0.167)**: Monitoring stack (Prometheus, InfluxDB 3 Core, Telegraf, Mosquitto), Nginx Proxy Manager, Cloudflare Tunnel, PDC agent.
-- **Pi 2 (raspberrypi2.local @ 192.168.0.147)**: Camera Dashboard stack (PostgreSQL, Node.js API, Web UI, SFTP, Mediamtx). Volumes at `/storage`; NAS mounted at `/mnt/nas-backup`.
+- **Pi 2 (raspberrypi2.local @ 192.168.0.146)**: Camera Dashboard stack (PostgreSQL, Node.js API, Web UI, SFTP, Mediamtx). Volumes at `/storage`; NAS mounted at `/mnt/nas-backup`.
 - **Pi 3 (raspberrypi3.local @ 192.168.0.248)**: Idle/standby for scaling.
 - **All**: Cabled to router; `/mnt/nas-backup` Samba mount for shared backups and surveillance captures.
 
