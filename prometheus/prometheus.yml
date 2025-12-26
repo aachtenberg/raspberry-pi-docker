@@ -14,6 +14,13 @@ scrape_configs:
           instance: 'raspberry-pi'
           host: '192.168.0.167'
 
+  - job_name: 'raspberry-pi2'
+    static_configs:
+      - targets: ['192.168.0.146:9100']
+        labels:
+          instance: 'raspberry-pi2'
+          host: 'raspberrypi2'
+
   - job_name: 'telegraf-pi2'
     static_configs:
       - targets: ['192.168.0.146:9273']

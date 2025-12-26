@@ -215,7 +215,7 @@
             "uid": "cf6z7j8gxto1sc"
           },
           "editorMode": "code",
-          "expr": "(time() - (node_boot_time_seconds or prometheus_node_boot_time_seconds)) / 86400",
+          "expr": "(time() - node_boot_time_seconds) / 86400",
           "instant": true,
           "legendFormat": "{{instance}}",
           "range": false,
