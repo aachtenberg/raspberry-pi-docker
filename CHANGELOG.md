@@ -6,6 +6,68 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Added
+- **Mosquitto MQTT Broker Monitoring**
+  - Enabled `$SYS/#` topic publishing (sys_interval 10 seconds)
+  - Telegraf input for mosquitto $SYS metrics collection
+  - Grafana Cloud dashboard: "Mosquitto MQTT Broker" (uid: mosquitto-broker)
+  - Tracks: connected clients, message rates, network throughput, connection load, queue stats, memory usage, uptime
+  - Production-grade tuning: persistence, queue limits, connection management, comprehensive logging
+
+- **Mosquitto Broker Configuration Enhancements**
+  - Comprehensive production tuning for ESP sensors and surveillance
+  - Queue management: max_queued_messages (1000), max_queued_bytes (10MB), max_inflight_messages (20)
+  - Message size limit: 10MB (sufficient for camera snapshots)
+  - Connection limits: max_connections (100), max_keepalive (0 = client-specified)
+  - Performance tuning: retry_interval (20s), persistent_client_expiration (5m)
+  - Enhanced logging: timestamps, connection messages, all log levels
+  - autosave_interval (300s) for persistence management
+
+- **Camera Dashboard PostgreSQL Backup**
+  - Updated Pi 2 backup script to include `camera-dashboard_postgres-data` volume
+  - Backup metrics exported to Prometheus via node-exporter textfile collector
+  - Infrastructure Health dashboard updated to query both Pi 1 and Pi 2 backup metrics
+
+- **Grafana Cloud Dashboard Updates**
+  - Fixed datasource UID in all dashboards (cf6z7j8gxto1sc)
+  - Infrastructure Health dashboard: unified backup status queries for both Pis
+  - Romain Temperature Data: added battery monitoring panels for Spa/Sauna sensors
+  - PostgreSQL Monitoring: comprehensive database health dashboard (12 panels)
+
+- **Raspberry Pi 2 Telegraf Enhancements**
+  - Added Prometheus input to scrape node-exporter metrics (including backup status)
+  - Combined metrics output on port 9273 (docker stats + node-exporter + backup metrics)
+  - Enables centralized monitoring of Pi 2 infrastructure via Pi 1 Prometheus
+
+- **ESP Sensor Hub Status Monitoring**
+  - Added `esp-sensor-hub/+/status` MQTT topic support in Telegraf
+  - New InfluxDB 3 measurement: `esp_status` (battery, wifi, uptime, heap, health)
+  - Tracks: battery_voltage, battery_percent, wifi_rssi, uptime_seconds, free_heap, sensor_healthy, wifi_connected, wifi_reconnects, sensor_read_failures
+  - Battery monitoring panels added to Romain Temperature dashboard
+
+### Changed
+- **Prometheus Configuration**
+  - Updated Pi 2 target IP from 192.168.0.147 to 192.168.0.146 (telegraf-pi2, postgres)
+  - Added mosquitto-exporter scrape target (port 9234)
+  - Removed obsolete ai-monitor scrape job
+
+- **Docker Compose Updates**
+  - Removed orphaned mosquitto-exporter service (switched to Telegraf-based collection)
+  - Updated mqtt-otel-bridge topics to support comma-separated list parsing
+
+- **Nginx Proxy Manager (Camera Dashboard)**
+  - Simplified proxy configurations for `/api`, `/streams`, and `/` routes
+  - Removed `$server` and `$port` variables in favor of direct proxy_pass URLs
+
+### Fixed
+- **Prometheus Target Connectivity**
+  - Restored Prometheus to bridge network (was incorrectly on host mode)
+  - Fixed DNS resolution for influxdb3-core and other services
+
+- **Mosquitto File Permissions**
+  - mosquitto.conf ownership issue resolved (UID 1883 conflict)
+  - Added `sudo chown aachten:aachten` fix to operations guide
+
 ### Removed
 - **Local Grafana container** - Deprecated in favor of Grafana Cloud
   - Removed grafana service from docker-compose.yml

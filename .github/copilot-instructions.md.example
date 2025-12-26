@@ -14,7 +14,7 @@
 ## Key files & locations
 - Orchestration: `docker-compose.yml` (all services), `.env` (local secrets), `.env.example` (template).
 - Grafana dashboards: `grafana/dashboards/*.json` (legacy local Grafana exports; now using Grafana Cloud).
-- Prometheus configs: `prometheus/prometheus.yml`.
+- Prometheus configs: `prometheus/prometheus.yml` (use `.example` for sanitized version).
 - Telegraf config: `telegraf/telegraf.conf` (MQTT → InfluxDB 3 bridge).
 - Nginx Proxy Manager hosts: `nginx-proxy-manager/data/nginx/proxy_host/*.conf` (numbered files, tracked in git).
 - Backup: `scripts/backup_to_nas.sh` (automated daily at 3 AM), `scripts/restore_from_nas.sh`; NAS persistently mounted at `/mnt/nas-backup`.
@@ -45,7 +45,7 @@
 
 ## Environment Variables (Canonical)
 - Grafana Cloud
-	- `GRAFANA_CLOUD_URL`: Base URL of the instance, e.g. https://aachten.grafana.net
+	- `GRAFANA_CLOUD_URL`: Base URL of the instance, e.g. https://USERNAME.grafana.net
 	- `GRAFANA_CLOUD_API_KEY`: Service Account token used by scripts (minimum: dashboard write via API). Used by `scripts/create_grafana_dashboard.sh` for folders and dashboard upserts.
 	- `GRAFANA_PDC_TOKEN`, `GRAFANA_PDC_CLUSTER`, `GRAFANA_PDC_GCLOUD_HOSTED_GRAFANA_ID`: Required by `pdc-agent` to ship Prometheus metrics to Grafana Cloud.
 
@@ -93,7 +93,7 @@
 
 ## Backup system
 - **Automated backups**: Daily at 3:00 AM via systemd timer (`docker-backup.timer`).
-- **NAS mount**: Persistent via `/etc/fstab` at `/mnt/nas-backup` (//192.168.0.1/G).
+- **NAS mount**: Persistent via `/etc/fstab` at `/mnt/nas-backup` (//NAS_IP/SHARE_NAME).
 - **What's backed up**: Docker volumes (Grafana-legacy, Prometheus, InfluxDB3, Portainer, Mosquitto), bind-mounted directories (Home Assistant, Nginx Proxy Manager), repository configs, `.env` file.
 - **What's NOT backed up**: Docker images (pulled fresh), containers (rebuilt from compose), networks (from compose definition).
 - **Retention**: 30 days automatic cleanup.
@@ -101,19 +101,19 @@
 - **Docs**: `docs/BACKUP_GUIDE.md` (complete backup/restore/disaster-recovery guide).
 
 ## Raspberry Pi Topology (Current)
-- **Pi 1 (raspberrypi.local @ 192.168.0.167)**: Monitoring stack (Prometheus, InfluxDB 3 Core, Telegraf, Mosquitto), Nginx Proxy Manager, Cloudflare Tunnel, PDC agent.
-- **Pi 2 (raspberrypi2.local @ 192.168.0.146)**: Camera Dashboard stack (PostgreSQL, Node.js API, Web UI, SFTP, Mediamtx). Volumes at `/storage`; NAS mounted at `/mnt/nas-backup`.
-- **Pi 3 (raspberrypi3.local @ 192.168.0.248)**: Idle/standby for scaling.
+- **Pi 1 (PI1_HOSTNAME)**: Monitoring stack (Prometheus, InfluxDB 3 Core, Telegraf, Mosquitto), Nginx Proxy Manager, Cloudflare Tunnel, PDC agent.
+- **Pi 2 (PI2_HOSTNAME)**: Camera Dashboard stack (PostgreSQL, Node.js API, Web UI, SFTP, Mediamtx). Volumes at `/storage`; NAS mounted at `/mnt/nas-backup`.
+- **Pi 3 (PI3_HOSTNAME)**: Idle/standby for scaling.
 - **All**: Cabled to router; `/mnt/nas-backup` Samba mount for shared backups and surveillance captures.
 
 ## SSH & User Conventions
-- **Username**: `aachten` (SSH equivalence configured on all Pis).
+- **Username**: `USERNAME` (SSH equivalence configured on all Pis).
 - **Reference /etc/hosts** for hostname → IP mappings when connecting remotely.
 - **Storage on Pi 2**: Use `/storage` for volumes (e.g., camera-dashboard at `/storage/camera-dashboard`).
 
 ## Camera Dashboard Integration
 - **Plan**: See `docs/SURVEILLANCE_DASHBOARD_PLAN.md` in raspberry-pi-docker for complete phased rollout (Phases 0–10).
-- **Repo**: `camera-dashboard` (https://github.com/aachtenberg/camera-dashboard.git) cloned to `/storage/camera-dashboard/` on Pi 2.
+- **Repo**: `camera-dashboard` (https://github.com/USERNAME/camera-dashboard.git) cloned to `/storage/camera-dashboard/` on Pi 2.
 - **Services**: PostgreSQL, Express API (`/api`), web UI (`/`), SFTP (port 2222), Mediamtx (HLS/WebRTC on port 8888).
 - **NPM vhost**: Pi 1's Nginx Proxy Manager proxies `/`, `/api`, `/streams/*` to Pi 2 stack.
 - **MQTT → Telegraf → InfluxDB 3**: Camera motion events flow to Grafana Cloud analytics.
@@ -124,7 +124,7 @@
 - Using **Grafana Cloud** for dashboards and alerting (reason: InfluxDB 3 Core requires FlightSQL datasource which works better with Grafana Cloud for public dashboard sharing).
 - **pdc-agent** (Grafana Private Data Center agent) ships local Prometheus metrics to Grafana Cloud.
 - PDC agent config: `GRAFANA_PDC_TOKEN`, `GRAFANA_PDC_CLUSTER`, `GRAFANA_PDC_GCLOUD_HOSTED_GRAFANA_ID` in `.env`.
-- Dashboards managed at: https://aachten.grafana.net (your Grafana Cloud instance).
+- Dashboards managed at: https://USERNAME.grafana.net (your Grafana Cloud instance).
 - Upload dashboards: `./scripts/create_grafana_dashboard.sh <json-file> [folder]` using `GRAFANA_CLOUD_API_KEY` from `.env`.
 
 ## Helpful references

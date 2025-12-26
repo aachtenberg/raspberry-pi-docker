@@ -18,8 +18,9 @@ BACKUP_DIR="${BACKUP_BASE}/${TIMESTAMP}"
 DOCKER_DIR="/home/aachten/docker/raspberry-pi2"
 LOG_FILE="${DOCKER_DIR}/logs/backup-$(date +%Y%m%d).log"
 
-# Ensure log directory exists
+# Ensure log directory exists and textfile collector directory
 mkdir -p "${DOCKER_DIR}/logs"
+mkdir -p /var/lib/node_exporter/textfile_collector
 
 # Logging function
 log() {
@@ -79,11 +80,10 @@ fi
 log "Creating backup directory structure..."
 mkdir -p "${BACKUP_DIR}"/{volumes,configs,metadata}
 
-# Backup Docker volumes for raspberrypi2 monitoring services
-# No grafana/local volumes on pi2; back up only present prefixed volumes
+# Backup Docker volumes for raspberrypi2 monitoring services and camera-dashboard
 log "Backing up Docker volumes..."
-# List all volumes with raspberrypi2 prefix
-VOLUMES=$(docker volume ls --format "{{.Name}}" | grep "^raspberry-pi2_" || echo "")
+# Combine volumes: raspberrypi2 prefixed + camera-dashboard postgres
+VOLUMES=$(docker volume ls --format "{{.Name}}" | grep -E "^(raspberry-pi2_|camera-dashboard_)" || echo "")
 
 if [ -n "$VOLUMES" ]; then
     for volume in $VOLUMES; do
@@ -96,7 +96,7 @@ if [ -n "$VOLUMES" ]; then
             log "    Warning: Failed to backup $volume"
     done
 else
-    log "  No volumes found with raspberry-pi2 prefix"
+    log "  No volumes found (expected: raspberry-pi2_* and camera-dashboard_*)"
 fi
 
 # Backup repository configs
@@ -125,6 +125,7 @@ fi
 
 # Calculate backup size
 BACKUP_SIZE=$(du -sh "$BACKUP_DIR" | cut -f1)
+BACKUP_SIZE_BYTES=$(du -sb "$BACKUP_DIR" | cut -f1)
 log "Backup size: $BACKUP_SIZE"
 
 # Cleanup old backups (keep last 30 days)
@@ -145,6 +146,28 @@ log "✅ Backup completed successfully!"
 log "Location: $BACKUP_DIR"
 log "Size: $BACKUP_SIZE"
 log "=========================================="
+
+# Write metrics for Prometheus
+METRICS_FILE="/var/lib/node_exporter/textfile_collector/docker_backup.prom"
+cat > "${METRICS_FILE}.$$" << EOF
+# HELP docker_backup_last_success_timestamp Unix timestamp of last successful backup
+# TYPE docker_backup_last_success_timestamp gauge
+docker_backup_last_success_timestamp{hostname="${HOSTNAME}"} $(date +%s)
+
+# HELP docker_backup_size_bytes Size of last backup in bytes
+# TYPE docker_backup_size_bytes gauge
+docker_backup_size_bytes{hostname="${HOSTNAME}"} ${BACKUP_SIZE_BYTES}
+
+# HELP docker_backup_duration_seconds Duration of last backup in seconds
+# TYPE docker_backup_duration_seconds gauge
+docker_backup_duration_seconds{hostname="${HOSTNAME}"} ${SECONDS}
+
+# HELP docker_backup_status Status of last backup (1=success, 0=failure)
+# TYPE docker_backup_status gauge
+docker_backup_status{hostname="${HOSTNAME}"} 1
+EOF
+mv "${METRICS_FILE}.$$" "${METRICS_FILE}"
+log "Metrics written to ${METRICS_FILE}"
 
 # Cleanup (unmount) happens in trap EXIT
 exit 0

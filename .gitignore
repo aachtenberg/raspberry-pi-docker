@@ -13,6 +13,11 @@ secrets/
 *.crt
 *.token
 
+# Local Network Topology - keep private
+# Use .example templates for public repo
+/prometheus/prometheus.yml
+/.github/copilot-instructions.md
+
 # Docker Data and Volumes
 # These are persisted in Docker volumes, not in Git
 data/

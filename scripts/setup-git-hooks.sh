@@ -36,9 +36,13 @@ if echo "$STAGED_FILES" | grep -qE '^\.env$|/\.env$'; then
 fi
 echo "✅ No .env file in staged changes"
 
-# Check 2: Block common secret patterns in staged content
+# Check 2: Block common secret patterns in staged content (skip .example files)
 BLOCKED_PATTERNS='(password|secret|api_key|token).*=.*[a-zA-Z0-9_-]{20,}|apiv3_[A-Za-z0-9_-]+'
 for file in $STAGED_FILES; do
+    # Skip .example files and documentation
+    if [[ "$file" =~ \.example$ ]] || [[ "$file" =~ \.md$ ]]; then
+        continue
+    fi
     if [ -f "$file" ]; then
         if git diff --cached "$file" | grep -E "$BLOCKED_PATTERNS" > /dev/null 2>&1; then
             echo "❌ ERROR: Secret-like content detected in $file"
@@ -60,6 +64,24 @@ if echo "$STAGED_FILES" | grep -q '^prometheus/influxdb3_token$'; then
     fi
     echo "✅ prometheus/influxdb3_token is placeholder"
 fi
+
+# Check 3: Block real network topology configs (should use .example templates)
+if echo "$STAGED_FILES" | grep -qE '^prometheus/prometheus\.yml$|^\.github/copilot-instructions\.md$'; then
+    echo "❌ ERROR: Attempting to commit local network topology files!"
+    echo "   These files contain sensitive network information (IPs/hostnames):"
+    for file in prometheus/prometheus.yml .github/copilot-instructions.md; do
+        if echo "$STAGED_FILES" | grep -q "^$file$"; then
+            echo "   - $file"
+        fi
+    done
+    echo ""
+    echo "   📋 Solution:"
+    echo "   1. Unstage with: git reset HEAD <file>"
+    echo "   2. Commit sanitized .example templates instead"
+    echo "   3. Run './scripts/setup-local-configs.sh' to regenerate local versions"
+    exit 1
+fi
+echo "✅ No sensitive network topology files in staged changes"
 
 # Check 3: Validate docker-compose.yml syntax
 if echo "$STAGED_FILES" | grep -q 'docker-compose.yml'; then
@@ -97,5 +119,5 @@ echo "✅ post-commit hook installed"
 
 echo ""
 echo "🎉 Git hooks setup complete!"
-echo "   - pre-commit: Blocks .env, warns secrets, validates docker compose"
+echo "   - pre-commit: Blocks .env, secrets, network topology, validates docker compose"
 echo "   - post-commit: Push reminder"
