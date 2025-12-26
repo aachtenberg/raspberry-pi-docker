@@ -1,0 +1,77 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: 'prometheus'
+    static_configs:
+      - targets: ['localhost:9090']
+
+  - job_name: 'raspberry-pi'
+    static_configs:
+      - targets: ['node-exporter:9100']
+        labels:
+          instance: 'raspberry-pi'
+          host: 'PI1_HOSTNAME'
+
+  - job_name: 'raspberry-pi2'
+    static_configs:
+      - targets: ['PI2_HOSTNAME:9100']
+        labels:
+          instance: 'raspberry-pi2'
+          host: 'PI2_HOSTNAME'
+
+  - job_name: 'telegraf-pi2'
+    static_configs:
+      - targets: ['PI2_HOSTNAME:9273']
+        labels:
+          instance: 'raspberry-pi2'
+          service: 'telegraf'
+    scrape_interval: 15s
+
+  # InfluxDB v2 - DISABLED (migrated to v3)
+  # - job_name: 'influxdb'
+  #   static_configs:
+  #     - targets: ['influxdb:8086']
+  #       labels:
+  #         instance: 'raspberry-pi'
+  #         service: 'influxdb-v2'
+  #   metrics_path: '/metrics'
+  #   scrape_interval: 15s
+
+  - job_name: 'influxdb3'
+    static_configs:
+      - targets: ['influxdb3-core:8181']
+        labels:
+          instance: 'raspberry-pi'
+          service: 'influxdb-v3'
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    fallback_scrape_protocol: PrometheusText0.0.4
+    authorization:
+      type: Bearer
+      credentials_file: /etc/prometheus/influxdb3_token
+
+  - job_name: 'telegraf'
+    static_configs:
+      - targets: ['telegraf:9273']
+        labels:
+          instance: 'raspberry-pi'
+          service: 'telegraf'
+    scrape_interval: 15s
+
+  - job_name: 'mosquitto'
+    static_configs:
+      - targets: ['mosquitto-exporter:9234']
+        labels:
+          instance: 'raspberry-pi'
+          service: 'mosquitto'
+    scrape_interval: 15s
+
+  - job_name: 'postgres'
+    static_configs:
+      - targets: ['PI2_HOSTNAME:9187']
+        labels:
+          instance: 'raspberry-pi2'
+          service: 'postgresql'
+    scrape_interval: 15s
