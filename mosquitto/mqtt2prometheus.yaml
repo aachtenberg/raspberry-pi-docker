@@ -1,0 +1,102 @@
+# mqtt2prometheus configuration for Mosquitto $SYS metrics
+# Maps Mosquitto broker statistics to Prometheus metrics
+
+mqtt:
+  server: tcp://mosquitto:1883
+  topic_path: $SYS/#
+  qos: 0
+
+cache:
+  timeout: 24h
+
+metrics:
+  # Client connections
+  - prom_name: mosquitto_connected_clients
+    mqtt_name: $SYS/broker/clients/connected
+    help: Number of currently connected clients
+    type: gauge
+    
+  - prom_name: mosquitto_disconnected_clients
+    mqtt_name: $SYS/broker/clients/disconnected
+    help: Number of disconnected clients (with persistent sessions)
+    type: gauge
+    
+  - prom_name: mosquitto_total_clients
+    mqtt_name: $SYS/broker/clients/total
+    help: Total number of clients (connected + disconnected with sessions)
+    type: gauge
+    
+  - prom_name: mosquitto_maximum_clients
+    mqtt_name: $SYS/broker/clients/maximum
+    help: Maximum number of concurrent clients since broker start
+    type: gauge
+
+  # Messages
+  - prom_name: mosquitto_messages_received_total
+    mqtt_name: $SYS/broker/messages/received
+    help: Total messages received by the broker since startup
+    type: counter
+    
+  - prom_name: mosquitto_messages_sent_total
+    mqtt_name: $SYS/broker/messages/sent
+    help: Total messages sent by the broker since startup
+    type: counter
+    
+  - prom_name: mosquitto_messages_stored
+    mqtt_name: $SYS/broker/messages/stored
+    help: Number of messages currently stored (QoS>0 messages in flight and queued)
+    type: gauge
+    
+  - prom_name: mosquitto_messages_retained
+    mqtt_name: $SYS/broker/retained messages/count
+    help: Number of retained messages
+    type: gauge
+
+  # Network
+  - prom_name: mosquitto_bytes_received_total
+    mqtt_name: $SYS/broker/bytes/received
+    help: Total bytes received since broker startup
+    type: counter
+    
+  - prom_name: mosquitto_bytes_sent_total
+    mqtt_name: $SYS/broker/bytes/sent
+    help: Total bytes sent since broker startup
+    type: counter
+
+  # Load
+  - prom_name: mosquitto_load_messages_received_1min
+    mqtt_name: $SYS/broker/load/messages/received/1min
+    help: Message receive rate (1 minute average)
+    type: gauge
+    
+  - prom_name: mosquitto_load_messages_sent_1min
+    mqtt_name: $SYS/broker/load/messages/sent/1min
+    help: Message send rate (1 minute average)
+    type: gauge
+    
+  - prom_name: mosquitto_load_publish_received_1min
+    mqtt_name: $SYS/broker/load/publish/received/1min
+    help: PUBLISH message receive rate (1 minute average)
+    type: gauge
+
+  # Subscriptions
+  - prom_name: mosquitto_subscriptions
+    mqtt_name: $SYS/broker/subscriptions/count
+    help: Total number of subscriptions
+    type: gauge
+
+  # System
+  - prom_name: mosquitto_uptime_seconds
+    mqtt_name: $SYS/broker/uptime
+    help: Broker uptime in seconds
+    type: gauge
+    
+  - prom_name: mosquitto_heap_current
+    mqtt_name: $SYS/broker/heap/current
+    help: Current heap size in bytes
+    type: gauge
+    
+  - prom_name: mosquitto_heap_maximum
+    mqtt_name: $SYS/broker/heap/maximum
+    help: Maximum heap size in bytes since broker start
+    type: gauge
