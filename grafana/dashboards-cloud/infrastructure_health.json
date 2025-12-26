@@ -153,17 +153,15 @@
     {
       "datasource": {
         "type": "prometheus",
-        "uid": "grafanacloud-prom"
+        "uid": "cf6z7j8gxto1sc"
       },
-      "description": "Host availability",
+      "description": "Host uptime in days since last boot",
       "fieldConfig": {
         "defaults": {
           "color": {
             "mode": "thresholds"
           },
           "mappings": [],
-          "max": 100,
-          "min": 0,
           "thresholds": {
             "mode": "absolute",
             "steps": [
@@ -172,16 +170,16 @@
                 "value": 0
               },
               {
-                "color": "yellow",
-                "value": 95
+                "color": "orange",
+                "value": 1
               },
               {
                 "color": "green",
-                "value": 99
+                "value": 7
               }
             ]
           },
-          "unit": "percent"
+          "unit": "d"
         },
         "overrides": []
       },
@@ -203,10 +201,10 @@
             "lastNotNull"
           ],
           "fields": "",
-          "values": false
+          "values": true
         },
         "showPercentChange": false,
-        "textMode": "value",
+        "textMode": "auto",
         "wideLayout": true
       },
       "pluginVersion": "12.4.0-19938312174",
@@ -214,13 +212,13 @@
         {
           "datasource": {
             "type": "prometheus",
-            "uid": "grafanacloud-prom"
+            "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "avg by(instance) (up) * 100",
-          "instant": false,
+          "editorMode": "code",
+          "expr": "(time() - (node_boot_time_seconds or prometheus_node_boot_time_seconds)) / 86400",
+          "instant": true,
           "legendFormat": "{{instance}}",
-          "queryType": "range",
-          "range": true,
+          "range": false,
           "refId": "A"
         }
       ],
