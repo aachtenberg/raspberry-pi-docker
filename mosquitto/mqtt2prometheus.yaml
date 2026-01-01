@@ -2,7 +2,7 @@
 # Maps Mosquitto broker statistics to Prometheus metrics
 
 mqtt:
-  server: tcp://mosquitto:1883
+  server: tcp://mosquitto-broker:1883
   topic_path: $SYS/#
   qos: 0
 

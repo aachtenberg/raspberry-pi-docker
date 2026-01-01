@@ -85,7 +85,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/clients/connected\"}",
+          "expr": "broker_clients_connected",
           "refId": "A"
         }
       ],
@@ -209,7 +209,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(mosquitto{topic=\"$SYS/broker/messages/received\"}[5m]) * 60",
+          "expr": "rate(broker_messages_received[5m]) * 60",
           "legendFormat": "Messages received/min",
           "refId": "A"
         },
@@ -218,7 +218,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(mosquitto{topic=\"$SYS/broker/messages/sent\"}[5m]) * 60",
+          "expr": "rate(broker_messages_sent[5m]) * 60",
           "legendFormat": "Messages sent/min",
           "refId": "B"
         }
@@ -313,7 +313,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(mosquitto{topic=\"$SYS/broker/bytes/received\"}[5m])",
+          "expr": "rate(broker_bytes_received[5m])",
           "legendFormat": "Bytes received/sec",
           "refId": "A"
         },
@@ -322,7 +322,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(mosquitto{topic=\"$SYS/broker/bytes/sent\"}[5m])",
+          "expr": "rate(broker_bytes_sent[5m])",
           "legendFormat": "Bytes sent/sec",
           "refId": "B"
         }
@@ -416,7 +416,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/load/connections/1min\"}",
+          "expr": "broker_load_connections_1min",
           "legendFormat": "Connections/min",
           "refId": "A"
         }
@@ -510,7 +510,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/clients/connected\"}",
+          "expr": "broker_clients_connected",
           "legendFormat": "Connected",
           "refId": "A"
         },
@@ -519,7 +519,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/clients/disconnected\"}",
+          "expr": "broker_clients_disconnected",
           "legendFormat": "Disconnected (with sessions)",
           "refId": "B"
         },
@@ -528,7 +528,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/clients/maximum\"}",
+          "expr": "broker_clients_maximum",
           "legendFormat": "Maximum",
           "refId": "C"
         }
@@ -622,7 +622,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/messages/stored\"}",
+          "expr": "broker_messages_stored",
           "legendFormat": "Messages stored (queued)",
           "refId": "A"
         },
@@ -631,7 +631,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/retained messages/count\"}",
+          "expr": "broker_retained_messages_count",
           "legendFormat": "Retained messages",
           "refId": "B"
         },
@@ -640,7 +640,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/subscriptions/count\"}",
+          "expr": "broker_subscriptions_count",
           "legendFormat": "Subscriptions",
           "refId": "C"
         }
@@ -710,7 +710,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/uptime\"} / 3600",
+          "expr": "broker_uptime / 3600",
           "refId": "A"
         }
       ],
@@ -803,7 +803,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/heap/current\"}",
+          "expr": "broker_heap_size_current",
           "legendFormat": "Current heap",
           "refId": "A"
         },
@@ -812,7 +812,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "mosquitto{topic=\"$SYS/broker/heap/maximum\"}",
+          "expr": "broker_heap_size_maximum",
           "legendFormat": "Maximum heap",
           "refId": "B"
         }
