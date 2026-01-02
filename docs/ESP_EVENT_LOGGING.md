@@ -14,64 +14,101 @@ ESP Device → MQTT (esp-sensor-hub/{device}/events)
 
 ## Event Message Format
 
-### JSON Payload Structure
+### Temperature Sensor Events
+**Topic**: `esp-sensor-hub/{device-name}/events`
+
 ```json
 {
   "device": "Spa",
-  "chip_id": "A1B2C3D4",
-  "event_type": "wifi_reconnect",
+  "chip_id": "A0B1C2D3E4F5",
+  "firmware_version": "1.0.3-build20251222",
+  "schema_version": 1,
+  "event": "ota_start",
   "severity": "warning",
-  "message": "WiFi connection lost, reconnecting...",
-  "error_code": "WIFI_DISCONNECT",
-  "duration_ms": 2345,
-  "timestamp": 1704236400000
+  "timestamp": 12345,
+  "uptime_seconds": 3600,
+  "free_heap": 45000,
+  "message": "OTA update starting (sketch)"
+}
+```
+
+### Surveillance Camera Events
+**Topic**: `surveillance/{device-name}/events`
+
+```json
+{
+  "device": "Front Door Cam",
+  "chip_id": "1234567890ABCDEF",
+  "trace_id": "a1b2c3d4e5f6",
+  "traceparent": "00-a1b2c3d4e5f6-1234567890ab-01",
+  "seq_num": 42,
+  "schema_version": 1,
+  "location": "surveillance",
+  "timestamp": 12345,
+  "event": "motion_detected",
+  "severity": "info",
+  "uptime": 3600,
+  "free_heap": 120000
 }
 ```
 
 ### Field Types
 **Tags** (indexed, for filtering):
-- `device`: Device name (e.g., "Spa", "Main Cottage", "Pump House")
-- `chip_id`: ESP32 chip ID
-- `topic`: MQTT topic
+- `device`: Device name (from MQTT topic)
+- `chip_id`: ESP32/ESP8266 chip ID
+- `location`: Fixed as "surveillance" for cameras
+- `topic`: MQTT topic path
 
 **String Fields**:
-- `event_type`: Event category (wifi_reconnect, ota_update, deep_sleep, error, warning, info)
-- `severity`: Event severity (info, warning, error, critical)
-- `message`: Human-readable event description
-- `error_code`: Optional error code for debugging
-- `status`: Optional status field
+- `event`: Event name (see Event Types below)
+- `severity`: Event severity (info, warning, error)
+- `message`: Human-readable event description (optional)
+- `firmware_version`: Device firmware version
+- `trace_id`: Distributed tracing ID (surveillance only)
+- `traceparent`: W3C trace context (surveillance only)
 
 **Numeric Fields**:
-- `duration_ms`: Event duration in milliseconds
-- `timestamp`: Unix timestamp (milliseconds)
-- Any other numeric values
+- `timestamp`: Device uptime in milliseconds
+- `uptime_seconds`: Device uptime in seconds
+- `free_heap`: Free heap memory in bytes
+- `seq_num`: Sequence number (surveillance only)
+- `schema_version`: Message schema version
 
 ## Event Types
 
-### Connectivity Events
-- `wifi_reconnect`: WiFi connection restored after disconnection
-- `wifi_connect`: Initial WiFi connection on boot
-- `mqtt_reconnect`: MQTT broker reconnection
-- `network_timeout`: Network operation timeout
+## Event Types
 
-### System Events
-- `ota_update`: Over-the-air firmware update
-- `deep_sleep`: Entering deep sleep mode
-- `wakeup`: Waking from deep sleep
-- `reboot`: Device reboot
-- `low_battery`: Battery voltage below threshold
-- `heap_low`: Low free heap memory
+### Temperature Sensor Events
+- `ota_start`: OTA update beginning
+- `ota_complete`: OTA update successful
+- `ota_error`: OTA update failed
+- `ota_warning`: OTA-related warnings
+- `sensor_error`: DS18B20 read failures
+- `deep_sleep_config`: Deep sleep configuration changes
+- `deep_sleep_warning`: Deep sleep configuration warnings
+- `device_restart`: Device restarting via MQTT command
+- `config_portal`: WiFi configuration portal events
+- `device_configured`: Device name/WiFi configured
+- `wifi_connected`: WiFi connection established
+- `command_error`: MQTT command processing errors
 
-### Error Events
-- `sensor_error`: Temperature sensor read failure
-- `mqtt_publish_failed`: Failed to publish to MQTT
-- `wifi_failed`: WiFi connection permanently failed
-- `heap_exhausted`: Out of memory
+### Surveillance Camera Events
+- `motion_detected`: Motion detected by camera
+- `camera_error`: Camera sensor or processing error
+- `reconnect`: MQTT/WiFi reconnection
+- `image_capture`: Image captured and published
+- `config_change`: Configuration updated
+
+### Severity Levels
+- `info`: Normal operational events
+- `warning`: Important events requiring attention
+- `error`: Failure conditions
 
 ## Telegraf Configuration
 
-### Input Plugin
+### Input Plugins
 ```toml
+# Temperature Sensor Events
 [[inputs.mqtt_consumer]]
   servers = ["tcp://mosquitto-broker:1883"]
   topics = ["esp-sensor-hub/+/events"]
@@ -79,18 +116,40 @@ ESP Device → MQTT (esp-sensor-hub/{device}/events)
   data_format = "json"
   name_override = "esp_events"
   tag_keys = ["device", "chip_id"]
-  json_string_fields = ["event_type", "severity", "message", "error_code", "status"]
+  json_string_fields = ["event", "severity", "message", "firmware_version"]
+
+# Surveillance Camera Events
+[[inputs.mqtt_consumer]]
+  servers = ["tcp://mosquitto-broker:1883"]
+  topics = ["surveillance/+/events"]
+  qos = 0
+  data_format = "json"
+  name_override = "surveillance_events"
+  tag_keys = ["device", "chip_id", "location"]
+  json_string_fields = ["event", "severity", "trace_id", "traceparent"]
+```
+
+### Subscription Examples
+```bash
+# All temperature sensor events
+mosquitto_sub -h localhost -t "esp-sensor-hub/+/events" -v
+
+# All surveillance camera events
+mosquitto_sub -h localhost -t "surveillance/+/events" -v
+
+# All events from both device types
+mosquitto_sub -h localhost -t "+/+/events" -v
 ```
 
 ### Outputs
-1. **InfluxDB 3 Core**: `esp_events` database for historical queries
+1. **InfluxDB 3 Core**: `esp_events` database for historical queries (both temperature sensors and cameras)
 2. **Prometheus**: `:9273/metrics` endpoint with counters
 
 ## InfluxDB 3 Queries
 
 ### Recent events by device
 ```sql
-SELECT time, device, event_type, severity, message
+SELECT time, device, event, severity, message
 FROM esp_events
 WHERE time > now() - interval '1 hour'
 ORDER BY time DESC
@@ -99,18 +158,26 @@ LIMIT 50
 
 ### Event counts by type
 ```sql
-SELECT event_type, count(*) as count
+SELECT event, count(*) as count
 FROM esp_events
 WHERE time > now() - interval '24 hours'
-GROUP BY event_type
+GROUP BY event
 ORDER BY count DESC
+```
+
+### Surveillance events with trace IDs
+```sql
+SELECT time, device, event, trace_id, seq_num
+FROM surveillance_events
+WHERE time > now() - interval '1 hour'
+ORDER BY time DESC
 ```
 
 ### Error events
 ```sql
-SELECT time, device, event_type, message, error_code
+SELECT time, device, event, message
 FROM esp_events
-WHERE severity IN ('error', 'critical')
+WHERE severity IN ('error')
   AND time > now() - interval '7 days'
 ORDER BY time DESC
 ```
@@ -120,8 +187,9 @@ ORDER BY time DESC
 Telegraf exposes event counters via Prometheus:
 
 ```
-esp_events{device="Spa",event_type="wifi_reconnect",severity="warning"} 5
-esp_events{device="Main Cottage",event_type="error",severity="error"} 2
+esp_events{device="Spa",event="ota_start",severity="warning"} 2
+esp_events{device="Main Cottage",event="sensor_error",severity="error"} 1
+surveillance_events{device="Front-Door-Cam",event="motion_detected",severity="info"} 15
 ```
 
 ### Alert Rules
@@ -139,14 +207,21 @@ groups:
           summary: "High error rate on {{ $labels.device }}"
           description: "Device {{ $labels.device }} reporting {{ $value }} errors/sec"
       
-      - alert: ESPCriticalEvent
-        expr: esp_events{severity="critical"} > 0
+      - alert: OTAUpdateFailed
+        expr: increase(esp_events{event="ota_error"}[10m]) > 0
         for: 1m
         labels:
-          severity: critical
+          severity: warning
         annotations:
-          summary: "Critical event on {{ $labels.device }}"
-          description: "{{ $labels.event_type }}: {{ $labels.message }}"
+          summary: "OTA update failed on {{ $labels.device }}"
+      
+      - alert: SensorReadFailures
+        expr: increase(esp_events{event="sensor_error"}[5m]) > 3
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Multiple sensor failures on {{ $labels.device }}"
 ```
 
 ## Grafana Dashboards
@@ -176,6 +251,17 @@ GROUP BY time_bucket, device
 ORDER BY time_bucket
 ```
 
+### Event Type Distribution
+```sql
+SELECT
+  event,
+  count(*) as count
+FROM esp_events
+WHERE time >= $__timeFrom AND time <= $__timeTo
+GROUP BY event
+ORDER BY count DESC
+```
+
 ### Severity Distribution
 ```sql
 SELECT
@@ -186,31 +272,17 @@ WHERE time >= $__timeFrom AND time <= $__timeTo
 GROUP BY severity
 ```
 
-## ESP Device Implementation
+## Device Implementation
 
-### Example Arduino Code
-```cpp
-void publishEvent(const char* eventType, const char* severity, const char* message) {
-  StaticJsonDocument<256> doc;
-  doc["device"] = DEVICE_NAME;
-  doc["chip_id"] = getChipId();
-  doc["event_type"] = eventType;
-  doc["severity"] = severity;
-  doc["message"] = message;
-  doc["timestamp"] = millis();
-  
-  char buffer[256];
-  serializeJson(doc, buffer);
-  
-  String topic = "esp-sensor-hub/" + String(DEVICE_NAME) + "/events";
-  mqttClient.publish(topic.c_str(), buffer, false);
-}
+**Note**: Event publishing is already implemented in your ESP devices (firmware 1.0.9+ for most devices, 1.0.13+ for newer ones). Events are automatically published for:
+- OTA updates (start, complete, error, warning)
+- Sensor errors
+- Deep sleep configuration changes
+- Device restarts
+- WiFi/MQTT connection events
+- Configuration portal activity
 
-// Usage
-publishEvent("wifi_reconnect", "warning", "WiFi connection restored");
-publishEvent("sensor_error", "error", "Failed to read temperature sensor");
-publishEvent("deep_sleep", "info", "Entering deep sleep for 60s");
-```
+No firmware changes needed - events are already flowing to MQTT!
 
 ## Best Practices
 
