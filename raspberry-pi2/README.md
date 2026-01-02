@@ -1,11 +1,27 @@
 # Raspberry Pi 2 Monitoring Setup
 
-Configuration for raspberrypi2 (set your LAN host/IP, e.g., raspberrypi2.local) - lightweight monitoring exporters only. No Ollama or autoheal services run here anymore.
+Configuration for raspberrypi2 (192.168.0.146) - monitoring exporters + AI monitor for camera dashboard stack.
 
 ## Services
 
 - **node-exporter** (port 9100) - System metrics
-- **telegraf** (port 9273) - Exposes local host and Docker metrics to Prometheus
+- **telegraf** (port 9273) - Docker + host metrics
+- **timescaledb** (port 5433) - Time-series database (camera dashboard)
+- **postgres-exporter** (port 9188) - TimescaleDB metrics
+- **promtail** (port 9080) - Log shipping to Grafana Cloud
+- **ai-monitor** (port 8001) - Self-healing + LLM triage for Pi2 containers
+
+## AI Monitor (NEW)
+
+Pi2 runs its own ai-monitor instance monitoring local containers via Docker socket. It:
+- Monitors camera dashboard services (postgres, api, web, sftp)
+- Monitors exporters (telegraf, promtail, postgres-exporter)
+- Reports metrics to Pi1's Prometheus on port 8001
+- Shares same Claude/Gemini API keys from `.env`
+
+**Protected services** (never auto-restart): `postgres`, `timescaledb`, `mediamtx`
+
+See [docs/AI_MONITOR.md](../docs/AI_MONITOR.md) for full documentation.
 
 ## Quick Setup
 

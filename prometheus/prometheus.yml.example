@@ -28,6 +28,44 @@ scrape_configs:
           instance: 'raspberry-pi2'
           service: 'telegraf'
     scrape_interval: 15s
+  - job_name: 'timescaledb'
+    static_configs:
+      - targets: ['PI2_HOSTNAME:9188']
+        labels:
+          instance: 'raspberry-pi2'
+          service: 'timescaledb'
+    scrape_interval: 15s
+
+  - job_name: 'promtail-pi2'
+    static_configs:
+      - targets: ['PI2_HOSTNAME:9080']
+        labels:
+          instance: 'raspberry-pi2'
+          service: 'promtail'
+    scrape_interval: 15s
+
+  - job_name: 'ai-monitor'
+    static_configs:
+      - targets: ['ai-monitor:8000']
+        labels:
+          instance: 'raspberry-pi'
+          service: 'ai-monitor'
+    scrape_interval: 15s
+
+  - job_name: 'ai-monitor-pi2'
+    static_configs:
+      - targets: ['PI2_HOSTNAME:8001']
+        labels:
+          instance: 'raspberry-pi2'
+          service: 'ai-monitor'
+    scrape_interval: 15s
+  - job_name: 'mosquitto'
+    static_configs:
+      - targets: ['mosquitto-exporter:9234']
+        labels:
+          instance: 'raspberry-pi'
+          service: 'mosquitto'
+    scrape_interval: 15s
 
   # InfluxDB v2 - DISABLED (migrated to v3)
   # - job_name: 'influxdb'

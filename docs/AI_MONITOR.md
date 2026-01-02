@@ -10,14 +10,26 @@ The AI monitor is an autonomous agent that monitors Docker containers and Promet
 ## Architecture
 
 ```
-┌─────────────────┐      ┌──────────────┐      ┌─────────────┐
-│   Prometheus    │─────▶│  AI Monitor  │─────▶│   Docker    │
-│  (metrics API)  │      │   (Python)   │      │  (restarts) │
-└─────────────────┘      └──────────────┘      └─────────────┘
-                                │
-                                ├─────▶ Claude API (triage)
-                                │
-                                └─────▶ Prometheus metrics (:8000)
+┌─────────────────┐      ┌──────────────────┐      ┌─────────────┐
+│   Prometheus    │─────▶│  AI Monitor Pi1  │─────▶│  Docker Pi1 │
+│  (metrics API)  │      │    (Python)      │      │ (restarts)  │
+└─────────────────┘      └──────────────────┘      └─────────────┘
+         │                        │
+         │                        ├─────▶ Claude API (triage)
+         │                        │
+         │                        └─────▶ Prometheus metrics (:8000)
+         │
+         └──────────────▶ ┌──────────────────┐      ┌─────────────┐
+                          │  AI Monitor Pi2  │─────▶│  Docker Pi2 │
+                          │    (Python)      │      │ (restarts)  │
+                          └──────────────────┘      └─────────────┘
+                                   │
+                                   ├─────▶ Claude API (triage)
+                                   │
+                                   └─────▶ Prometheus metrics (:8001)
+
+Multi-host deployment: Each Pi runs its own ai-monitor monitoring local containers
+via Docker socket. Both report metrics to central Prometheus on Pi1.
 ```
 
 ## Features
@@ -32,9 +44,13 @@ The AI monitor is an autonomous agent that monitors Docker containers and Promet
 
 Note: We do not rely on Docker Compose service-level healthchecks. AI Monitor is the source of truth for health.
 
-**Current allowlist**: `telegraf`, `prometheus`
+**Current allowlist**: 
+- **Pi1 (raspberrypi)**: `telegraf`, `prometheus`
+- **Pi2 (raspberrypi2)**: `telegraf`, `promtail`
 
-**Protected** (not auto-restarted): `mosquitto-broker` (ESP devices can't auto-reconnect)
+**Protected** (not auto-restarted): 
+- **Pi1**: `mosquitto-broker` (ESP devices can't auto-reconnect), `influxdb3-core` (data integrity), `nginx-proxy-manager` (breaks connections), `homeassistant` (complex state)
+- **Pi2**: `postgres` (camera-dashboard DB), `timescaledb` (data integrity), `mediamtx` (camera streams)
 
 ### LLM Triage
 - Gathers snapshot of Prometheus down targets, Docker state, and resource usage (with last 50 lines of logs for failing containers)
@@ -125,6 +141,22 @@ docker compose up -d --force-recreate ai-monitor
 
 ## Usage
 
+### Deploy on Both Pis
+
+**Pi1 (raspberrypi):**
+```bash
+cd ~/docker
+docker compose up -d ai-monitor
+docker compose logs -f ai-monitor
+```
+
+**Pi2 (raspberrypi2):**
+```bash
+cd ~/docker/raspberry-pi2
+docker compose up -d ai-monitor
+docker compose logs -f ai-monitor
+```
+
 ### Check Status
 ```bash
 # View ai-monitor logs
@@ -208,9 +240,37 @@ Prevents restart loops for services with persistent issues (e.g., config errors,
 4. **Trend analysis**: Use historical data to predict failures
 5. **Auto-rollback**: Revert container to previous version if restart fails repeatedly
 
+## Competitive Landscape
+
+### Commercial AIOps Platforms
+- **PagerDuty Event Intelligence** - ML-based alert grouping ($$$)
+- **BigPanda** - Alert correlation and incident triage ($$$)
+- **Moogsoft** - AIOps with automated root cause analysis ($$$)
+- **Datadog Watchdog** / **New Relic Applied Intelligence** - Cloud-native anomaly detection ($$$)
+- **Dynatrace Davis AI** - Causal AI for enterprise observability ($$$$$)
+
+### Open Source Alternatives
+- **Robusta.dev / Holmes** - K8s-native troubleshooting with LLM integration (K8s-specific)
+- **K8sGPT** - Kubernetes diagnostics using GPT models (K8s-only)
+- **Keptn** - Event-driven orchestration with ML capabilities (complex setup)
+- **Prometheus + Grafana ML** - Limited anomaly detection (no triage)
+
+### Why AI Monitor is Different
+- ✅ **Fully self-hosted** - No vendor lock-in, runs on Raspberry Pi
+- ✅ **Modern LLM reasoning** - Claude/Gemini vs proprietary ML models
+- ✅ **Lightweight** - Single Python container vs enterprise platforms
+- ✅ **Cost-effective** - ~$0.50/month API costs vs $500-5000/month SaaS
+- ✅ **General-purpose** - Works with any Prometheus-compatible stack (not K8s-specific)
+- ✅ **Context-aware** - Passes historical trends + logs + state to LLM for rich analysis
+- ✅ **Structured incident reports** - Automatic markdown documentation
+
+**Most similar to**: Robusta's Holmes, but broader scope (not K8s-locked) and simpler deployment.
+
 ## References
 
 - Code: `/home/aachten/docker/ai-monitor/monitor.py`
 - Prometheus config: `/home/aachten/docker/prometheus/prometheus.yml`
 - Grafana dashboard: `/home/aachten/docker/grafana/dashboards-cloud/ai_monitor_metrics.json`
 - Claude API docs: https://docs.anthropic.com/claude/reference/
+- Robusta Holmes: https://github.com/robusta-dev/holmesgpt
+- K8sGPT: https://github.com/k8sgpt-ai/k8sgpt

@@ -26,7 +26,7 @@ services:
   #     - monitoring
 
   # ============================================================================
-  # PROMETHEUS STACK - Metrics
+  # PROMETHEUS STACK - Metrics & Logs
   # ============================================================================
   prometheus:
     image: prom/prometheus:latest
@@ -43,6 +43,19 @@ services:
       - '--storage.tsdb.path=/prometheus'
       - '--web.console.libraries=/usr/share/prometheus/console_libraries'
       - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - monitoring
+
+  loki:
+    image: grafana/loki:latest
+    container_name: loki
+    restart: unless-stopped
+    user: "1000:1000"
+    ports:
+      - "3100:3100"
+    volumes:
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
     networks:
       - monitoring
 
@@ -77,6 +90,19 @@ services:
       - mosquitto-log:/mosquitto/log
     networks:
       - monitoring
+
+  mosquitto-exporter:
+    image: nolte/mosquitto-exporter:latest
+    container_name: mosquitto-exporter
+    restart: unless-stopped
+    environment:
+      - BROKER_ENDPOINT=tcp://mosquitto-broker:1883
+    ports:
+      - '9234:9234'
+    networks:
+      - monitoring
+    depends_on:
+      - mosquitto
 
   # ============================================================================
   # NGINX PROXY MANAGER - Reverse Proxy
@@ -163,6 +189,7 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock:ro
     environment:
       - INFLUXDB3_ADMIN_TOKEN=${INFLUXDB3_ADMIN_TOKEN}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
     depends_on:
       - mosquitto
 
@@ -242,57 +269,6 @@ services:
   # ============================================================================
   # OPENTELEMETRY COLLECTOR - Trace Ingestion
   # ============================================================================
-  otel-collector:
-    image: otel/opentelemetry-collector:latest
-    container_name: otel-collector
-    restart: unless-stopped
-    command: ["--config=/etc/otelcol/config.yaml"]
-    ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
-    volumes:
-      - ./otel-collector/config.yaml:/etc/otelcol/config.yaml:ro
-    networks:
-      - monitoring
-    depends_on:
-      - jaeger
-
-  # ============================================================================
-  # JAEGER - Trace Visualization
-  # ============================================================================
-  jaeger:
-    image: jaegertracing/all-in-one:1.57
-    container_name: jaeger
-    restart: unless-stopped
-    ports:
-      - "16686:16686"  # Jaeger UI
-      - "14250:14250"  # gRPC ingest
-      - "14268:14268"  # HTTP ingest
-      - "9411:9411"    # Zipkin ingest (optional)
-    networks:
-      - monitoring
-
-  # ============================================================================
-  # MQTT OTEL BRIDGE - Trace Generation from MQTT
-  # ============================================================================
-  mqtt-otel-bridge:
-    build:
-      context: ./mqtt-otel-bridge
-      dockerfile: Dockerfile
-    container_name: mqtt-otel-bridge
-    restart: unless-stopped
-    environment:
-      - MQTT_BROKER=mosquitto-broker
-      - MQTT_PORT=1883
-      - MQTT_TOPIC=esp-sensor-hub/#
-      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4317
-      - OTEL_SERVICE_NAME=mqtt-otel-bridge
-    networks:
-      - monitoring
-    depends_on:
-      - mosquitto
-      - otel-collector
-
 # ==============================================================================
 # VOLUMES
 # ==============================================================================
@@ -302,6 +278,7 @@ volumes:
   influxdb3-data:
   grafana-data:
   prometheus-data:
+  loki-data:
   mosquitto-data:
   mosquitto-log:
   portainer-data:

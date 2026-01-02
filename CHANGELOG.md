@@ -53,7 +53,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 - **Docker Compose Updates**
   - Removed orphaned mosquitto-exporter service (switched to Telegraf-based collection)
-  - Updated mqtt-otel-bridge topics to support comma-separated list parsing
 
 - **Nginx Proxy Manager (Camera Dashboard)**
   - Simplified proxy configurations for `/api`, `/streams`, and `/` routes
