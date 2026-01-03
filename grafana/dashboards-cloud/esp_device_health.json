@@ -247,12 +247,14 @@
       },
       "targets": [
         {
+          "dataset": "iox",
           "datasource": {
             "type": "grafana-influxdb-flightsql-datasource",
             "uid": "ef6y1vgh2r6kgc"
           },
+          "editorMode": "builder",
           "format": "time_series",
-          "rawSql": "SELECT time, device, wifi_reconnects FROM esp_status WHERE time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "rawSql": "SELECT \"time\", \"device\", \"wifi_reconnects\" FROM \"esp_status\" WHERE \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\" ASC",
           "refId": "A"
         }
       ],
@@ -418,12 +420,14 @@
       },
       "targets": [
         {
+          "dataset": "iox",
           "datasource": {
             "type": "grafana-influxdb-flightsql-datasource",
             "uid": "ef6y1vgh2r6kgc"
           },
+          "editorMode": "builder",
           "format": "time_series",
-          "rawSql": "SELECT time, device, wifi_rssi FROM esp_status WHERE time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "rawSql": "SELECT \"time\", \"device\", \"wifi_rssi\" FROM \"esp_status\" WHERE \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\" ASC",
           "refId": "A"
         }
       ],
@@ -508,12 +512,14 @@
       },
       "targets": [
         {
+          "dataset": "iox",
           "datasource": {
             "type": "grafana-influxdb-flightsql-datasource",
             "uid": "ef6y1vgh2r6kgc"
           },
+          "editorMode": "builder",
           "format": "time_series",
-          "rawSql": "SELECT time, device, free_heap FROM esp_status WHERE time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "rawSql": "SELECT \"time\", \"device\", \"free_heap\" FROM \"esp_status\" WHERE \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\" ASC",
           "refId": "A"
         }
       ],
@@ -598,12 +604,14 @@
       },
       "targets": [
         {
+          "dataset": "iox",
           "datasource": {
             "type": "grafana-influxdb-flightsql-datasource",
             "uid": "ef6y1vgh2r6kgc"
           },
+          "editorMode": "builder",
           "format": "time_series",
-          "rawSql": "SELECT time, device, wifi_reconnects FROM esp_status WHERE time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "rawSql": "SELECT \"time\", \"device\", \"wifi_reconnects\" FROM \"esp_status\" WHERE \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\" ASC",
           "refId": "A"
         }
       ],
@@ -688,12 +696,14 @@
       },
       "targets": [
         {
+          "dataset": "iox",
           "datasource": {
             "type": "grafana-influxdb-flightsql-datasource",
             "uid": "ef6y1vgh2r6kgc"
           },
+          "editorMode": "builder",
           "format": "time_series",
-          "rawSql": "SELECT time, device, uptime_seconds FROM esp_status WHERE time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "rawSql": "SELECT \"time\", \"device\", \"uptime_seconds\" FROM \"esp_status\" WHERE \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\" ASC",
           "refId": "A"
         }
       ],
