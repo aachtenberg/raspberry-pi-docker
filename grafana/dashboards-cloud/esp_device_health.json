@@ -194,12 +194,12 @@
             "drawStyle": "line",
             "lineInterpolation": "smooth",
             "barAlignment": 0,
-            "lineWidth": 2,
-            "fillOpacity": 20,
+            "lineWidth": 1,
+            "fillOpacity": 0,
             "gradientMode": "scheme",
-            "spanNulls": false,
+            "spanNulls": true,
             "insertNulls": false,
-            "showPoints": "never",
+            "showPoints": "always",
             "pointSize": 5,
             "stacking": {
               "mode": "none",
@@ -207,7 +207,7 @@
             },
             "axisPlacement": "auto",
             "axisLabel": "",
-            "axisColorMode": "text",
+            "axisColorMode": "series",
             "axisBorderShow": false,
             "scaleDistribution": {
               "type": "linear"
@@ -260,14 +260,14 @@
       "id": 5,
       "options": {
         "tooltip": {
-          "mode": "multi",
+          "mode": "single",
           "sort": "none"
         },
         "legend": {
           "showLegend": true,
           "displayMode": "table",
           "placement": "right",
-          "calcs": ["lastNotNull", "min", "max"]
+          "calcs": []
         }
       },
       "targets": [
