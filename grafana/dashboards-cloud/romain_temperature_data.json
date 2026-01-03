@@ -1357,7 +1357,7 @@
             "uid": "influxdb"
           },
           "format": "time_series",
-          "rawSql": "SELECT \"time\", \"temperature_c\" FROM \"esp_weather\" WHERE \"device\" = 'Weather Station Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "rawSql": "SELECT \"time\", \"temperature_c\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
           "refId": "A"
         },
         {
@@ -1366,7 +1366,7 @@
             "uid": "influxdb"
           },
           "format": "time_series",
-          "rawSql": "SELECT \"time\", \"humidity_rh\" FROM \"esp_weather\" WHERE \"device\" = 'Weather Station Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "rawSql": "SELECT \"time\", \"humidity_rh\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
           "refId": "B"
         },
         {
@@ -1375,7 +1375,7 @@
             "uid": "influxdb"
           },
           "format": "time_series",
-          "rawSql": "SELECT \"time\", \"pressure_hpa\" FROM \"esp_weather\" WHERE \"device\" = 'Weather Station Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "rawSql": "SELECT \"time\", \"pressure_hpa\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
           "refId": "C"
         }
       ],
@@ -1434,7 +1434,7 @@
             "uid": "influxdb"
           },
           "format": "table",
-          "rawSql": "SELECT \"temperature_c\" as \"Temperature (°C)\", \"humidity_rh\" as \"Humidity (%)\", \"pressure_hpa\" as \"Pressure (hPa)\" FROM \"esp_weather\" WHERE \"device\" = 'Weather Station Main' ORDER BY \"time\" DESC LIMIT 1",
+          "rawSql": "SELECT \"temperature_c\" as \"Temperature (°C)\", \"humidity_rh\" as \"Humidity (%)\", \"pressure_hpa\" as \"Pressure (hPa)\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' ORDER BY \"time\" DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -1526,7 +1526,7 @@
             "uid": "influxdb"
           },
           "format": "time_series",
-          "rawSql": "SELECT \"time\", \"altitude_m\" FROM \"esp_weather\" WHERE \"device\" = 'Weather Station Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "rawSql": "SELECT \"time\", \"altitude_m\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
           "refId": "A"
         }
       ],
