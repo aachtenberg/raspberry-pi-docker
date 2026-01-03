@@ -28,7 +28,7 @@
         "type": "grafana-influxdb-flightsql-datasource",
         "uid": "ef6y1vgh2r6kgc"
       },
-      "description": "Recent events from ESP devices (OTA updates, errors, WiFi reconnects)",
+      "description": "Latest status from all ESP devices",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -47,16 +47,13 @@
                 "value": null
               }
             ]
-          },
-          "color": {
-            "mode": "thresholds"
           }
         },
         "overrides": [
           {
             "matcher": {
               "id": "byName",
-              "options": "severity"
+              "options": "wifi_rssi"
             },
             "properties": [
               {
@@ -66,72 +63,74 @@
                 }
               },
               {
-                "id": "mappings",
-                "value": [
-                  {
-                    "type": "value",
-                    "options": {
-                      "info": {
-                        "color": "blue",
-                        "index": 0
-                      }
-                    }
-                  },
-                  {
-                    "type": "value",
-                    "options": {
-                      "warning": {
-                        "color": "orange",
-                        "index": 1
-                      }
-                    }
-                  },
-                  {
-                    "type": "value",
-                    "options": {
-                      "error": {
-                        "color": "red",
-                        "index": 2
-                      }
-                    }
-                  }
-                ]
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "red", "value": -90},
+                    {"color": "orange", "value": -70},
+                    {"color": "yellow", "value": -60},
+                    {"color": "green", "value": -50}
+                  ]
+                }
+              },
+              {
+                "id": "unit",
+                "value": "dBm"
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "time"
+              "options": "free_heap"
             },
             "properties": [
               {
-                "id": "custom.width",
-                "value": 180
+                "id": "unit",
+                "value": "decbytes"
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "device"
+              "options": "uptime_seconds"
             },
             "properties": [
               {
-                "id": "custom.width",
-                "value": 150
+                "id": "unit",
+                "value": "s"
               }
             ]
           },
           {
             "matcher": {
               "id": "byName",
-              "options": "event"
+              "options": "battery_percent"
             },
             "properties": [
               {
-                "id": "custom.width",
-                "value": 160
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "orange", "value": 20},
+                    {"color": "yellow", "value": 50},
+                    {"color": "green", "value": 80}
+                  ]
+                }
               }
             ]
           }
@@ -163,11 +162,11 @@
             "uid": "ef6y1vgh2r6kgc"
           },
           "format": "table",
-          "rawSql": "SELECT time, device, event, severity, message, firmware_version, free_heap FROM esp_events.esp_events WHERE time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 100",
+          "rawSql": "SELECT device, wifi_rssi, free_heap, uptime_seconds, wifi_reconnects, battery_percent, battery_voltage FROM (SELECT device, wifi_rssi, free_heap, uptime_seconds, wifi_reconnects, battery_percent, battery_voltage, ROW_NUMBER() OVER (PARTITION BY device ORDER BY time DESC) as rn FROM esp_status WHERE time >= now() - INTERVAL '1 hour') WHERE rn = 1 ORDER BY device",
           "refId": "A"
         }
       ],
-      "title": "Recent Events",
+      "title": "Latest Device Status",
       "type": "table"
     },
     {
@@ -175,7 +174,7 @@
         "type": "grafana-influxdb-flightsql-datasource",
         "uid": "ef6y1vgh2r6kgc"
       },
-      "description": "Event rate over time by device",
+      "description": "WiFi reconnection events by device over time",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -253,11 +252,11 @@
             "uid": "ef6y1vgh2r6kgc"
           },
           "format": "time_series",
-          "rawSql": "SELECT time, device, COUNT(*) as count FROM esp_events.esp_events WHERE time >= $__timeFrom AND time <= $__timeTo GROUP BY time, device ORDER BY time",
+          "rawSql": "SELECT time, device, wifi_reconnects FROM esp_status WHERE time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
           "refId": "A"
         }
       ],
-      "title": "Event Rate by Device",
+      "title": "WiFi Reconnects by Device",
       "type": "timeseries"
     },
     {
@@ -265,7 +264,7 @@
         "type": "grafana-influxdb-flightsql-datasource",
         "uid": "ef6y1vgh2r6kgc"
       },
-      "description": "Event type distribution",
+      "description": "Current uptime by device",
       "fieldConfig": {
         "defaults": {
           "custom": {
@@ -275,7 +274,8 @@
               "legend": false
             }
           },
-          "mappings": []
+          "mappings": [],
+          "unit": "s"
         },
         "overrides": []
       },
@@ -291,14 +291,14 @@
           "displayMode": "table",
           "placement": "right",
           "showLegend": true,
-          "values": ["value", "percent"]
+          "values": ["value"]
         },
-        "pieType": "donut",
+        "pieType": "pie",
         "tooltip": {
           "mode": "single",
           "sort": "none"
         },
-        "displayLabels": ["name", "percent"]
+        "displayLabels": ["name", "value"]
       },
       "pluginVersion": "11.4.0",
       "targets": [
@@ -308,11 +308,11 @@
             "uid": "ef6y1vgh2r6kgc"
           },
           "format": "table",
-          "rawSql": "SELECT event, COUNT(*) as count FROM esp_events.esp_events WHERE time >= $__timeFrom AND time <= $__timeTo GROUP BY event ORDER BY count DESC",
+          "rawSql": "SELECT device, uptime_seconds FROM (SELECT device, uptime_seconds, ROW_NUMBER() OVER (PARTITION BY device ORDER BY time DESC) as rn FROM esp_status WHERE time >= now() - INTERVAL '1 hour') WHERE rn = 1 ORDER BY device",
           "refId": "A"
         }
       ],
-      "title": "Event Types",
+      "title": "Device Uptime",
       "type": "piechart"
     },
     {
