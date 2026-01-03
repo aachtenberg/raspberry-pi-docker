@@ -86,7 +86,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "count(count by (name) (container_last_seen{name=~\".+\"}))",
+          "expr": "count(docker_container_cpu_usage_total{container_name=~\".+\"})",
           "instant": false,
           "queryType": "range",
           "range": true,
@@ -189,9 +189,9 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(container_cpu_usage_seconds_total{name=~\".+\"}[$__rate_interval])",
+          "expr": "rate(docker_container_cpu_usage_percent{container_name=~\".+\"}[$__rate_interval])",
           "instant": false,
-          "legendFormat": "{{name}}",
+          "legendFormat": "{{container_name}}",
           "queryType": "range",
           "range": true,
           "refId": "A"
@@ -318,9 +318,9 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "container_memory_usage_bytes{name=~\".+\"}",
+          "expr": "docker_container_mem_usage{container_name=~\".+\"}",
           "instant": false,
-          "legendFormat": "{{name}}",
+          "legendFormat": "{{container_name}}",
           "queryType": "range",
           "range": true,
           "refId": "A"
@@ -418,7 +418,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(container_network_receive_bytes_total[$__rate_interval])",
+          "expr": "rate(docker_container_net_rx_bytes{container_name=~\".+\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "{{interface}}",
           "queryType": "range",
@@ -518,7 +518,7 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(container_network_transmit_bytes_total[$__rate_interval])",
+          "expr": "rate(docker_container_net_tx_bytes{container_name=~\".+\"}[$__rate_interval])",
           "instant": false,
           "legendFormat": "{{interface}}",
           "queryType": "range",
@@ -622,9 +622,9 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "container_fs_usage_bytes{name=~\".+\"}",
+          "expr": "docker_container_mem_usage_percent{container_name=~\".+\"}",
           "instant": false,
-          "legendFormat": "{{name}} - {{device}}",
+          "legendFormat": "{{container_name}} - {{device}}",
           "queryType": "range",
           "range": true,
           "refId": "A"
@@ -726,9 +726,9 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(container_oom_events_total{name=~\".+\"}[$__rate_interval])",
+          "expr": "docker_container_cpu_throttling_throttled_time{container_name=~\".+\"}",
           "instant": false,
-          "legendFormat": "{{name}}",
+          "legendFormat": "{{container_name}}",
           "queryType": "range",
           "range": true,
           "refId": "A"
@@ -805,9 +805,9 @@
             "type": "prometheus",
             "uid": "cf6z7j8gxto1sc"
           },
-          "expr": "rate(container_cpu_usage_seconds_total{name=~\".+\"}[$__rate_interval])",
+          "expr": "rate(docker_container_cpu_usage_percent{container_name=~\".+\"}[$__rate_interval])",
           "instant": false,
-          "legendFormat": "{{name}}",
+          "legendFormat": "{{container_name}}",
           "queryType": "range",
           "range": true,
           "refId": "A"
