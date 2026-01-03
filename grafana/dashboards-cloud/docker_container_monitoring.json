@@ -420,7 +420,7 @@
           },
           "expr": "rate(docker_container_net_rx_bytes{container_name=~\".+\"}[$__rate_interval])",
           "instant": false,
-          "legendFormat": "{{interface}}",
+          "legendFormat": "{{container_name}}",
           "queryType": "range",
           "range": true,
           "refId": "A"
@@ -520,7 +520,7 @@
           },
           "expr": "rate(docker_container_net_tx_bytes{container_name=~\".+\"}[$__rate_interval])",
           "instant": false,
-          "legendFormat": "{{interface}}",
+          "legendFormat": "{{container_name}}",
           "queryType": "range",
           "range": true,
           "refId": "A"
