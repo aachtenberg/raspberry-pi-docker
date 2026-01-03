@@ -406,9 +406,9 @@
             "lineWidth": 2,
             "fillOpacity": 20,
             "gradientMode": "scheme",
-            "spanNulls": false,
+            "spanNulls": true,
             "insertNulls": false,
-            "showPoints": "never",
+            "showPoints": "always",
             "pointSize": 5,
             "stacking": {
               "mode": "none",
@@ -508,9 +508,9 @@
             "lineWidth": 2,
             "fillOpacity": 20,
             "gradientMode": "scheme",
-            "spanNulls": false,
+            "spanNulls": true,
             "insertNulls": false,
-            "showPoints": "never",
+            "showPoints": "always",
             "pointSize": 5,
             "stacking": {
               "mode": "none",
