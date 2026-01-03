@@ -536,7 +536,7 @@
         "type": "influxdb",
         "uid": "ef6y1vgh2r6kgc"
       },
-      "description": "Latest temperature from Big Garage",
+      "description": "Latest temperature from Weather Station",
       "fieldConfig": {
         "defaults": {
           "decimals": 1,
@@ -582,24 +582,7 @@
           },
           "unit": "celsius"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "fahrenheit"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "fahrenheit"
-              },
-              {
-                "id": "displayName",
-                "value": "°F"
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 10,
@@ -616,7 +599,7 @@
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "/^celsius$/",
+          "fields": "/^temperature_c$/",
           "values": false
         },
         "showThresholdLabels": false,
@@ -634,7 +617,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT celsius, fahrenheit FROM esp_temperature WHERE device = 'Big-Garage' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT temperature_c FROM esp_weather WHERE device = 'Weather-Station-Main' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -654,7 +637,7 @@
           }
         }
       ],
-      "title": "Big Garage",
+      "title": "Weather Station",
       "transparent": true,
       "type": "gauge"
     },
@@ -941,255 +924,6 @@
         }
       ],
       "title": "Temperature History ",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 23
-      },
-      "id": 102,
-      "panels": [],
-      "title": "Battery",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "ef6y1vgh2r6kgc"
-      },
-      "description": "Spa battery percentage",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "orange",
-                "value": 20
-              },
-              {
-                "color": "green",
-                "value": 40
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 24
-      },
-      "id": 101,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "/^battery_percent$/",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "pluginVersion": "12.4.0-19938312174",
-      "targets": [
-        {
-          "dataset": "iox",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "ef6y1vgh2r6kgc"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT battery_percent FROM esp_status WHERE device = 'Spa' AND time > now() - INTERVAL '24 hours' ORDER BY time DESC LIMIT 1",
-          "refId": "A"
-        }
-      ],
-      "title": "Spa Battery",
-      "transparent": true,
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "ef6y1vgh2r6kgc"
-      },
-      "description": "Sauna battery percentage",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "orange",
-                "value": 20
-              },
-              {
-                "color": "green",
-                "value": 40
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 24
-      },
-      "id": 104,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "/^battery_percent$/",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "pluginVersion": "12.4.0-19938312174",
-      "targets": [
-        {
-          "dataset": "iox",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "ef6y1vgh2r6kgc"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT battery_percent FROM esp_status WHERE device = 'Sauna' AND time > now() - INTERVAL '24 hours' ORDER BY time DESC LIMIT 1",
-          "refId": "A"
-        }
-      ],
-      "title": "Sauna Battery",
-      "transparent": true,
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "ef6y1vgh2r6kgc"
-      },
-      "description": "Spa/Sauna battery percent over time",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 2,
-            "showPoints": "never",
-            "spanNulls": true
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "orange",
-                "value": 20
-              },
-              {
-                "color": "green",
-                "value": 40
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "battery_percent"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "${__field.labels.device}"
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 28
-      },
-      "id": 103,
-      "options": {
-        "legend": {
-          "calcs": [
-            "min",
-            "max",
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        }
-      },
-      "pluginVersion": "12.4.0-19938312174",
-      "targets": [
-        {
-          "dataset": "iox",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "ef6y1vgh2r6kgc"
-          },
-          "editorMode": "code",
-          "format": "time_series",
-          "rawQuery": true,
-          "rawSql": "SELECT time, device, battery_percent FROM esp_status WHERE device IN ('Spa', 'Sauna') AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time ASC",
-          "refId": "A"
-        }
-      ],
-      "title": "Battery Trend",
-      "transparent": true,
       "type": "timeseries"
     },
     {
