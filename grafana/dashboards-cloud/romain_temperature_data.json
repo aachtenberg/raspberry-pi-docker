@@ -1191,6 +1191,347 @@
       "title": "Battery Trend",
       "transparent": true,
       "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "influxdb"
+      },
+      "description": "Temperature, humidity, and pressure from Weather Station Main (BME280)",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "barAlignment": 0,
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "insertNulls": false,
+            "showPoints": "never",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "text",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Temperature (°C)"
+              },
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Humidity (%)"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Pressure (hPa)"
+              },
+              {
+                "id": "unit",
+                "value": "pressurehpa"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "hidden"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 35
+      },
+      "id": 20,
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max",
+            "mean"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "influxdb"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, temperature_c FROM temperature_data.esp_weather WHERE device = 'Weather Station Main' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "influxdb"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, humidity_rh FROM temperature_data.esp_weather WHERE device = 'Weather Station Main' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "influxdb"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, pressure_hpa FROM temperature_data.esp_weather WHERE device = 'Weather Station Main' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "refId": "C"
+        }
+      ],
+      "title": "Weather Station (BME280)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "influxdb"
+      },
+      "description": "Current weather conditions",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 35
+      },
+      "id": 21,
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "showPercentChange": false
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "influxdb"
+          },
+          "format": "table",
+          "rawSql": "SELECT temperature_c as \"Temperature (°C)\", humidity_rh as \"Humidity (%)\", pressure_hpa as \"Pressure (hPa)\" FROM temperature_data.esp_weather WHERE device = 'Weather Station Main' ORDER BY time DESC LIMIT 1",
+          "refId": "A"
+        }
+      ],
+      "title": "Current Conditions",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "influxdb"
+      },
+      "description": "Calculated altitude based on barometric pressure",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "barAlignment": 0,
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "insertNulls": false,
+            "showPoints": "never",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "text",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "lengthm"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 35
+      },
+      "id": 22,
+      "options": {
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "influxdb"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, altitude_m FROM temperature_data.esp_weather WHERE device = 'Weather Station Main' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "title": "Barometric Altitude",
+      "type": "timeseries"
     }
   ],
   "preload": true,
