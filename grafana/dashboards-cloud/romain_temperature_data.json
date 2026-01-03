@@ -921,6 +921,18 @@
             "orderByDirection": "ASC"
           },
           "table": "esp_temperature"
+        },
+        {
+          "dataset": "iox",
+          "datasource": {
+            "type": "influxdb",
+            "uid": "ef6y1vgh2r6kgc"
+          },
+          "editorMode": "code",
+          "format": "time_series",
+          "rawQuery": true,
+          "rawSql": "SELECT time, 'Weather-Station-Main' as device, temperature_c as celsius FROM esp_weather WHERE device = 'Weather-Station-Main' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time ASC",
+          "refId": "B"
         }
       ],
       "title": "Temperature History ",
