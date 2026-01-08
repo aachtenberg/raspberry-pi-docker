@@ -98,35 +98,35 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
-          "expr": "max by (device) (surveillance_camera_ready)",
+          "expr": "max by (device) (surveillance_camera_ready) and on(device) max by (device) (max_over_time(surveillance_camera_ready[2m]) > 0)",
           "format": "table",
           "instant": true,
           "refId": "Status"
         },
         {
           "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
-          "expr": "max by (device) (surveillance_wifi_rssi)",
+          "expr": "max by (device) (surveillance_wifi_rssi) and on(device) max by (device) (max_over_time(surveillance_camera_ready[2m]) > 0)",
           "format": "table",
           "instant": true,
           "refId": "WiFi"
         },
         {
           "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
-          "expr": "max by (device) (surveillance_free_heap)",
+          "expr": "max by (device) (surveillance_free_heap) and on(device) max by (device) (max_over_time(surveillance_camera_ready[2m]) > 0)",
           "format": "table",
           "instant": true,
           "refId": "Heap"
         },
         {
           "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
-          "expr": "max by (device) (surveillance_uptime_seconds)",
+          "expr": "max by (device) (surveillance_uptime_seconds) and on(device) max by (device) (max_over_time(surveillance_camera_ready[2m]) > 0)",
           "format": "table",
           "instant": true,
           "refId": "Uptime"
         },
         {
           "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
-          "expr": "max by (device) (surveillance_camera_errors)",
+          "expr": "max by (device) (surveillance_camera_errors) and on(device) max by (device) (max_over_time(surveillance_camera_ready[2m]) > 0)",
           "format": "table",
           "instant": true,
           "refId": "Errors"
@@ -598,7 +598,7 @@
       "targets": [
         {
           "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
-          "expr": "surveillance_uptime_seconds{device=~\"$device\"}",
+          "expr": "surveillance_uptime_seconds{device=~\"$device\"} and on(device) max_over_time(surveillance_camera_ready[2m]) > 0",
           "format": "table",
           "instant": true,
           "refId": "A"
