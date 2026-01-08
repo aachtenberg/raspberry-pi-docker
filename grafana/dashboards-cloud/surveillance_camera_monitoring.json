@@ -399,6 +399,7 @@
         {
           "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
           "expr": "surveillance_camera_ready{device=~\"$device\"}",
+          "format": "time_series",
           "legendFormat": "{{device}}",
           "refId": "A"
         }
