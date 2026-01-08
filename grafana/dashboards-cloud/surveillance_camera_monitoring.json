@@ -15,15 +15,15 @@
       }
     ]
   },
-  "description": "Surveillance camera monitoring: device health, connectivity, errors, and distributed trace correlation",
+  "description": "Surveillance camera monitoring: device health, connectivity, performance, and errors",
   "editable": true,
   "fiscalYearStartMonth": 0,
-  "graphTooltip": 0,
+  "graphTooltip": 1,
   "id": null,
   "links": [],
   "panels": [
     {
-      "description": "Active surveillance cameras (online if camera_ready metric scraped in last 2m)",
+      "description": "Active surveillance cameras - shows online status and key health metrics",
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "thresholds"},
@@ -51,59 +51,135 @@
         },
         "overrides": [
           {
-            "matcher": {"id": "byName", "options": "Value"},
+            "matcher": {"id": "byName", "options": "Status"},
             "properties": [
-              {"id": "custom.cellOptions", "value": {"type": "color-background"}}
+              {"id": "custom.cellOptions", "value": {"type": "color-background"}},
+              {"id": "custom.width", "value": 100}
             ]
           },
           {
-            "matcher": {"id": "byName", "options": "wifi_rssi"},
-            "properties": [{"id": "unit", "value": "dBm"}]
+            "matcher": {"id": "byName", "options": "WiFi (dBm)"},
+            "properties": [
+              {"id": "unit", "value": "dBm"},
+              {"id": "custom.width", "value": 110}
+            ]
           },
           {
-            "matcher": {"id": "byName", "options": "free_heap"},
-            "properties": [{"id": "unit", "value": "bytes"}]
+            "matcher": {"id": "byName", "options": "Free Heap"},
+            "properties": [
+              {"id": "unit", "value": "bytes"},
+              {"id": "custom.width", "value": 120}
+            ]
           },
           {
-            "matcher": {"id": "byName", "options": "uptime_seconds"},
-            "properties": [{"id": "unit", "value": "s"}]
+            "matcher": {"id": "byName", "options": "Uptime"},
+            "properties": [
+              {"id": "unit", "value": "s"},
+              {"id": "custom.width", "value": 140}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Errors"},
+            "properties": [
+              {"id": "custom.width", "value": 80}
+            ]
           }
         ]
       },
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "gridPos": {"h": 7, "w": 24, "x": 0, "y": 0},
       "id": 1,
       "options": {
         "cellHeight": "sm",
         "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false},
         "showHeader": true,
-        "sortBy": [{"desc": true, "displayName": "time"}]
+        "sortBy": [{"desc": false, "displayName": "Camera"}]
       },
       "pluginVersion": "12.4.0-19938312174",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
           "expr": "max by (device) (surveillance_camera_ready)",
           "format": "table",
           "instant": true,
-          "queryType": "range",
-          "refId": "A"
+          "refId": "Status"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "max by (device) (surveillance_wifi_rssi)",
+          "format": "table",
+          "instant": true,
+          "refId": "WiFi"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "max by (device) (surveillance_free_heap)",
+          "format": "table",
+          "instant": true,
+          "refId": "Heap"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "max by (device) (surveillance_uptime_seconds)",
+          "format": "table",
+          "instant": true,
+          "refId": "Uptime"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "max by (device) (surveillance_camera_errors)",
+          "format": "table",
+          "instant": true,
+          "refId": "Errors"
         }
       ],
-      "title": "Camera Devices Online",
+      "title": "Camera Status Overview",
+      "transformations": [
+        {
+          "id": "merge",
+          "options": {}
+        },
+        {
+          "id": "organize",
+          "options": {
+            "excludeByName": {
+              "Time": true,
+              "__name__": true,
+              "host": true,
+              "instance": true,
+              "job": true,
+              "source": true,
+              "topic": true
+            },
+            "indexByName": {
+              "device": 0,
+              "Value #Status": 1,
+              "Value #WiFi": 2,
+              "Value #Heap": 3,
+              "Value #Uptime": 4,
+              "Value #Errors": 5
+            },
+            "renameByName": {
+              "Value #Errors": "Errors",
+              "Value #Heap": "Free Heap",
+              "Value #Status": "Status",
+              "Value #Uptime": "Uptime",
+              "Value #WiFi": "WiFi (dBm)",
+              "device": "Camera"
+            }
+          }
+        }
+      ],
       "type": "table"
     },
     {
-      "description": "WiFi signal strength (RSSI) across all cameras",
+      "description": "WiFi signal strength - closer to 0 is better (e.g., -40 dBm is excellent, -70 dBm is poor)",
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
           "custom": {
             "axisBorderShow": false,
             "axisColorMode": "text",
-            "axisLabel": "RSSI (dBm)",
+            "axisLabel": "Signal Strength",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
@@ -117,7 +193,7 @@
             "showPoints": "never",
             "spanNulls": true,
             "stacking": {"group": "A", "mode": "none"},
-            "thresholdsStyle": {"mode": "off"}
+            "thresholdsStyle": {"mode": "dashed"}
           },
           "mappings": [],
           "thresholds": {
@@ -132,7 +208,7 @@
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 7},
       "id": 2,
       "options": {
         "legend": {
@@ -141,18 +217,13 @@
           "placement": "bottom",
           "showLegend": true
         },
-        "tooltip": {"hideZeros": false, "mode": "single", "sort": "none"}
+        "tooltip": {"mode": "multi", "sort": "none"}
       },
-      "pluginVersion": "12.4.0-19938312174",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
-          "expr": "avg by (device) (rate(surveillance_wifi_rssi[$__rate_interval]))",
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "surveillance_wifi_rssi{device=~\"$device\"}",
           "legendFormat": "{{device}}",
-          "queryType": "range",
           "refId": "A"
         }
       ],
@@ -160,18 +231,83 @@
       "type": "timeseries"
     },
     {
-      "description": "Heap memory available on devices",
+      "description": "Available heap memory on each camera - low values may indicate memory leaks",
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
           "custom": {
             "axisBorderShow": false,
             "axisColorMode": "text",
-            "axisLabel": "Bytes",
+            "axisLabel": "Available Memory",
             "axisPlacement": "auto",
             "barAlignment": 0,
             "drawStyle": "line",
             "fillOpacity": 10,
+            "gradientMode": "none",
+            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+            "lineInterpolation": "smooth",
+            "lineWidth": 2,
+            "pointSize": 5,
+            "scaleDistribution": {"type": "linear"},
+            "showPoints": "never",
+            "spanNulls": true,
+            "stacking": {"group": "A", "mode": "none"},
+            "thresholdsStyle": {"mode": "dashed"}
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "yellow", "value": 20000},
+              {"color": "green", "value": 100000}
+            ]
+          },
+          "unit": "bytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 7},
+      "id": 3,
+      "options": {
+        "legend": {
+          "calcs": ["lastNotNull", "mean", "min"],
+          "displayMode": "table",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "tooltip": {"mode": "multi", "sort": "none"}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "surveillance_free_heap{device=~\"$device\"}",
+          "legendFormat": "{{device}} heap",
+          "refId": "A"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "surveillance_free_psram{device=~\"$device\"} > 0",
+          "legendFormat": "{{device}} psram",
+          "refId": "B"
+        }
+      ],
+      "title": "Free Memory (Heap + PSRAM)",
+      "type": "timeseries"
+    },
+    {
+      "description": "Network bandwidth usage - only available for cameras that report it",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "palette-classic"},
+          "custom": {
+            "axisBorderShow": false,
+            "axisColorMode": "text",
+            "axisLabel": "Bandwidth",
+            "axisPlacement": "auto",
+            "barAlignment": 0,
+            "drawStyle": "line",
+            "fillOpacity": 20,
             "gradientMode": "none",
             "hideFrom": {"legend": false, "tooltip": false, "viz": false},
             "lineInterpolation": "smooth",
@@ -186,45 +322,92 @@
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
-            "steps": [
-              {"color": "red", "value": 0},
-              {"color": "yellow", "value": 10000},
-              {"color": "green", "value": 50000}
-            ]
+            "steps": [{"color": "green", "value": null}]
           },
-          "unit": "bytes"
+          "unit": "Kbits"
         },
         "overrides": []
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
-      "id": 3,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 15},
+      "id": 10,
       "options": {
         "legend": {
-          "calcs": ["lastNotNull", "mean", "min"],
+          "calcs": ["lastNotNull", "mean", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         },
-        "tooltip": {"hideZeros": false, "mode": "single", "sort": "none"}
+        "tooltip": {"mode": "multi", "sort": "none"}
       },
-      "pluginVersion": "12.4.0-19938312174",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
-          "expr": "avg by (device) (surveillance_free_heap)",
-          "legendFormat": "{{device}} heap",
-          "queryType": "range",
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "surveillance_bandwidth_kbps{device=~\"$device\"}",
+          "legendFormat": "{{device}}",
           "refId": "A"
         }
       ],
-      "title": "Free Heap Memory",
+      "title": "Network Bandwidth Usage",
       "type": "timeseries"
     },
     {
-      "description": "Crash and error counts per device",
+      "description": "Camera status - green = online, red = offline",
+      "fieldConfig": {
+        "defaults": {
+          "color": {"mode": "thresholds"},
+          "custom": {
+            "fillOpacity": 70,
+            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
+            "lineWidth": 0
+          },
+          "mappings": [
+            {
+              "options": {
+                "0": {"color": "red", "index": 1, "text": "Offline"},
+                "1": {"color": "green", "index": 0, "text": "Online"}
+              },
+              "type": "value"
+            }
+          ],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {"color": "red", "value": 0},
+              {"color": "green", "value": 1}
+            ]
+          },
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 15},
+      "id": 11,
+      "options": {
+        "alignValue": "left",
+        "legend": {
+          "calcs": [],
+          "displayMode": "list",
+          "placement": "bottom",
+          "showLegend": true
+        },
+        "mergeValues": true,
+        "rowHeight": 0.9,
+        "showValue": "never",
+        "tooltip": {"mode": "single", "sort": "none"}
+      },
+      "targets": [
+        {
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "surveillance_camera_ready{device=~\"$device\"}",
+          "legendFormat": "{{device}}",
+          "refId": "A"
+        }
+      ],
+      "title": "Camera Availability Timeline",
+      "type": "state-timeline"
+    },
+    {
+      "description": "Camera errors and crash events",
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
@@ -251,54 +434,56 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "green", "value": 0},
-              {"color": "yellow", "value": 5},
-              {"color": "red", "value": 10}
+              {"color": "green", "value": null}
             ]
           },
           "unit": "short"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {"id": "byRegexp", "options": ".*errors"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "red", "mode": "fixed"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byRegexp", "options": ".*crashes"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "dark-red", "mode": "fixed"}}
+            ]
+          }
+        ]
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 23},
       "id": 4,
       "options": {
         "legend": {
-          "calcs": ["lastNotNull", "sum"],
+          "calcs": ["sum", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         },
-        "tooltip": {"hideZeros": false, "mode": "single", "sort": "none"}
+        "tooltip": {"mode": "multi", "sort": "desc"}
       },
-      "pluginVersion": "12.4.0-19938312174",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
-          "expr": "max by (device) (increase(surveillance_crash_count[$__rate_interval]))",
-          "legendFormat": "{{device}} crashes",
-          "queryType": "range",
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "increase(surveillance_camera_errors{device=~\"$device\"}[$__rate_interval]) > 0",
+          "legendFormat": "{{device}} errors",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
-          "expr": "max by (device) (increase(surveillance_camera_errors[$__rate_interval]))",
-          "legendFormat": "{{device}} errors",
-          "queryType": "range",
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "increase(surveillance_crash_count{device=~\"$device\"}[$__rate_interval]) > 0",
+          "legendFormat": "{{device}} crashes",
           "refId": "B"
         }
       ],
-      "title": "Crash & Error Counts",
+      "title": "Camera Errors & Crashes",
       "type": "timeseries"
     },
     {
-      "description": "Motion and capture events",
+      "description": "Motion detection and photo capture activity",
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "palette-classic"},
@@ -324,51 +509,55 @@
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
-            "steps": [{"color": "green", "value": 0}]
+            "steps": [{"color": "green", "value": null}]
           },
           "unit": "short"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {"id": "byRegexp", "options": ".*motion"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "orange", "mode": "fixed"}}
+            ]
+          },
+          {
+            "matcher": {"id": "byRegexp", "options": ".*captures"},
+            "properties": [
+              {"id": "color", "value": {"fixedColor": "blue", "mode": "fixed"}}
+            ]
+          }
+        ]
       },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 23},
       "id": 5,
       "options": {
         "legend": {
-          "calcs": ["lastNotNull", "sum"],
+          "calcs": ["sum", "max"],
           "displayMode": "table",
           "placement": "bottom",
           "showLegend": true
         },
-        "tooltip": {"hideZeros": false, "mode": "single", "sort": "none"}
+        "tooltip": {"mode": "multi", "sort": "desc"}
       },
-      "pluginVersion": "12.4.0-19938312174",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
-          "expr": "max by (device) (increase(surveillance_motion_count[$__rate_interval])) > 0",
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "increase(surveillance_motion_count{device=~\"$device\"}[$__rate_interval]) > 0",
           "legendFormat": "{{device}} motion",
-          "queryType": "range",
           "refId": "A"
         },
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
-          "expr": "max by (device) (increase(surveillance_capture_count[$__rate_interval])) > 0",
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "increase(surveillance_capture_count{device=~\"$device\"}[$__rate_interval]) > 0",
           "legendFormat": "{{device}} captures",
-          "queryType": "range",
           "refId": "B"
         }
       ],
-      "title": "Motion & Capture Events",
+      "title": "Motion Detection & Captures",
       "type": "timeseries"
     },
     {
-      "description": "Current uptime per device (time since last boot)",
+      "description": "Current uptime per camera (time since last reboot)",
       "fieldConfig": {
         "defaults": {
           "color": {"mode": "thresholds"},
@@ -381,260 +570,111 @@
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              {"color": "red", "value": 0},
+              {"color": "red", "value": null},
               {"color": "yellow", "value": 3600},
               {"color": "green", "value": 86400}
             ]
           },
           "unit": "s"
         },
-        "overrides": []
+        "overrides": [
+          {
+            "matcher": {"id": "byName", "options": "Uptime"},
+            "properties": [
+              {"id": "custom.cellOptions", "value": {"type": "color-background"}}
+            ]
+          }
+        ]
       },
-      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 24},
+      "gridPos": {"h": 7, "w": 24, "x": 0, "y": 31},
       "id": 6,
       "options": {
         "cellHeight": "sm",
         "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false},
         "showHeader": true,
-        "sortBy": []
+        "sortBy": [{"desc": true, "displayName": "Uptime"}]
       },
-      "pluginVersion": "12.4.0-19938312174",
       "targets": [
         {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
-          "expr": "topk(20, surveillance_uptime_seconds)",
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "surveillance_uptime_seconds{device=~\"$device\"}",
           "format": "table",
           "instant": true,
-          "queryType": "range",
           "refId": "A"
         }
       ],
-      "title": "Current Device Uptime",
+      "title": "Camera Uptime",
       "transformations": [
         {
           "id": "organize",
           "options": {
             "excludeByName": {
+              "Time": true,
               "__name__": true,
-              "chip_id": true,
+              "boot_reason": false,
               "host": true,
               "instance": true,
-              "ip": true,
               "job": true,
-              "service": true,
               "source": true,
               "topic": true,
-              "version": true
+              "ip": false,
+              "resolution": false,
+              "version": false
             },
-            "indexByName": {},
+            "indexByName": {
+              "device": 0,
+              "Value": 1,
+              "ip": 2,
+              "boot_reason": 3,
+              "version": 4,
+              "resolution": 5
+            },
             "renameByName": {
-              "Value": "Uptime (seconds)",
+              "Value": "Uptime",
               "boot_reason": "Last Boot Reason",
-              "device": "Camera"
+              "device": "Camera",
+              "ip": "IP Address",
+              "resolution": "Resolution",
+              "version": "Firmware"
             }
           }
         }
       ],
       "type": "table"
-    },
-    {
-      "description": "Boot/reboot rate by device (indicates restarts)",
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "palette-classic"},
-          "custom": {
-            "axisBorderShow": false,
-            "axisColorMode": "text",
-            "axisLabel": "Reboots/hour",
-            "axisPlacement": "auto",
-            "barAlignment": 0,
-            "drawStyle": "bars",
-            "fillOpacity": 100,
-            "gradientMode": "none",
-            "hideFrom": {"legend": false, "tooltip": false, "viz": false},
-            "lineInterpolation": "linear",
-            "lineWidth": 1,
-            "pointSize": 5,
-            "scaleDistribution": {"type": "linear"},
-            "showPoints": "never",
-            "spanNulls": false,
-            "stacking": {"group": "A", "mode": "normal"},
-            "thresholdsStyle": {"mode": "off"}
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {"color": "green", "value": 0},
-              {"color": "yellow", "value": 1},
-              {"color": "red", "value": 3}
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 24},
-      "id": 14,
-      "options": {
-        "legend": {
-          "calcs": ["lastNotNull", "sum"],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        },
-        "tooltip": {"hideZeros": false, "mode": "single", "sort": "none"}
-      },
-      "pluginVersion": "12.4.0-19938312174",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
-          "expr": "max by (device) (increase(surveillance_uptime_seconds[1h])) * 0",
-          "legendFormat": "{{device}} reboots",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "Reboot Frequency",
-      "type": "timeseries"
-    },
-    {
-      "description": "Trace ID field from recent surveillance events (for Jaeger link-out)",
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "custom": {
-            "align": "auto",
-            "cellOptions": {"type": "auto"},
-            "inspect": false
-          },
-          "links": [
-            {
-              "targetBlank": true,
-              "title": "View Trace",
-              "url": "http://localhost:16686/trace/${__value.raw}"
-            }
-          ],
-          "mappings": [],
-          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
-      "id": 7,
-      "options": {
-        "cellHeight": "sm",
-        "footer": {"countRows": false, "fields": "", "reducer": ["sum"], "show": false},
-        "showHeader": true,
-        "sortBy": []
-      },
-      "pluginVersion": "12.4.0-19938312174",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
-          "expr": "topk(50, surveillance_timestamp)",
-          "format": "table",
-          "instant": true,
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "Recent Events & Trace IDs",
-      "type": "table"
-    },
-    {
-      "description": "Timeline showing camera online/offline transitions",
-      "fieldConfig": {
-        "defaults": {
-          "color": {"mode": "thresholds"},
-          "custom": {"hideFrom": {"legend": false, "tooltip": false, "viz": false}},
-          "mappings": [
-            {
-              "options": {
-                "0": {"color": "red", "index": 1, "text": "Down"},
-                "1": {"color": "green", "index": 0, "text": "Up"}
-              },
-              "type": "value"
-            }
-          ],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {"color": "red", "value": 0},
-              {"color": "green", "value": 1}
-            ]
-          },
-          "unit": "short"
-        },
-        "overrides": []
-      },
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40},
-      "id": 16,
-      "options": {
-        "legend": {"calcs": [], "displayMode": "list", "placement": "bottom", "showLegend": true}
-      },
-      "pluginVersion": "12.4.0-19938312174",
-      "targets": [
-        {
-          "datasource": {
-            "type": "prometheus",
-            "uid": "cf6z7j8gxto1sc"
-          },
-          "expr": "up{job=\"telegraf\"}",
-          "queryType": "range",
-          "refId": "A"
-        }
-      ],
-      "title": "Camera Availability Timeline (Up/Down Transitions)",
-      "type": "state-timeline"
     }
   ],
-  "preload": false,
+  "refresh": "30s",
   "schemaVersion": 42,
   "tags": ["surveillance", "cameras", "iot"],
   "templating": {
     "list": [
       {
-        "current": {},
-        "datasource": {
-          "type": "prometheus",
-          "uid": "cf6z7j8gxto1sc"
-        },
-        "definition": "label_values(surveillance_uptime_seconds, device)",
+        "current": {"selected": true, "text": "All", "value": "$__all"},
+        "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+        "definition": "label_values(surveillance_camera_ready, device)",
         "hide": 0,
         "includeAll": true,
-        "label": "Camera Device",
+        "label": "Camera",
         "multi": true,
         "name": "device",
         "options": [],
         "query": {
-          "query": "label_values(surveillance_uptime_seconds, device)",
+          "query": "label_values(surveillance_camera_ready, device)",
           "refId": "PromVar"
         },
         "refresh": 1,
         "regex": "",
         "skipUrlSync": false,
+        "sort": 1,
         "type": "query"
       }
     ]
   },
-  "time": {
-    "from": "now-24h",
-    "to": "now"
-  },
+  "time": {"from": "now-6h", "to": "now"},
   "timepicker": {},
   "timezone": "browser",
   "title": "Surveillance Camera Monitoring",
   "uid": "surv-cam-mon",
-  "version": 1,
+  "version": 2,
   "weekStart": ""
 }
