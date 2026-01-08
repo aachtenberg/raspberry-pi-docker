@@ -1180,7 +1180,7 @@
             "uid": "influxdb"
           },
           "format": "table",
-          "rawSql": "SELECT \"temperature_c\" as \"Temperature (°C)\", \"humidity_rh\" as \"Humidity (%)\", \"pressure_hpa\" as \"Pressure (hPa)\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' ORDER BY \"time\" DESC LIMIT 1",
+          "rawSql": "SELECT \"temperature_c\" as \"Temperature (°C)\", \"humidity_rh\" as \"Humidity (%)\", \"pressure_hpa\" as \"Pressure (hPa)\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND time >= now() - INTERVAL '1 hour' ORDER BY \"time\" DESC LIMIT 1",
           "refId": "A"
         }
       ],
