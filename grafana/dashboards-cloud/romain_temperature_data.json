@@ -536,7 +536,7 @@
         "type": "influxdb",
         "uid": "ef6y1vgh2r6kgc"
       },
-      "description": "Latest temperature from Big Garage",
+      "description": "Latest temperature from Weather Station",
       "fieldConfig": {
         "defaults": {
           "decimals": 1,
@@ -582,24 +582,7 @@
           },
           "unit": "celsius"
         },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "fahrenheit"
-            },
-            "properties": [
-              {
-                "id": "unit",
-                "value": "fahrenheit"
-              },
-              {
-                "id": "displayName",
-                "value": "°F"
-              }
-            ]
-          }
-        ]
+        "overrides": []
       },
       "gridPos": {
         "h": 10,
@@ -616,7 +599,7 @@
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "/^celsius$/",
+          "fields": "/^temperature_c$/",
           "values": false
         },
         "showThresholdLabels": false,
@@ -634,7 +617,7 @@
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT celsius, fahrenheit FROM esp_temperature WHERE device = 'Big-Garage' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT temperature_c FROM esp_weather WHERE device = 'Weather-Station-Main' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -654,7 +637,7 @@
           }
         }
       ],
-      "title": "Big Garage",
+      "title": "Weather Station",
       "transparent": true,
       "type": "gauge"
     },
@@ -938,243 +921,7 @@
             "orderByDirection": "ASC"
           },
           "table": "esp_temperature"
-        }
-      ],
-      "title": "Temperature History ",
-      "type": "timeseries"
-    },
-    {
-      "collapsed": false,
-      "gridPos": {
-        "h": 1,
-        "w": 24,
-        "x": 0,
-        "y": 23
-      },
-      "id": 102,
-      "panels": [],
-      "title": "Battery",
-      "type": "row"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "ef6y1vgh2r6kgc"
-      },
-      "description": "Spa battery percentage",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "orange",
-                "value": 20
-              },
-              {
-                "color": "green",
-                "value": 40
-              }
-            ]
-          },
-          "unit": "percent"
         },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 0,
-        "y": 24
-      },
-      "id": 101,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "/^battery_percent$/",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "pluginVersion": "12.4.0-19938312174",
-      "targets": [
-        {
-          "dataset": "iox",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "ef6y1vgh2r6kgc"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT battery_percent FROM esp_status WHERE device = 'Spa' AND time > now() - INTERVAL '24 hours' ORDER BY time DESC LIMIT 1",
-          "refId": "A"
-        }
-      ],
-      "title": "Spa Battery",
-      "transparent": true,
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "ef6y1vgh2r6kgc"
-      },
-      "description": "Sauna battery percentage",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "thresholds"
-          },
-          "mappings": [],
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "orange",
-                "value": 20
-              },
-              {
-                "color": "green",
-                "value": 40
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": []
-      },
-      "gridPos": {
-        "h": 4,
-        "w": 6,
-        "x": 6,
-        "y": 24
-      },
-      "id": 104,
-      "options": {
-        "colorMode": "value",
-        "graphMode": "none",
-        "justifyMode": "auto",
-        "orientation": "auto",
-        "reduceOptions": {
-          "calcs": [
-            "lastNotNull"
-          ],
-          "fields": "/^battery_percent$/",
-          "values": false
-        },
-        "textMode": "value"
-      },
-      "pluginVersion": "12.4.0-19938312174",
-      "targets": [
-        {
-          "dataset": "iox",
-          "datasource": {
-            "type": "influxdb",
-            "uid": "ef6y1vgh2r6kgc"
-          },
-          "editorMode": "code",
-          "format": "table",
-          "rawQuery": true,
-          "rawSql": "SELECT battery_percent FROM esp_status WHERE device = 'Sauna' AND time > now() - INTERVAL '24 hours' ORDER BY time DESC LIMIT 1",
-          "refId": "A"
-        }
-      ],
-      "title": "Sauna Battery",
-      "transparent": true,
-      "type": "stat"
-    },
-    {
-      "datasource": {
-        "type": "influxdb",
-        "uid": "ef6y1vgh2r6kgc"
-      },
-      "description": "Spa/Sauna battery percent over time",
-      "fieldConfig": {
-        "defaults": {
-          "color": {
-            "mode": "palette-classic"
-          },
-          "custom": {
-            "drawStyle": "line",
-            "fillOpacity": 10,
-            "lineWidth": 2,
-            "showPoints": "never",
-            "spanNulls": true
-          },
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": 0
-              },
-              {
-                "color": "orange",
-                "value": 20
-              },
-              {
-                "color": "green",
-                "value": 40
-              }
-            ]
-          },
-          "unit": "percent"
-        },
-        "overrides": [
-          {
-            "matcher": {
-              "id": "byName",
-              "options": "battery_percent"
-            },
-            "properties": [
-              {
-                "id": "displayName",
-                "value": "${__field.labels.device}"
-              }
-            ]
-          }
-        ]
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 24,
-        "x": 0,
-        "y": 28
-      },
-      "id": 103,
-      "options": {
-        "legend": {
-          "calcs": [
-            "min",
-            "max",
-            "lastNotNull"
-          ],
-          "displayMode": "table",
-          "placement": "bottom",
-          "showLegend": true
-        }
-      },
-      "pluginVersion": "12.4.0-19938312174",
-      "targets": [
         {
           "dataset": "iox",
           "datasource": {
@@ -1184,12 +931,352 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT time, device, battery_percent FROM esp_status WHERE device IN ('Spa', 'Sauna') AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time ASC",
+          "rawSql": "SELECT time, 'Weather-Station-Main' as device, temperature_c as celsius FROM esp_weather WHERE device = 'Weather-Station-Main' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time ASC",
+          "refId": "B"
+        }
+      ],
+      "title": "Temperature History ",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "influxdb"
+      },
+      "description": "Temperature, humidity, and pressure from Weather Station Main (BME280)",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "barAlignment": 0,
+            "lineWidth": 2,
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "insertNulls": false,
+            "showPoints": "never",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "text",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "A"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Temperature (°C)"
+              },
+              {
+                "id": "unit",
+                "value": "celsius"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "red"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Humidity (%)"
+              },
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "right"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "blue"
+                }
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "C"
+            },
+            "properties": [
+              {
+                "id": "displayName",
+                "value": "Pressure (hPa)"
+              },
+              {
+                "id": "unit",
+                "value": "pressurehpa"
+              },
+              {
+                "id": "custom.axisPlacement",
+                "value": "hidden"
+              },
+              {
+                "id": "color",
+                "value": {
+                  "mode": "fixed",
+                  "fixedColor": "green"
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 35
+      },
+      "id": 20,
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "min",
+            "max",
+            "mean"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "influxdb"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT \"time\", \"temperature_c\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "refId": "A"
+        },
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "influxdb"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT \"time\", \"humidity_rh\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "refId": "B"
+        },
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "influxdb"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT \"time\", \"pressure_hpa\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "refId": "C"
+        }
+      ],
+      "title": "Weather Station (BME280)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "influxdb"
+      },
+      "description": "Current weather conditions",
+      "fieldConfig": {
+        "defaults": {
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 35
+      },
+      "id": 21,
+      "options": {
+        "reduceOptions": {
+          "values": false,
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": ""
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "wideLayout": true,
+        "colorMode": "value",
+        "graphMode": "area",
+        "justifyMode": "auto",
+        "showPercentChange": false
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "influxdb"
+          },
+          "format": "table",
+          "rawSql": "SELECT \"temperature_c\" as \"Temperature (°C)\", \"humidity_rh\" as \"Humidity (%)\", \"pressure_hpa\" as \"Pressure (hPa)\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND time >= now() - INTERVAL '1 hour' ORDER BY \"time\" DESC LIMIT 1",
           "refId": "A"
         }
       ],
-      "title": "Battery Trend",
-      "transparent": true,
+      "title": "Current Conditions",
+      "type": "stat"
+    },
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "influxdb"
+      },
+      "description": "Calculated altitude based on barometric pressure",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "barAlignment": 0,
+            "lineWidth": 2,
+            "fillOpacity": 10,
+            "gradientMode": "none",
+            "spanNulls": false,
+            "insertNulls": false,
+            "showPoints": "never",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "text",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "lengthm"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 35
+      },
+      "id": 22,
+      "options": {
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "list",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull"
+          ]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "influxdb"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT \"time\", \"altitude_m\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "refId": "A"
+        }
+      ],
+      "title": "Barometric Altitude",
       "type": "timeseries"
     }
   ],
