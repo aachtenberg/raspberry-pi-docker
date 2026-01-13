@@ -14,23 +14,29 @@ ESP Device → MQTT (esp-sensor-hub/{device}/events)
 
 ## Event Message Format
 
-### Temperature Sensor Events
-**Topic**: `esp-sensor-hub/{device-name}/events`
+### ESP Sensor Hub Events (LoRa/Weather Station Devices)
+**Topic**: `esp-sensor-hub/{device_id}/events`
 
 ```json
 {
-  "device": "Spa",
-  "chip_id": "A0B1C2D3E4F5",
-  "firmware_version": "1.0.3-build20251222",
-  "schema_version": 1,
-  "event": "ota_start",
-  "severity": "warning",
-  "timestamp": 12345,
-  "uptime_seconds": 3600,
-  "free_heap": 45000,
-  "message": "OTA update starting (sketch)"
+  "device_id": "f09e9e76aec4",
+  "device_name": "BME280-LoRa-001",
+  "event_type": 1,
+  "severity": 0,
+  "message": "Device started",
+  "timestamp": 12345
 }
 ```
+
+**Event Types (numeric):**
+- `0` = info
+- `1` = warning
+- `2` = error
+
+**Severity Levels (numeric):**
+- `0` = info
+- `1` = warning  
+- `2` = error
 
 ### Surveillance Camera Events
 **Topic**: `surveillance/{device-name}/events`
@@ -54,25 +60,31 @@ ESP Device → MQTT (esp-sensor-hub/{device}/events)
 
 ### Field Types
 **Tags** (indexed, for filtering):
-- `device`: Device name (from MQTT topic)
-- `chip_id`: ESP32/ESP8266 chip ID
+- `device`: Device ID extracted from MQTT topic path
+- `device_id`: Device identifier from payload
+- `device_name`: Human-readable device name from payload
 - `location`: Fixed as "surveillance" for cameras
 - `topic`: MQTT topic path
 
-**String Fields**:
+**ESP Sensor String Fields**:
+- `message`: Human-readable event description
+
+**ESP Sensor Numeric Fields**:
+- `event_type`: Event type code (numeric)
+- `severity`: Severity level (numeric: 0=info, 1=warning, 2=error)
+- `timestamp`: Device timestamp
+
+**Surveillance Camera String Fields**:
 - `event`: Event name (see Event Types below)
-- `severity`: Event severity (info, warning, error)
-- `message`: Human-readable event description (optional)
-- `firmware_version`: Device firmware version
+- `severity`: Event severity string (info, warning, error)
 - `trace_id`: Distributed tracing ID (surveillance only)
 - `traceparent`: W3C trace context (surveillance only)
 
-**Numeric Fields**:
+**Surveillance Camera Numeric Fields**:
 - `timestamp`: Device uptime in milliseconds
 - `uptime_seconds`: Device uptime in seconds
 - `free_heap`: Free heap memory in bytes
-- `seq_num`: Sequence number (surveillance only)
-- `schema_version`: Message schema version
+- `seq_num`: Sequence number
 
 ## Event Types
 
@@ -108,15 +120,15 @@ ESP Device → MQTT (esp-sensor-hub/{device}/events)
 
 ### Input Plugins
 ```toml
-# Temperature Sensor Events
+# ESP Sensor Hub Events (Temperature, Weather Stations, LoRa)
 [[inputs.mqtt_consumer]]
   servers = ["tcp://mosquitto-broker:1883"]
   topics = ["esp-sensor-hub/+/events"]
   qos = 0
   data_format = "json"
   name_override = "esp_events"
-  tag_keys = ["device", "chip_id"]
-  json_string_fields = ["event", "severity", "message", "firmware_version"]
+  tag_keys = ["device_id", "device_name"]
+  json_string_fields = ["message"]  # event_type and severity are numeric
 
 # Surveillance Camera Events
 [[inputs.mqtt_consumer]]
@@ -126,8 +138,10 @@ ESP Device → MQTT (esp-sensor-hub/{device}/events)
   data_format = "json"
   name_override = "surveillance_events"
   tag_keys = ["device", "chip_id", "location"]
-  json_string_fields = ["event", "severity", "trace_id", "traceparent"]
+  json_string_fields = ["event", "severity", "trace_id", "traceparent", "message"]
 ```
+
+**Note:** The `device` tag is also extracted from the MQTT topic path via regex processor: `esp-sensor-hub/{device}/events`
 
 ### Subscription Examples
 ```bash

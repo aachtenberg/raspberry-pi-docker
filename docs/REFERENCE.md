@@ -123,10 +123,12 @@ MQTT Broker
   topics = [
     "homeassistant/sensor/+/state",
     "esp-sensor-hub/+/status",
-    "esp-sensor-hub/+/temperature"
+    "esp-sensor-hub/+/temperature",
+    "esp-sensor-hub/+/readings"
   ]
   data_format = "json"
-  tag_keys = ["device", "chip_id"]
+  tag_keys = ["device_id", "device_name"]
+  # Device extracted from MQTT topic via regex processor
 ```
 
 **2. Regex Processor (extract device from topic):**
@@ -203,23 +205,35 @@ ORDER BY time DESC
 esp-sensor-hub/{device_id}/temperature
   payload: {"device": "Big-Garage", "celsius": 24.5, "fahrenheit": 76.1}
 
-esp-sensor-hub/{device_id}/events
-  payload: {"device": "Big-Garage", "event": "startup", "chip_id": "ABC123"}
+esp-sensor-hub/{device_id}/readings  # Weather stations (BME280/BMP280)
+  payload: {"device_id": "769e9ef0", "device_name": "sensor_769e9ef0", "temperature": 23.2, "humidity": 18.0, "pressure": 998.5, "altitude": 122, "rssi": -24, "snr": 10}
 
-esp-sensor-hub/{device_id}/status
-  payload: {"device": "Spa", "battery_voltage": 4.12, "battery_percent": 94, "wifi_rssi": -60, "uptime_seconds": 215, ...}
+esp-sensor-hub/{device_id}/events
+  payload: {"device_id": "f09e9e76aec4", "device_name": "BME280-LoRa-001", "event_type": 1, "severity": 0, "message": "Device started", "timestamp": 12345}
+
+esp-sensor-hub/{device_id}/status  # LoRa devices
+  payload: {"device_id": "769e9ef0", "device_name": "sensor_769e9ef0", "uptime": 3600, "wake_count": 120, "sensor_healthy": true, "lora_rssi": -14, "lora_snr": 10, "free_heap_kb": 215, "sensor_failures": 0}
 ```
 
 **InfluxDB 3 Schema:**
 ```
 measurement: esp_temperature
-  tags: device, chip_id
+  tags: device (from topic), device_id, device_name
   fields: celsius, fahrenheit
 
-measurement: esp_status
-  tags: device, chip_id
-  fields: battery_voltage, battery_percent, wifi_rssi, uptime_seconds, free_heap, sensor_healthy, wifi_connected, wifi_reconnects, sensor_read_failures, timestamp, seq_num
-time: timestamp
+measurement: esp_weather  # Weather stations
+  tags: device (from topic), device_id, device_name
+  fields: temperature, humidity, pressure, altitude, rssi, snr, battery_voltage, battery_percent, pressure_change, pressure_trend, gateway_time, sequence
+
+measurement: esp_status  # LoRa devices
+  tags: device (from topic), device_id, device_name
+  fields: uptime, wake_count, sensor_healthy, lora_rssi, lora_snr, free_heap_kb, sensor_failures, tx_failures, last_success_tx, deep_sleep_sec, rssi, snr
+
+measurement: esp_events
+  tags: device (from topic), device_id, device_name
+  fields: event_type, severity, message, timestamp
+
+time: timestamp (RFC3339 nanoseconds)
 ```
 
 **Device configuration:**

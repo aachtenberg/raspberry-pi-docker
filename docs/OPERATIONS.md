@@ -197,10 +197,14 @@ docker exec mosquitto-broker mosquitto_sub -t 'surveillance/#' -v
 
 **Check Telegraf Prometheus metrics:**
 ```bash
-curl -s http://localhost:9273/metrics | grep esp_temperature_celsius
+# Temperature sensor data
+curl -s http://localhost:9273/metrics | grep esp_temperature
+
+# Weather station data
+curl -s http://localhost:9273/metrics | grep esp_weather
 ```
 
-Expected: Current temperature readings from Main-Cottage, Spa, Pump-House, Small-Garage
+Expected: Current readings from all active ESP devices (temperature sensors and weather stations)
 
 ### Mosquitto Broker Monitoring
 
