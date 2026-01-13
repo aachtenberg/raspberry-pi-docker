@@ -316,6 +316,6 @@ No firmware changes needed - events are already flowing to MQTT!
 3. Check Prometheus targets: http://prometheus:9090/targets
 
 ## Related Documentation
-- [OPERATIONS_GUIDE.md](OPERATIONS.md) - System operations
-- [INFLUXDB3_SETUP.md](INFLUXDB3_SETUP.md) - InfluxDB 3 Core setup
+- [OPERATIONS.md](OPERATIONS.md) - System operations
+- [SETUP.md](SETUP.md) - InfluxDB 3 Core and service setup
 - [AI_MONITOR.md](AI_MONITOR.md) - Automated alerting

@@ -599,7 +599,7 @@
           "calcs": [
             "lastNotNull"
           ],
-          "fields": "/^temperature_c$/",
+          "fields": "/^temperature$/",
           "values": false
         },
         "showThresholdLabels": false,
@@ -609,15 +609,14 @@
       "pluginVersion": "12.4.0-19938312174",
       "targets": [
         {
-          "dataset": "iox",
           "datasource": {
-            "type": "influxdb",
+            "type": "grafana-influxdb-flightsql-datasource",
             "uid": "ef6y1vgh2r6kgc"
           },
           "editorMode": "code",
           "format": "table",
           "rawQuery": true,
-          "rawSql": "SELECT temperature_c FROM esp_weather WHERE device = 'Weather-Station-Main' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
+          "rawSql": "SELECT temperature FROM esp_weather WHERE device = '0000C4AE769E9EF0' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time DESC LIMIT 1",
           "refId": "A",
           "sql": {
             "columns": [
@@ -931,7 +930,7 @@
           "editorMode": "code",
           "format": "time_series",
           "rawQuery": true,
-          "rawSql": "SELECT time, 'Weather-Station-Main' as device, temperature_c as celsius FROM esp_weather WHERE device = 'Weather-Station-Main' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time ASC",
+          "rawSql": "SELECT time, device, temperature as celsius FROM esp_weather WHERE device = '0000C4AE769E9EF0' AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time ASC",
           "refId": "B"
         }
       ],
@@ -1103,7 +1102,7 @@
             "uid": "influxdb"
           },
           "format": "time_series",
-          "rawSql": "SELECT \"time\", \"temperature_c\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "rawSql": "SELECT \"time\", \"temperature\" FROM \"esp_weather\" WHERE \"device\" = '0000C4AE769E9EF0' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
           "refId": "A"
         },
         {
@@ -1112,7 +1111,7 @@
             "uid": "influxdb"
           },
           "format": "time_series",
-          "rawSql": "SELECT \"time\", \"humidity_rh\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "rawSql": "SELECT \"time\", \"humidity\" FROM \"esp_weather\" WHERE \"device\" = '0000C4AE769E9EF0' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
           "refId": "B"
         },
         {
@@ -1121,11 +1120,11 @@
             "uid": "influxdb"
           },
           "format": "time_series",
-          "rawSql": "SELECT \"time\", \"pressure_hpa\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "rawSql": "SELECT \"time\", \"pressure\" FROM \"esp_weather\" WHERE \"device\" = '0000C4AE769E9EF0' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
           "refId": "C"
         }
       ],
-      "title": "Weather Station (BME280)",
+      "title": "Weather Station (LoRa BME280)",
       "type": "timeseries"
     },
     {
@@ -1180,7 +1179,7 @@
             "uid": "influxdb"
           },
           "format": "table",
-          "rawSql": "SELECT \"temperature_c\" as \"Temperature (°C)\", \"humidity_rh\" as \"Humidity (%)\", \"pressure_hpa\" as \"Pressure (hPa)\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND time >= now() - INTERVAL '1 hour' ORDER BY \"time\" DESC LIMIT 1",
+          "rawSql": "SELECT \"temperature\" as \"Temperature (°C)\", \"humidity\" as \"Humidity (%)\", \"pressure\" as \"Pressure (hPa)\" FROM \"esp_weather\" WHERE \"device\" = '0000C4AE769E9EF0' AND time >= now() - INTERVAL '1 hour' ORDER BY \"time\" DESC LIMIT 1",
           "refId": "A"
         }
       ],
@@ -1272,7 +1271,7 @@
             "uid": "influxdb"
           },
           "format": "time_series",
-          "rawSql": "SELECT \"time\", \"altitude_m\" FROM \"esp_weather\" WHERE \"device\" = 'Weather-Station-Main' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
+          "rawSql": "SELECT \"time\", \"altitude\" FROM \"esp_weather\" WHERE \"device\" = '0000C4AE769E9EF0' AND \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\"",
           "refId": "A"
         }
       ],

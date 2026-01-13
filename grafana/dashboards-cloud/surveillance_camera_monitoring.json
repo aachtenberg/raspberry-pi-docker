@@ -68,14 +68,21 @@
             "matcher": {"id": "byName", "options": "Free Heap"},
             "properties": [
               {"id": "unit", "value": "bytes"},
-              {"id": "custom.width", "value": 120}
+              {"id": "custom.width", "value": 110}
+            ]
+          },
+          {
+            "matcher": {"id": "byName", "options": "Free PSRAM"},
+            "properties": [
+              {"id": "unit", "value": "bytes"},
+              {"id": "custom.width", "value": 110}
             ]
           },
           {
             "matcher": {"id": "byName", "options": "Uptime"},
             "properties": [
               {"id": "unit", "value": "s"},
-              {"id": "custom.width", "value": 140}
+              {"id": "custom.width", "value": 120}
             ]
           },
           {
@@ -130,6 +137,13 @@
           "format": "table",
           "instant": true,
           "refId": "Errors"
+        },
+        {
+          "datasource": {"type": "prometheus", "uid": "cf6z7j8gxto1sc"},
+          "expr": "max by (device) (surveillance_free_psram) and on(device) max by (device) (max_over_time(surveillance_camera_ready[2m]) > 0)",
+          "format": "table",
+          "instant": true,
+          "refId": "PSRAM"
         }
       ],
       "title": "Camera Status Overview",
@@ -155,12 +169,14 @@
               "Value #Status": 1,
               "Value #WiFi": 2,
               "Value #Heap": 3,
-              "Value #Uptime": 4,
-              "Value #Errors": 5
+              "Value #PSRAM": 4,
+              "Value #Uptime": 5,
+              "Value #Errors": 6
             },
             "renameByName": {
               "Value #Errors": "Errors",
               "Value #Heap": "Free Heap",
+              "Value #PSRAM": "Free PSRAM",
               "Value #Status": "Status",
               "Value #Uptime": "Uptime",
               "Value #WiFi": "WiFi (dBm)",
