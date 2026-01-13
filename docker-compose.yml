@@ -231,7 +231,7 @@ services:
       - prometheus
 
   # ============================================================================
-  # AI MONITOR - Self-healing with LLM diagnostics
+  # AI MONITOR - Rule-based monitoring with LLM triage (legacy)
   # ============================================================================
   ai-monitor:
     build:
@@ -239,6 +239,8 @@ services:
       dockerfile: Dockerfile
     container_name: ai-monitor
     restart: unless-stopped
+    profiles:
+      - legacy  # Only start with: docker compose --profile legacy up
     ports:
       - '8000:8000'  # Prometheus metrics endpoint
     environment:
@@ -261,6 +263,48 @@ services:
       # without restarts, append :ro and set AI_MONITOR_EXECUTE=false
       - /var/run/docker.sock:/var/run/docker.sock
       - ./ai-monitor/incidents:/app/incidents  # Incident reports
+    depends_on:
+      - prometheus
+    networks:
+      - monitoring
+
+  # ============================================================================
+  # AI AGENT MONITOR - LLM-driven investigation with tool calling
+  # ============================================================================
+  ai-agent:
+    build:
+      context: ./ai-monitor
+      dockerfile: Dockerfile
+    container_name: ai-agent
+    restart: unless-stopped
+    ports:
+      - '8001:8000'  # Prometheus metrics endpoint (different port to avoid conflict)
+    command: ["python", "agent_monitor.py"]
+    environment:
+      - PROMETHEUS_URL=${AI_MONITOR_PROMETHEUS_URL:-http://prometheus:9090}
+      - AI_MONITOR_INTERVAL_SECONDS=${AI_MONITOR_INTERVAL_SECONDS:-60}
+      - AI_MONITOR_EXECUTE=${AI_MONITOR_EXECUTE:-false}
+      - AI_MONITOR_LOG_LEVEL=${AI_MONITOR_LOG_LEVEL:-info}
+      - AI_MONITOR_METRICS_PORT=8000
+      # LLM Configuration
+      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
+      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-3-5-sonnet-20241022}
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash-exp}
+      # Agent-specific config
+      - AI_MONITOR_MAX_TOOL_CALLS=${AI_MONITOR_MAX_TOOL_CALLS:-20}
+      - AI_MONITOR_MAX_INVESTIGATION_TIME_SECONDS=${AI_MONITOR_MAX_INVESTIGATION_TIME_SECONDS:-300}
+      # Guardrails
+      - AI_MONITOR_ALLOWED_CONTAINERS=${AI_MONITOR_ALLOWED_CONTAINERS:-prometheus,influxdb3-core,nginx-proxy-manager,telegraf,mosquitto}
+      - AI_MONITOR_GUARDRAIL_COOLDOWN_SECONDS=${AI_MONITOR_GUARDRAIL_COOLDOWN_SECONDS:-600}
+      - AI_MONITOR_GUARDRAIL_MAX_RESTARTS_PER_HOUR=${AI_MONITOR_GUARDRAIL_MAX_RESTARTS_PER_HOUR:-3}
+      # Incident reports
+      - AI_MONITOR_INCIDENT_REPORTS_DIR=/app/incidents
+    volumes:
+      # Docker socket (write access required for container restart)
+      # Security note: Grants full Docker daemon control
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./ai-monitor/incidents:/app/incidents  # Investigation reports
     depends_on:
       - prometheus
     networks:
