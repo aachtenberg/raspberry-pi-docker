@@ -1,0 +1,617 @@
+{
+  "annotations": {
+    "list": [
+      {
+        "builtIn": 1,
+        "datasource": {
+          "type": "grafana",
+          "uid": "-- Grafana --"
+        },
+        "enable": true,
+        "hide": true,
+        "iconColor": "rgba(0, 211, 255, 1)",
+        "name": "Annotations & Alerts",
+        "type": "dashboard"
+      }
+    ]
+  },
+  "description": "ESP32/ESP8266 Device Health, Status, and Event Monitoring",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": true,
+  "panels": [
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "ef6y1vgh2r6kgc"
+      },
+      "description": "Latest status from all ESP devices",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "align": "auto",
+            "cellOptions": {
+              "type": "auto"
+            },
+            "inspect": false
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "wifi_rssi"
+            },
+            "properties": [
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "red", "value": -90},
+                    {"color": "orange", "value": -70},
+                    {"color": "yellow", "value": -60},
+                    {"color": "green", "value": -50}
+                  ]
+                }
+              },
+              {
+                "id": "unit",
+                "value": "dBm"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "free_heap"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "decbytes"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "uptime_seconds"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
+          },
+          {
+            "matcher": {
+              "id": "byName",
+              "options": "battery_percent"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "percent"
+              },
+              {
+                "id": "custom.cellOptions",
+                "value": {
+                  "type": "color-background"
+                }
+              },
+              {
+                "id": "thresholds",
+                "value": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "red", "value": 0},
+                    {"color": "orange", "value": 20},
+                    {"color": "yellow", "value": 50},
+                    {"color": "green", "value": 80}
+                  ]
+                }
+              }
+            ]
+          }
+        ]
+      },
+      "gridPos": {
+        "h": 10,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
+      "id": 1,
+      "options": {
+        "showHeader": true,
+        "cellHeight": "sm",
+        "footer": {
+          "show": false,
+          "reducer": ["sum"],
+          "countRows": false,
+          "fields": ""
+        },
+        "frameIndex": 0
+      },
+      "pluginVersion": "11.4.0",
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "ef6y1vgh2r6kgc"
+          },
+          "format": "table",
+          "rawSql": "SELECT device, wifi_rssi, free_heap, uptime_seconds, wifi_reconnects, battery_percent, battery_voltage FROM (SELECT device, wifi_rssi, free_heap, uptime_seconds, wifi_reconnects, battery_percent, battery_voltage, ROW_NUMBER() OVER (PARTITION BY device ORDER BY time DESC) as rn FROM esp_status WHERE time >= now() - INTERVAL '1 hour') WHERE rn = 1 ORDER BY device",
+          "refId": "A"
+        }
+      ],
+      "title": "Latest Device Status",
+      "type": "table"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 18
+      },
+      "id": 4,
+      "panels": [],
+      "title": "Device Status & Health",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "ef6y1vgh2r6kgc"
+      },
+      "description": "WiFi signal strength (RSSI) by device",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "barAlignment": 0,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "scheme",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "always",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "series",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": -90
+              },
+              {
+                "color": "orange",
+                "value": -70
+              },
+              {
+                "color": "yellow",
+                "value": -60
+              },
+              {
+                "color": "green",
+                "value": -50
+              }
+            ]
+          },
+          "unit": "dBm"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 19
+      },
+      "id": 5,
+      "options": {
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": []
+        }
+      },
+      "targets": [
+        {
+          "dataset": "iox",
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "ef6y1vgh2r6kgc"
+          },
+          "editorMode": "builder",
+          "format": "time_series",
+          "rawSql": "SELECT \"time\", \"device\", \"wifi_rssi\" FROM \"esp_status\" WHERE \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\" ASC",
+          "refId": "A"
+        }
+      ],
+      "title": "WiFi Signal Strength (RSSI)",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "ef6y1vgh2r6kgc"
+      },
+      "description": "Free heap memory by device",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "barAlignment": 0,
+            "lineWidth": 1,
+            "fillOpacity": 0,
+            "gradientMode": "none",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "always",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "series",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "off"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          },
+          "unit": "decbytes"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 19
+      },
+      "id": 6,
+      "options": {
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": []
+        }
+      },
+      "targets": [
+        {
+          "dataset": "iox",
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "ef6y1vgh2r6kgc"
+          },
+          "editorMode": "builder",
+          "format": "time_series",
+          "rawSql": "SELECT \"time\", \"device\", \"free_heap\" FROM \"esp_status\" WHERE \"time\" >= $__timeFrom AND \"time\" <= $__timeTo ORDER BY \"time\" ASC",
+          "refId": "A"
+        }
+      ],
+      "title": "Free Heap Memory",
+      "type": "timeseries"
+    },
+    {
+      "collapsed": false,
+      "gridPos": {
+        "h": 1,
+        "w": 24,
+        "x": 0,
+        "y": 27
+      },
+      "id": 9,
+      "panels": [],
+      "title": "Battery-Powered Devices",
+      "type": "row"
+    },
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "ef6y1vgh2r6kgc"
+      },
+      "description": "Battery voltage for battery-powered devices",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "barAlignment": 0,
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "scheme",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "always",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "text",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 3.3
+              },
+              {
+                "color": "yellow",
+                "value": 3.6
+              },
+              {
+                "color": "green",
+                "value": 3.9
+              }
+            ]
+          },
+          "unit": "volt"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 36
+      },
+      "id": 10,
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["lastNotNull", "min"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "ef6y1vgh2r6kgc"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, device, battery_voltage FROM esp_status WHERE battery_voltage > 0 AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "title": "Battery Voltage",
+      "type": "timeseries"
+    },
+    {
+      "datasource": {
+        "type": "grafana-influxdb-flightsql-datasource",
+        "uid": "ef6y1vgh2r6kgc"
+      },
+      "description": "Battery percentage for battery-powered devices",
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineInterpolation": "smooth",
+            "barAlignment": 0,
+            "lineWidth": 2,
+            "fillOpacity": 20,
+            "gradientMode": "scheme",
+            "spanNulls": true,
+            "insertNulls": false,
+            "showPoints": "always",
+            "pointSize": 5,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            },
+            "axisPlacement": "auto",
+            "axisLabel": "",
+            "axisColorMode": "text",
+            "axisBorderShow": false,
+            "scaleDistribution": {
+              "type": "linear"
+            },
+            "axisCenteredZero": false,
+            "hideFrom": {
+              "tooltip": false,
+              "viz": false,
+              "legend": false
+            },
+            "thresholdsStyle": {
+              "mode": "area"
+            }
+          },
+          "color": {
+            "mode": "thresholds"
+          },
+          "mappings": [],
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "red",
+                "value": 0
+              },
+              {
+                "color": "orange",
+                "value": 20
+              },
+              {
+                "color": "yellow",
+                "value": 50
+              },
+              {
+                "color": "green",
+                "value": 70
+              }
+            ]
+          },
+          "unit": "percent",
+          "max": 100,
+          "min": 0
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 36
+      },
+      "id": 11,
+      "options": {
+        "tooltip": {
+          "mode": "multi",
+          "sort": "none"
+        },
+        "legend": {
+          "showLegend": true,
+          "displayMode": "table",
+          "placement": "right",
+          "calcs": ["lastNotNull", "min"]
+        }
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "grafana-influxdb-flightsql-datasource",
+            "uid": "ef6y1vgh2r6kgc"
+          },
+          "format": "time_series",
+          "rawSql": "SELECT time, device, battery_percent FROM esp_status WHERE battery_percent > 0 AND time >= $__timeFrom AND time <= $__timeTo ORDER BY time",
+          "refId": "A"
+        }
+      ],
+      "title": "Battery Level",
+      "type": "timeseries"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 42,
+  "tags": ["esp32", "esp8266", "iot", "events", "health"],
+  "templating": {
+    "list": []
+  },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
+  "timepicker": {},
+  "timezone": "America/Toronto",
+  "title": "ESP Device Health & Events",
+  "uid": "esp-device-health",
+  "version": 1,
+  "weekStart": ""
+}

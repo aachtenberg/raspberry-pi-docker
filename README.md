@@ -67,7 +67,7 @@ InfluxDB 3 Core is the default. InfluxDB 2.7 support is retained as an optional 
 ### InfluxDB 3 Core (default)
 
 - **API**: `http://localhost:8181`
-- **Reference**: [InfluxDB 3 Setup Guide](docs/INFLUXDB3_SETUP.md)
+- **Reference**: [Setup Guide](docs/SETUP.md) and [Operations Guide](docs/OPERATIONS.md)
 
 ### InfluxDB 2.7 (optional)
 
@@ -94,7 +94,7 @@ docker compose ps | grep influxdb3
 docker compose logs influxdb3-core
 ```
 
-For detailed integration instructions, see the [InfluxDB 3 Setup Guide](docs/INFLUXDB3_SETUP.md).
+For detailed integration instructions, see the [Setup Guide](docs/SETUP.md) and [Operations Guide](docs/OPERATIONS.md).
 
 ### 1. Configure Secrets
 
