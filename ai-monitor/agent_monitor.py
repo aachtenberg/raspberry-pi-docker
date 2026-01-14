@@ -218,14 +218,28 @@ class GuardrailResult(BaseModel):
 
 # ============================== Tool Definitions ==============================
 
-SYSTEM_PROMPT = """You are an SRE agent monitoring a Raspberry Pi Docker infrastructure.
+SYSTEM_PROMPT = """You are an autonomous SRE agent monitoring a Raspberry Pi Docker infrastructure.
 
 MISSION:
-- Proactively detect and resolve infrastructure issues
-- Minimize false positives and unnecessary restarts
-- Provide clear explanations for all actions
+- Figure out issues on your own using available data - no rigid rules
+- Learn from past incidents to improve future resolutions
+- Take confident action when historical data supports it
+- Escalate only when truly uncertain
+
+CRITICAL: CHECK KNOWLEDGE BASE FIRST
+Before investigating manually, ALWAYS:
+1. query_knowledge_base() - Have we seen this before?
+2. get_runbook() - Is there a learned procedure?
+3. check_action_confidence() - What's the success rate for proposed actions?
 
 TOOLS AVAILABLE:
+
+Knowledge tools (use FIRST):
+- query_knowledge_base: Search past incidents for similar issues
+- get_runbook: Get learned step-by-step procedures
+- check_action_confidence: Check historical success rate for actions
+- get_incident_trends: Analyze patterns over time
+
 Observation tools (read-only):
 - prom_query: Execute PromQL queries
 - prom_list_metrics: List available Prometheus metrics
@@ -234,54 +248,149 @@ Observation tools (read-only):
 - docker_stats: Get real-time resource usage
 - system_info: Get host system metrics
 - http_check: Test HTTP endpoint availability
+- mqtt_subscribe: Listen to MQTT topics
+- mqtt_inspect: Get MQTT broker stats
+- influxdb_query: Query InfluxDB data
+- influxdb_list: List InfluxDB databases/tables
 
 Action tools (guardrailed):
-- restart_container: Restart a container (allowlist enforced)
+- restart_container: Restart a container (confidence-based execution)
 - create_alert: Send alert to operators
 - mark_resolved: Conclude investigation
 
-WORKFLOW:
-1. When triggered, use observation tools to understand the issue
-2. Form hypotheses and test them with targeted queries
-3. If you identify a clear problem with a known solution, take action
-4. If uncertain or outside your remediation scope, create an alert for humans
-5. Always call mark_resolved() when investigation complete with summary
+AUTONOMOUS WORKFLOW:
+1. ORIENT: query_knowledge_base() to check if we've seen this before
+2. PLAN: If runbook exists, follow it. Otherwise, investigate.
+3. DECIDE: check_action_confidence() before taking action
+   - High confidence (>85%): Execute automatically
+   - Medium confidence (50-85%): Proceed with caution
+   - Low confidence (<50%): Consider escalating
+4. ACT: Take action if confident, otherwise gather more data
+5. VERIFY: System will auto-verify actions succeeded
+6. LEARN: Your actions are recorded for future learning
 
 GUARDRAILS (ENFORCED BY SYSTEM):
-- Can only restart containers in allowlist
+- Container allowlist enforced
 - Restart cooldown: 10 minutes per container
-- Max 3 restarts per hour across all containers
-- Cannot modify volumes, networks, or host system
+- Max 3 restarts per hour globally
+- Confidence-based execution thresholds
 
-INVESTIGATION BEST PRACTICES:
-- Start broad (list containers, check Prometheus health)
-- Then narrow based on findings (inspect specific containers)
-- Check dependencies (if API failing, check database)
-- Look for cascading failures (upstream → downstream)
-- Consider resource constraints (memory pressure, disk full)
+INVESTIGATION APPROACH:
+- Don't follow rigid patterns - figure out what's actually wrong
+- Use metrics, logs, and data to form hypotheses
+- Test hypotheses with targeted queries
+- Trust historical success rates for action decisions
+- When evidence supports action, take it confidently
 
 EXAMPLES:
 
-Example 1 - Container crash:
-1. docker_inspect(container="api", include_logs=true) → see OOMKilled
-2. prom_query(query='docker_container_mem_usage{name="api"}[1h]') → see memory leak
-3. restart_container(container="api", reason="OOMKilled, restarting to restore service")
-4. create_alert(severity="medium", title="API memory leak detected")
-5. mark_resolved(summary="API restarted after OOM. Alert created for dev team.")
+Example 1 - Known issue (use knowledge base):
+1. query_knowledge_base(query="influxdb unhealthy") → Found 3 similar resolved incidents
+2. get_runbook(pattern="container_unhealthy") → Steps: inspect, check logs, restart
+3. check_action_confidence(action="restart_container", target="influxdb3-core") → 92% success
+4. restart_container(container="influxdb3-core", reason="Historical 92% success rate for this issue")
+5. mark_resolved(summary="Applied learned resolution from knowledge base. 92% confidence.")
 
-Example 2 - False alarm:
-1. docker_list() → all containers running
-2. prom_query(query='up{job="node-exporter"}[5m]') → see transient blip, now back
-3. mark_resolved(summary="Transient scrape failure, target back up. No action needed.")
+Example 2 - New issue (investigate fresh):
+1. query_knowledge_base(query="telegraf memory") → No similar incidents found
+2. docker_inspect(container="telegraf", include_logs=true) → Memory at 95%
+3. prom_query(query='container_memory_usage_bytes{name="telegraf"}[1h]') → Gradual increase
+4. check_action_confidence(action="restart_container", target="telegraf") → 50% (limited data)
+5. restart_container(container="telegraf", reason="Memory exhaustion, restart to restore")
+6. create_alert(severity="medium", title="Telegraf memory leak - needs investigation")
+7. mark_resolved(summary="Restarted telegraf due to memory exhaustion. Alert created for root cause analysis.")
+
+Example 3 - False alarm:
+1. query_knowledge_base(query="prometheus target down") → Similar: 5 transient failures, all self-resolved
+2. prom_query(query='up{job="node-exporter"}') → Target is up now
+3. mark_resolved(summary="Transient scrape failure matching known pattern. Self-resolved, no action needed.")
 
 REMEMBER:
-- Be efficient with queries (max 20 tool calls per investigation)
-- Don't restart containers unless clearly beneficial
-- When in doubt, alert humans instead of taking action
-- Always provide reasoning for actions in mark_resolved()
+- The knowledge base is your memory - use it!
+- Historical success rates should guide your confidence
+- Be efficient (max 20 tool calls) but thorough
+- Every investigation improves the knowledge base for next time
 """
 
 OBSERVATION_TOOLS = [
+    # ====================== Knowledge Base Tools (Phase 3) ======================
+    {
+        "name": "query_knowledge_base",
+        "description": "Search past incidents and resolutions. Use this FIRST to check if we've seen this issue before. Returns matching incidents with their outcomes, root causes, and what actions resolved them.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {
+                    "type": "string",
+                    "description": "Natural language query to search (e.g., 'influxdb authentication error', 'container OOM killed', 'prometheus scrape failures')"
+                },
+                "trigger_type": {
+                    "type": "string",
+                    "description": "Optional filter by trigger type (container_unhealthy, container_exited, prometheus_target_down, scrape_quality_degraded)"
+                },
+                "outcome": {
+                    "type": "string",
+                    "enum": ["resolved", "escalated", "timeout", "error"],
+                    "description": "Optional filter by outcome"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Max results to return (default: 5)"
+                }
+            },
+            "required": ["query"]
+        }
+    },
+    {
+        "name": "get_runbook",
+        "description": "Retrieve a learned runbook for a pattern. Runbooks are auto-generated from successful incident resolutions and contain step-by-step procedures.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "pattern": {
+                    "type": "string",
+                    "description": "Pattern to look up (e.g., 'container_unhealthy', 'influxdb', 'prometheus_target_down')"
+                }
+            },
+            "required": ["pattern"]
+        }
+    },
+    {
+        "name": "check_action_confidence",
+        "description": "Check confidence score for a proposed action based on historical success. Returns recommendation on whether to auto-execute, request approval, or escalate.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "action_type": {
+                    "type": "string",
+                    "description": "The action type (e.g., 'restart_container')"
+                },
+                "target": {
+                    "type": "string",
+                    "description": "Target of the action (e.g., container name)"
+                },
+                "trigger_type": {
+                    "type": "string",
+                    "description": "The trigger type for this investigation"
+                }
+            },
+            "required": ["action_type", "target", "trigger_type"]
+        }
+    },
+    {
+        "name": "get_incident_trends",
+        "description": "Get incident trends and statistics over a time period. Useful for understanding if issues are recurring or getting worse.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "days": {
+                    "type": "integer",
+                    "description": "Number of days to analyze (default: 7)"
+                }
+            }
+        }
+    },
+    # ====================== Prometheus Tools ======================
     {
         "name": "prom_query",
         "description": "Execute arbitrary PromQL query against Prometheus. Use this to check metrics, identify anomalies, or investigate trends.",
@@ -539,8 +648,13 @@ ALL_TOOLS = OBSERVATION_TOOLS + ACTION_TOOLS
 # ============================= Guardrail Enforcer =============================
 
 class GuardrailEnforcer:
-    """Enforce safety guardrails on agent actions."""
-    
+    """Enforce safety guardrails on agent actions with confidence-based execution."""
+
+    # Confidence thresholds for autonomous execution
+    HIGH_CONFIDENCE_THRESHOLD = 0.85  # Auto-execute
+    MEDIUM_CONFIDENCE_THRESHOLD = 0.5  # Proceed with caution
+    # Below MEDIUM = escalate/alert
+
     def __init__(self):
         self.allowed_containers = {
             c.strip() for c in os.getenv("AI_MONITOR_ALLOWED_CONTAINERS", "").split(",") if c.strip()
@@ -549,14 +663,30 @@ class GuardrailEnforcer:
         self.max_restarts_per_hour = _env_int("AI_MONITOR_GUARDRAIL_MAX_RESTARTS_PER_HOUR", 3)
         self.restart_history: Dict[str, float] = {}
         self.restart_lock = Lock()
-        
+
+        # Knowledge base reference for confidence checks
+        self.knowledge_base = None
+
+        # Current investigation context (set during investigation)
+        self.current_trigger_type: Optional[str] = None
+
         _log("info", "Guardrail enforcer initialized",
              allowed_containers=sorted(self.allowed_containers),
              cooldown_seconds=self.cooldown_seconds,
-             max_restarts_per_hour=self.max_restarts_per_hour)
-    
+             max_restarts_per_hour=self.max_restarts_per_hour,
+             high_confidence_threshold=self.HIGH_CONFIDENCE_THRESHOLD,
+             medium_confidence_threshold=self.MEDIUM_CONFIDENCE_THRESHOLD)
+
+    def set_knowledge_base(self, kb) -> None:
+        """Set knowledge base reference for confidence calculations."""
+        self.knowledge_base = kb
+
+    def set_investigation_context(self, trigger_type: str) -> None:
+        """Set current investigation context for confidence calculations."""
+        self.current_trigger_type = trigger_type
+
     def check_restart_container(self, container: str) -> GuardrailResult:
-        """Check if container restart is allowed."""
+        """Check if container restart is allowed with confidence-based execution."""
         with self.restart_lock:
             # Check allowlist
             if self.allowed_containers and container not in self.allowed_containers:
@@ -565,7 +695,7 @@ class GuardrailEnforcer:
                     allowed=False,
                     reason=f"Container '{container}' not in allowlist. Allowed: {sorted(self.allowed_containers)}"
                 )
-            
+
             # Check cooldown
             now = time.time()
             last_restart = self.restart_history.get(container, 0)
@@ -577,7 +707,7 @@ class GuardrailEnforcer:
                     reason=f"Restart cooldown active for '{container}' ({remaining}s remaining)",
                     metadata={"last_restart": last_restart, "remaining_seconds": remaining}
                 )
-            
+
             # Check rate limit (last hour)
             hour_ago = now - 3600
             recent_restarts = [t for t in self.restart_history.values() if t > hour_ago]
@@ -588,14 +718,48 @@ class GuardrailEnforcer:
                     reason=f"Rate limit exceeded: {len(recent_restarts)} restarts in last hour (max: {self.max_restarts_per_hour})",
                     metadata={"recent_restarts": len(recent_restarts)}
                 )
-            
-            return GuardrailResult(allowed=True, reason="All guardrails passed")
-    
+
+            # Calculate confidence score if knowledge base available
+            confidence = 0.5  # Default medium confidence
+            confidence_reason = "default"
+
+            if self.knowledge_base and self.current_trigger_type:
+                confidence = self.knowledge_base.calculate_action_confidence(
+                    action_type="restart_container",
+                    target=container,
+                    trigger_type=self.current_trigger_type
+                )
+                confidence_reason = "historical_data"
+
+            # Log confidence level
+            if confidence >= self.HIGH_CONFIDENCE_THRESHOLD:
+                confidence_level = "high"
+            elif confidence >= self.MEDIUM_CONFIDENCE_THRESHOLD:
+                confidence_level = "medium"
+            else:
+                confidence_level = "low"
+
+            _log("info", "Restart confidence calculated",
+                 container=container,
+                 confidence=confidence,
+                 confidence_level=confidence_level,
+                 trigger_type=self.current_trigger_type)
+
+            return GuardrailResult(
+                allowed=True,
+                reason=f"All guardrails passed. Confidence: {confidence:.2f} ({confidence_level})",
+                metadata={
+                    "confidence": confidence,
+                    "confidence_level": confidence_level,
+                    "confidence_reason": confidence_reason
+                }
+            )
+
     def record_restart(self, container: str) -> None:
         """Record a successful restart."""
         with self.restart_lock:
             self.restart_history[container] = time.time()
-    
+
     def check_action(self, tool_name: str, arguments: Dict[str, Any]) -> GuardrailResult:
         """Check if any action is allowed."""
         if tool_name == "restart_container":
@@ -696,8 +860,93 @@ class ToolExecutor:
             if len(TOOL_CALL_HISTORY) > MAX_TOOL_CALL_HISTORY:
                 TOOL_CALL_HISTORY.pop(0)
     
+    # Reference to knowledge base (set by AgentMonitor)
+    knowledge_base = None
+
+    def set_knowledge_base(self, kb) -> None:
+        """Set reference to knowledge base for knowledge tools."""
+        self.knowledge_base = kb
+
+    # ----------------------- Knowledge Base Tools (Phase 3) ------------------
+
+    def _tool_query_knowledge_base(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Search past incidents in knowledge base."""
+        if not self.knowledge_base:
+            return {"error": "Knowledge base not available", "incidents": []}
+
+        query = args["query"]
+        trigger_type = args.get("trigger_type")
+        outcome = args.get("outcome")
+        limit = args.get("limit", 5)
+
+        incidents = self.knowledge_base.query_incidents(
+            query=query,
+            trigger_type=trigger_type,
+            outcome=outcome,
+            limit=limit
+        )
+
+        return {
+            "query": query,
+            "results_count": len(incidents),
+            "incidents": incidents,
+            "message": f"Found {len(incidents)} matching incidents" if incidents else "No similar incidents found - this may be a new issue type"
+        }
+
+    def _tool_get_runbook(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Retrieve runbook for a pattern."""
+        if not self.knowledge_base:
+            return {"error": "Knowledge base not available", "runbook": None}
+
+        pattern = args["pattern"]
+        runbook = self.knowledge_base.get_runbook(pattern)
+
+        if runbook:
+            return {
+                "found": True,
+                "runbook": runbook,
+                "message": f"Found runbook with {len(runbook.get('steps', []))} steps, {runbook.get('success_rate', 0)*100:.0f}% success rate"
+            }
+        else:
+            return {
+                "found": False,
+                "runbook": None,
+                "message": f"No runbook found for pattern '{pattern}'. Investigate manually and a runbook will be auto-generated after 3+ successful resolutions."
+            }
+
+    def _tool_check_action_confidence(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Check confidence for proposed action."""
+        if not self.knowledge_base:
+            return {
+                "confidence": 0.5,
+                "recommendation": "request_approval",
+                "reason": "Knowledge base not available - defaulting to medium confidence"
+            }
+
+        action_type = args["action_type"]
+        target = args["target"]
+        trigger_type = args["trigger_type"]
+
+        recommendation = self.knowledge_base.get_action_recommendation(
+            action_type=action_type,
+            target=target,
+            trigger_type=trigger_type
+        )
+
+        return recommendation
+
+    def _tool_get_incident_trends(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Get incident trends over time period."""
+        if not self.knowledge_base:
+            return {"error": "Knowledge base not available"}
+
+        days = args.get("days", 7)
+        trends = self.knowledge_base.get_incident_trends(days=days)
+
+        return trends
+
     # ----------------------- Observation Tools --------------------------------
-    
+
     def _tool_prom_query(self, args: Dict[str, Any]) -> Dict[str, Any]:
         """Execute Prometheus query."""
         query = args["query"]
@@ -1314,16 +1563,23 @@ class AgentMonitor:
         self.guardrails = GuardrailEnforcer()
         self.tool_executor = ToolExecutor(self.guardrails)
         self.trigger_detector = TriggerDetector(self.tool_executor)
-        
+
         # Knowledge base
         self.knowledge_base = None
         if KNOWLEDGE_BASE_AVAILABLE and _env_bool("AI_MONITOR_KNOWLEDGE_BASE_ENABLED", True):
             try:
                 self.knowledge_base = KnowledgeBase()
-                _log("info", "Knowledge base initialized", 
+                # Wire up knowledge base to components for Phase 3 features
+                self.tool_executor.set_knowledge_base(self.knowledge_base)
+                self.guardrails.set_knowledge_base(self.knowledge_base)
+                _log("info", "Knowledge base initialized",
                      stats=self.knowledge_base.get_stats())
             except Exception as e:
                 _log("error", "Failed to initialize knowledge base", error=str(e))
+
+        # Proactive monitoring config
+        self.proactive_scan_interval = _env_int("AI_MONITOR_PROACTIVE_SCAN_INTERVAL", 900)  # 15 min
+        self.last_proactive_scan = 0
         
         # Config
         self.interval_seconds = _env_int("AI_MONITOR_INTERVAL_SECONDS", 60)
@@ -1343,24 +1599,27 @@ class AgentMonitor:
     def investigate(self, trigger: str) -> Investigation:
         """
         Investigate a trigger using LLM with tool calling.
-        
+
         The LLM iteratively calls tools to understand the issue and take action.
         After actions, verifies they succeeded (closed-loop).
-        Stores learnings in knowledge base.
+        Stores learnings in knowledge base and triggers learning hooks.
         Returns complete investigation report with audit trail.
         """
         # Classify trigger type for similarity matching
         trigger_type = self._classify_trigger(trigger)
-        
+
         investigation = Investigation(
             trigger=trigger,
             trigger_type=trigger_type,
             start_time=time.time()
         )
-        
+
         ACTIVE_INVESTIGATIONS.inc()
-        
-        # Check knowledge base for similar incidents
+
+        # Set investigation context for confidence-based execution
+        self.guardrails.set_investigation_context(trigger_type)
+
+        # Check knowledge base for similar incidents and runbooks
         if self.knowledge_base:
             similar = self.knowledge_base.find_similar_incidents(
                 trigger=trigger,
@@ -1370,6 +1629,14 @@ class AgentMonitor:
             if similar:
                 _log("info", "Found similar past incidents", count=len(similar))
                 investigation.metadata["similar_incidents"] = similar
+
+            # Check for existing runbook
+            runbook = self.knowledge_base.get_runbook(trigger_type)
+            if runbook:
+                _log("info", "Found runbook for trigger type",
+                     trigger_type=trigger_type,
+                     steps=len(runbook.get("steps", [])))
+                investigation.metadata["runbook"] = runbook
         
         try:
             if self.use_claude:
@@ -1409,14 +1676,37 @@ class AgentMonitor:
                  actions_taken=len(investigation.actions_taken),
                  verifications=len(investigation.verifications))
             
-            # Store in knowledge base
+            # Store in knowledge base and trigger learning hooks
             if self.knowledge_base:
                 try:
                     incident_id = self._record_to_knowledge_base(investigation)
                     investigation.metadata["incident_id"] = incident_id
+
+                    # Phase 3: Pattern detection - track recurring issues
+                    pattern_result = self.knowledge_base.detect_and_record_pattern(
+                        trigger=investigation.trigger,
+                        trigger_type=investigation.trigger_type,
+                        incident_id=incident_id
+                    )
+                    if pattern_result and pattern_result.get("proactive_enabled"):
+                        _log("info", "Proactive monitoring enabled for pattern",
+                             pattern_id=pattern_result["pattern_id"],
+                             occurrence_count=pattern_result["occurrence_count"])
+
+                    # Phase 3: Auto-generate runbook after successful resolutions
+                    if investigation.outcome == "resolved":
+                        runbook_result = self.knowledge_base.maybe_generate_runbook(
+                            trigger_type=investigation.trigger_type,
+                            min_occurrences=3
+                        )
+                        if runbook_result:
+                            _log("info", "Auto-generated runbook from successful resolutions",
+                                 pattern_type=runbook_result["pattern_type"],
+                                 steps_count=len(runbook_result.get("steps", [])))
+
                 except Exception as e:
                     _log("error", "Failed to record to knowledge base", error=str(e))
-            
+
             self._save_investigation_report(investigation)
         
         return investigation
@@ -1752,17 +2042,160 @@ class AgentMonitor:
     
     def run_once(self) -> None:
         """Execute one monitoring cycle."""
+        # Run proactive scan periodically
+        now = time.time()
+        if now - self.last_proactive_scan >= self.proactive_scan_interval:
+            self._proactive_scan()
+            self.last_proactive_scan = now
+
         triggers = self.trigger_detector.check_triggers()
-        
+
         if not triggers:
             _log("debug", "No triggers detected")
             return
-        
+
         _log("info", "Triggers detected", count=len(triggers), triggers=triggers)
-        
+
         # Investigate each trigger
         for trigger in triggers:
             self.investigate(trigger)
+
+    def _proactive_scan(self) -> None:
+        """
+        Phase 3: Proactive monitoring scan.
+        Check for patterns with proactive monitoring enabled and run their checks.
+        """
+        if not self.knowledge_base:
+            return
+
+        _log("info", "Running proactive monitoring scan")
+
+        # Get all enabled proactive checks
+        proactive_checks = self.knowledge_base.get_proactive_checks()
+        if not proactive_checks:
+            _log("debug", "No proactive checks configured")
+            return
+
+        _log("info", "Found proactive checks", count=len(proactive_checks))
+
+        triggers_found = []
+
+        for check in proactive_checks:
+            config = check.get("config", {})
+            check_type = config.get("check_type", "generic")
+
+            try:
+                issue_detected = False
+                issue_details = None
+
+                if check_type == "docker_health":
+                    # Check all containers for unhealthy status
+                    result = self.tool_executor.execute("docker_list", {"all": True})
+                    if result.get("success"):
+                        unhealthy = [
+                            c for c in result["data"].get("containers", [])
+                            if c.get("health") == "unhealthy"
+                        ]
+                        if unhealthy:
+                            issue_detected = True
+                            issue_details = f"Unhealthy containers: {[c['name'] for c in unhealthy]}"
+
+                elif check_type == "docker_status":
+                    # Check for exited containers
+                    result = self.tool_executor.execute("docker_list", {"all": True})
+                    if result.get("success"):
+                        exited = [
+                            c for c in result["data"].get("containers", [])
+                            if c.get("status") == "exited"
+                        ]
+                        if exited:
+                            issue_detected = True
+                            issue_details = f"Exited containers: {[c['name'] for c in exited]}"
+
+                elif check_type == "prometheus_query":
+                    # Run the configured query
+                    query = config.get("query", "up == 0")
+                    result = self.tool_executor.execute("prom_query", {"query": query})
+                    if result.get("success"):
+                        results = result["data"].get("result", [])
+                        if results:
+                            issue_detected = True
+                            issue_details = f"Prometheus query '{query}' returned {len(results)} results"
+
+                elif check_type == "resource_forecast":
+                    # Basic resource trend analysis
+                    result = self.tool_executor.execute("system_info", {})
+                    if result.get("success"):
+                        disk_percent = result["data"].get("disk", {}).get("percent", 0)
+                        mem_percent = result["data"].get("memory", {}).get("percent", 0)
+
+                        if disk_percent > 85:
+                            issue_detected = True
+                            issue_details = f"Disk usage at {disk_percent}% - may exhaust soon"
+                        elif mem_percent > 90:
+                            issue_detected = True
+                            issue_details = f"Memory usage at {mem_percent}% - may exhaust soon"
+
+                if issue_detected:
+                    _log("warn", "Proactive check detected issue",
+                         pattern_id=check.get("pattern_id"),
+                         signature=check.get("signature"),
+                         issue=issue_details)
+
+                    # Create trigger for investigation
+                    triggers_found.append(
+                        f"[PROACTIVE] {check.get('signature', 'unknown')}: {issue_details}"
+                    )
+
+            except Exception as e:
+                _log("error", "Proactive check failed",
+                     pattern_id=check.get("pattern_id"),
+                     error=str(e))
+
+        # Run trend analysis
+        self._check_trends()
+
+        # Investigate any proactive triggers found
+        for trigger in triggers_found:
+            _log("info", "Investigating proactive trigger", trigger=trigger)
+            self.investigate(trigger)
+
+    def _check_trends(self) -> None:
+        """
+        Analyze incident trends and alert on concerning patterns.
+        """
+        if not self.knowledge_base:
+            return
+
+        try:
+            trends = self.knowledge_base.get_incident_trends(days=7)
+            if not trends.get("total_incidents"):
+                return
+
+            # Check for concerning trends
+            daily_rate = trends.get("daily_rate", 0)
+            resolution_rate = trends.get("resolution_rate", 1.0)
+
+            # Alert if daily incident rate is high
+            if daily_rate > 10:
+                _log("warn", "High incident rate detected",
+                     daily_rate=daily_rate,
+                     period_days=7)
+
+            # Alert if resolution rate is low
+            if resolution_rate < 0.7 and trends.get("total_incidents", 0) > 5:
+                _log("warn", "Low resolution rate detected",
+                     resolution_rate=resolution_rate,
+                     total_incidents=trends.get("total_incidents"))
+
+            # Log trending issues
+            trending = trends.get("trending_issues", [])
+            if trending:
+                _log("info", "Trending issues identified",
+                     trending=[t["trigger_type"] for t in trending[:3]])
+
+        except Exception as e:
+            _log("error", "Trend analysis failed", error=str(e))
     
     def run_forever(self) -> None:
         """Run monitoring loop forever."""
