@@ -333,6 +333,17 @@ services:
       - INFLUXDB3_ADMIN_TOKEN=${INFLUXDB3_ADMIN_TOKEN}
       # Incident reports
       - AI_MONITOR_INCIDENT_REPORTS_DIR=/app/incidents
+      # Knowledge Base (SQLite by default, PostgreSQL for production)
+      - AI_MONITOR_KNOWLEDGE_BASE_ENABLED=${AI_MONITOR_KNOWLEDGE_BASE_ENABLED:-true}
+      - AI_MONITOR_VERIFICATION_ENABLED=${AI_MONITOR_VERIFICATION_ENABLED:-true}
+      - KNOWLEDGE_BASE_DB_TYPE=${KNOWLEDGE_BASE_DB_TYPE:-sqlite}
+      - KNOWLEDGE_BASE_SQLITE_PATH=/app/incidents/knowledge.db
+      # PostgreSQL (optional - set KNOWLEDGE_BASE_DB_TYPE=postgresql to use)
+      - KNOWLEDGE_BASE_PG_HOST=${KNOWLEDGE_BASE_PG_HOST:-raspberrypi2.local}
+      - KNOWLEDGE_BASE_PG_PORT=${KNOWLEDGE_BASE_PG_PORT:-5432}
+      - KNOWLEDGE_BASE_PG_DATABASE=${KNOWLEDGE_BASE_PG_DATABASE:-sre_knowledge}
+      - KNOWLEDGE_BASE_PG_USER=${KNOWLEDGE_BASE_PG_USER:-sre_agent}
+      - KNOWLEDGE_BASE_PG_PASSWORD=${KNOWLEDGE_BASE_PG_PASSWORD:-}
     volumes:
       # Docker socket (write access required for container restart)
       # Security note: Grants full Docker daemon control

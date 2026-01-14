@@ -5,7 +5,9 @@ This module implements an LLM-driven monitoring agent that:
 1. Detects state changes (triggers)
 2. Investigates using observation tools (Prometheus, Docker APIs)
 3. Takes remediation actions within guardrails
-4. Provides full audit trail of investigations
+4. Verifies actions succeeded (closed-loop)
+5. Stores learnings in knowledge base
+6. Provides full audit trail of investigations
 """
 
 import json
@@ -21,6 +23,14 @@ import docker
 import requests
 from pydantic import BaseModel, Field
 from prometheus_client import Counter, Gauge, Histogram, start_http_server
+
+# Import knowledge base
+try:
+    from knowledge_base import KnowledgeBase, SQLALCHEMY_AVAILABLE
+    KNOWLEDGE_BASE_AVAILABLE = True
+except ImportError:
+    KNOWLEDGE_BASE_AVAILABLE = False
+    KnowledgeBase = None
 
 try:
     from anthropic import Anthropic
@@ -155,19 +165,48 @@ class ToolCall:
     result: Optional[Dict[str, Any]] = None
     error: Optional[str] = None
     timestamp: float = field(default_factory=time.time)
+    duration_ms: Optional[float] = None
+    success: bool = True
+
+
+@dataclass
+class ActionTaken:
+    """Represents an action taken during investigation."""
+    action_type: str
+    target: Optional[str]
+    parameters: Dict[str, Any]
+    timestamp: float
+    success: bool
+    error: Optional[str] = None
+    resolved_incident: bool = False
+
+
+@dataclass
+class VerificationCheck:
+    """Represents a verification check after an action."""
+    check_type: str
+    description: str
+    timestamp: float
+    passed: bool
+    details: Dict[str, Any]
 
 
 @dataclass
 class Investigation:
     """Complete investigation report."""
     trigger: str
+    trigger_type: str
     start_time: float
     end_time: Optional[float] = None
     outcome: str = "in_progress"  # in_progress, resolved, escalated, timeout, error
     findings: str = ""
+    root_cause: Optional[str] = None
+    resolution_summary: Optional[str] = None
     tool_calls: List[ToolCall] = field(default_factory=list)
-    actions_taken: List[str] = field(default_factory=list)
+    actions_taken: List[ActionTaken] = field(default_factory=list)
+    verifications: List[VerificationCheck] = field(default_factory=list)
     llm_iterations: int = 0
+    metadata: Dict[str, Any] = field(default_factory=dict)
 
 
 class GuardrailResult(BaseModel):
@@ -1166,8 +1205,58 @@ class TriggerDetector:
                 elif state.get("status") == "running" and prev.get("status") == "exited":
                     _log("info", "Container recovered", container=name)
         
+        # Check Prometheus metrics for degraded services
+        triggers.extend(self._check_prometheus_triggers())
+        
         # Update state for next iteration
         self.last_state["containers"] = current_containers
+        
+        return triggers
+    
+    def _check_prometheus_triggers(self) -> List[str]:
+        """Check Prometheus metrics for issues that warrant investigation."""
+        triggers = []
+        
+        try:
+            # 1. Scrape failures: target is "up" but scraping is broken
+            scrape_result = self.tool_executor.execute("prom_query", {
+                "query": "up{job!=\"\"} == 1 and (scrape_samples_scraped < 5 or scrape_duration_seconds > 5)"
+            })
+            if scrape_result.get("success") and scrape_result["data"].get("result"):
+                for series in scrape_result["data"]["result"]:
+                    job = series.get("metric", {}).get("job", "unknown")
+                    instance = series.get("metric", {}).get("instance", "unknown")
+                    triggers.append(f"Scrape quality degraded for {job} ({instance})")
+            
+            # 2. Targets completely down
+            down_result = self.tool_executor.execute("prom_query", {
+                "query": "up == 0"
+            })
+            if down_result.get("success") and down_result["data"].get("result"):
+                for series in down_result["data"]["result"]:
+                    job = series.get("metric", {}).get("job", "unknown")
+                    instance = series.get("metric", {}).get("instance", "unknown")
+                    prev_key = f"down_{job}_{instance}"
+                    
+                    # Only trigger if this is a new failure (not already down)
+                    if not self.last_state.get(prev_key):
+                        triggers.append(f"Target down: {job} ({instance})")
+                        self.last_state[prev_key] = time.time()
+                    # Clear state if target recovered
+                    elif prev_key in self.last_state:
+                        del self.last_state[prev_key]
+            
+            # 3. Recent container restarts
+            restart_result = self.tool_executor.execute("prom_query", {
+                "query": "changes(container_last_seen[5m]) > 0"
+            })
+            if restart_result.get("success") and restart_result["data"].get("result"):
+                for series in restart_result["data"]["result"]:
+                    container = series.get("metric", {}).get("name", "unknown")
+                    triggers.append(f"Container '{container}' restarted recently")
+        
+        except Exception as e:
+            _log("error", "Failed to check Prometheus triggers", error=str(e))
         
         return triggers
 
@@ -1226,31 +1315,61 @@ class AgentMonitor:
         self.tool_executor = ToolExecutor(self.guardrails)
         self.trigger_detector = TriggerDetector(self.tool_executor)
         
+        # Knowledge base
+        self.knowledge_base = None
+        if KNOWLEDGE_BASE_AVAILABLE and _env_bool("AI_MONITOR_KNOWLEDGE_BASE_ENABLED", True):
+            try:
+                self.knowledge_base = KnowledgeBase()
+                _log("info", "Knowledge base initialized", 
+                     stats=self.knowledge_base.get_stats())
+            except Exception as e:
+                _log("error", "Failed to initialize knowledge base", error=str(e))
+        
         # Config
         self.interval_seconds = _env_int("AI_MONITOR_INTERVAL_SECONDS", 60)
         self.max_tool_calls = _env_int("AI_MONITOR_MAX_TOOL_CALLS", 20)
         self.max_investigation_time = _env_int("AI_MONITOR_MAX_INVESTIGATION_TIME_SECONDS", 300)
         self.incident_dir = incident_dir
+        self.verification_enabled = _env_bool("AI_MONITOR_VERIFICATION_ENABLED", True)
         
         _log("info", "Agent monitor initialized",
              llm_backend="claude" if self.use_claude else "gemini" if self.use_gemini else "none",
              preferred=preferred_backend,
              max_tool_calls=self.max_tool_calls,
-             execute_mode=self.tool_executor.execute_mode)
+             execute_mode=self.tool_executor.execute_mode,
+             knowledge_base_enabled=self.knowledge_base is not None,
+             verification_enabled=self.verification_enabled)
     
     def investigate(self, trigger: str) -> Investigation:
         """
         Investigate a trigger using LLM with tool calling.
         
         The LLM iteratively calls tools to understand the issue and take action.
+        After actions, verifies they succeeded (closed-loop).
+        Stores learnings in knowledge base.
         Returns complete investigation report with audit trail.
         """
+        # Classify trigger type for similarity matching
+        trigger_type = self._classify_trigger(trigger)
+        
         investigation = Investigation(
             trigger=trigger,
+            trigger_type=trigger_type,
             start_time=time.time()
         )
         
         ACTIVE_INVESTIGATIONS.inc()
+        
+        # Check knowledge base for similar incidents
+        if self.knowledge_base:
+            similar = self.knowledge_base.find_similar_incidents(
+                trigger=trigger,
+                trigger_type=trigger_type,
+                limit=3
+            )
+            if similar:
+                _log("info", "Found similar past incidents", count=len(similar))
+                investigation.metadata["similar_incidents"] = similar
         
         try:
             if self.use_claude:
@@ -1260,6 +1379,10 @@ class AgentMonitor:
             else:
                 investigation.outcome = "error"
                 investigation.findings = "No LLM backend configured"
+            
+            # After investigation completes, run verification if actions were taken
+            if self.verification_enabled and investigation.actions_taken:
+                self._verify_resolution(investigation)
         
         except Exception as e:
             investigation.outcome = "error"
@@ -1274,7 +1397,7 @@ class AgentMonitor:
             INVESTIGATION_DURATION.observe(duration)
             LLM_ITERATIONS.observe(investigation.llm_iterations)
             INVESTIGATIONS_TOTAL.labels(
-                trigger_type=trigger.split()[0],  # First word as type
+                trigger_type=trigger_type,
                 outcome=investigation.outcome
             ).inc()
             
@@ -1283,18 +1406,208 @@ class AgentMonitor:
                  outcome=investigation.outcome,
                  duration_seconds=round(duration, 2),
                  tool_calls=len(investigation.tool_calls),
-                 actions_taken=len(investigation.actions_taken))
+                 actions_taken=len(investigation.actions_taken),
+                 verifications=len(investigation.verifications))
+            
+            # Store in knowledge base
+            if self.knowledge_base:
+                try:
+                    incident_id = self._record_to_knowledge_base(investigation)
+                    investigation.metadata["incident_id"] = incident_id
+                except Exception as e:
+                    _log("error", "Failed to record to knowledge base", error=str(e))
             
             self._save_investigation_report(investigation)
         
         return investigation
     
+    def _classify_trigger(self, trigger: str) -> str:
+        """Extract trigger type from trigger string."""
+        trigger_lower = trigger.lower()
+        
+        if "unhealthy" in trigger_lower:
+            return "container_unhealthy"
+        elif "exited" in trigger_lower:
+            return "container_exited"
+        elif "down" in trigger_lower and "target" in trigger_lower:
+            return "prometheus_target_down"
+        elif "scrape" in trigger_lower and "degraded" in trigger_lower:
+            return "scrape_quality_degraded"
+        elif "restart" in trigger_lower:
+            return "container_restarted"
+        else:
+            return "unknown"
+    
+    def _verify_resolution(self, investigation: Investigation) -> None:
+        """
+        Verify that actions taken actually resolved the issue.
+        This is the critical closed-loop verification.
+        """
+        _log("info", "Running verification checks", trigger=investigation.trigger)
+        
+        # Wait for system to stabilize after actions
+        time.sleep(5)
+        
+        # Generate verification plan based on trigger type
+        checks = self._generate_verification_checks(investigation)
+        
+        for check in checks:
+            try:
+                result = self.tool_executor.execute(check["tool"], check["arguments"])
+                
+                verification = VerificationCheck(
+                    check_type=check["type"],
+                    description=check["description"],
+                    timestamp=time.time(),
+                    passed=check["validator"](result),
+                    details=result
+                )
+                
+                investigation.verifications.append(verification)
+                
+                _log("info", "Verification check complete",
+                     check_type=check["type"],
+                     passed=verification.passed)
+            
+            except Exception as e:
+                verification = VerificationCheck(
+                    check_type=check["type"],
+                    description=check["description"],
+                    timestamp=time.time(),
+                    passed=False,
+                    details={"error": str(e)}
+                )
+                investigation.verifications.append(verification)
+                _log("error", "Verification check failed", 
+                     check_type=check["type"], error=str(e))
+        
+        # Update outcome based on verifications
+        if investigation.verifications:
+            all_passed = all(v.passed for v in investigation.verifications)
+            if all_passed and investigation.outcome == "resolved":
+                investigation.resolution_summary = "Actions verified successful"
+                # Mark the successful action
+                if investigation.actions_taken:
+                    investigation.actions_taken[-1].resolved_incident = True
+            elif not all_passed:
+                investigation.outcome = "escalated"
+                investigation.resolution_summary = "Verification failed - manual intervention needed"
+    
+    def _generate_verification_checks(self, investigation: Investigation) -> List[Dict[str, Any]]:
+        """Generate verification checks based on trigger type and actions taken."""
+        checks = []
+        
+        if investigation.trigger_type == "container_unhealthy":
+            # Check if container is now healthy
+            container_name = self._extract_container_name(investigation.trigger)
+            if container_name:
+                checks.append({
+                    "type": "docker_health",
+                    "description": f"Verify {container_name} is healthy",
+                    "tool": "docker_inspect",
+                    "arguments": {"container": container_name},
+                    "validator": lambda r: r.get("success") and r.get("data", {}).get("health") == "healthy"
+                })
+        
+        elif investigation.trigger_type == "prometheus_target_down":
+            # Check if target is now up
+            checks.append({
+                "type": "prometheus_target",
+                "description": "Verify Prometheus targets are up",
+                "tool": "prom_query",
+                "arguments": {"query": "up == 0"},
+                "validator": lambda r: r.get("success") and len(r.get("data", {}).get("result", [])) == 0
+            })
+        
+        elif investigation.trigger_type == "scrape_quality_degraded":
+            # Check if scrape quality improved
+            checks.append({
+                "type": "scrape_quality",
+                "description": "Verify scrape quality improved",
+                "tool": "prom_query",
+                "arguments": {"query": "scrape_samples_scraped > 5"},
+                "validator": lambda r: r.get("success") and len(r.get("data", {}).get("result", [])) > 0
+            })
+        
+        # Always add generic health check
+        checks.append({
+            "type": "overall_health",
+            "description": "Check overall system health",
+            "tool": "docker_list",
+            "arguments": {"all": True},
+            "validator": lambda r: r.get("success") and not any(
+                c.get("health") == "unhealthy" or c.get("status") == "exited" 
+                for c in r.get("data", {}).get("containers", [])
+            )
+        })
+        
+        return checks
+    
+    def _extract_container_name(self, trigger: str) -> Optional[str]:
+        """Extract container name from trigger string."""
+        import re
+        match = re.search(r"Container '([^']+)'", trigger)
+        return match.group(1) if match else None
+    
+    def _record_to_knowledge_base(self, investigation: Investigation) -> int:
+        """Store investigation in knowledge base for future learning."""
+        return self.knowledge_base.record_incident(
+            trigger=investigation.trigger,
+            trigger_type=investigation.trigger_type,
+            outcome=investigation.outcome,
+            findings=investigation.findings,
+            root_cause=investigation.root_cause,
+            resolution_summary=investigation.resolution_summary,
+            actions=[
+                {
+                    "type": a.action_type,
+                    "target": a.target,
+                    "parameters": a.parameters,
+                    "timestamp": datetime.fromtimestamp(a.timestamp, tz=timezone.utc).isoformat(),
+                    "success": a.success,
+                    "error": a.error,
+                    "resolved_incident": a.resolved_incident
+                }
+                for a in investigation.actions_taken
+            ],
+            tool_calls=[
+                {
+                    "name": tc.name,
+                    "arguments": tc.arguments,
+                    "result": tc.result,
+                    "error": tc.error,
+                    "timestamp": datetime.fromtimestamp(tc.timestamp, tz=timezone.utc).isoformat(),
+                    "duration_ms": tc.duration_ms,
+                    "success": tc.success
+                }
+                for tc in investigation.tool_calls
+            ],
+            verifications=[
+                {
+                    "type": v.check_type,
+                    "description": v.description,
+                    "timestamp": datetime.fromtimestamp(v.timestamp, tz=timezone.utc).isoformat(),
+                    "passed": v.passed,
+                    "details": v.details
+                }
+                for v in investigation.verifications
+            ],
+            metadata=investigation.metadata,
+            duration_seconds=investigation.end_time - investigation.start_time if investigation.end_time else None,
+            llm_iterations=investigation.llm_iterations
+        )
+    
     def _investigate_claude(self, investigation: Investigation) -> None:
         """Run investigation using Claude."""
+        # Add similar incidents to context if available
+        context_msg = f"Investigate this trigger: {investigation.trigger}"
+        if investigation.metadata.get("similar_incidents"):
+            context_msg += f"\n\nSimilar past incidents found:\n{json.dumps(investigation.metadata['similar_incidents'], indent=2)}"
+        
         messages = [
             {
                 "role": "user",
-                "content": f"Investigate this trigger: {investigation.trigger}"
+                "content": context_msg
             }
         ]
         
@@ -1308,6 +1621,7 @@ class AgentMonitor:
                 return
             
             # Call Claude with tools
+            start_time = time.time()
             response = self._anthropic_client.messages.create(
                 model=self.claude_model,
                 max_tokens=4096,
@@ -1319,12 +1633,17 @@ class AgentMonitor:
             # Check if Claude wants to use tools
             if response.stop_reason == "tool_use":
                 # Execute tools and add results to messages
+                tool_results = []
+                
                 for content_block in response.content:
                     if content_block.type == "tool_use":
+                        tool_start = time.time()
+                        
                         tool_call = ToolCall(
                             id=content_block.id,
                             name=content_block.name,
-                            arguments=content_block.input
+                            arguments=content_block.input,
+                            timestamp=tool_start
                         )
                         
                         # Execute tool
@@ -1332,34 +1651,43 @@ class AgentMonitor:
                             content_block.name,
                             content_block.input
                         )
+                        
                         tool_call.result = result
+                        tool_call.duration_ms = (time.time() - tool_start) * 1000
+                        tool_call.success = result.get("success", False)
+                        tool_call.error = result.get("error")
+                        
                         investigation.tool_calls.append(tool_call)
                         
-                        # Track actions
-                        if content_block.name in ["restart_container", "create_alert"]:
-                            investigation.actions_taken.append(
-                                f"{content_block.name}({content_block.input})"
+                        # Track actions with full details
+                        if content_block.name in ["restart_container", "create_alert", "mark_resolved"]:
+                            action = ActionTaken(
+                                action_type=content_block.name,
+                                target=content_block.input.get("container") or content_block.input.get("target"),
+                                parameters=content_block.input,
+                                timestamp=tool_start,
+                                success=result.get("success", False),
+                                error=result.get("error")
                             )
+                            investigation.actions_taken.append(action)
                         
                         # Check for mark_resolved
                         if content_block.name == "mark_resolved":
                             investigation.outcome = result.get("data", {}).get("outcome", "resolved")
                             investigation.findings = result.get("data", {}).get("summary", "")
                             return
+                        
+                        tool_results.append({
+                            "type": "tool_result",
+                            "tool_use_id": content_block.id,
+                            "content": json.dumps(result)
+                        })
                 
                 # Add assistant response and tool results to messages
                 messages.append({"role": "assistant", "content": response.content})
                 messages.append({
                     "role": "user",
-                    "content": [
-                        {
-                            "type": "tool_result",
-                            "tool_use_id": tc.id,
-                            "content": json.dumps(tc.result)
-                        }
-                        for tc in investigation.tool_calls
-                        if tc.id in [b.id for b in response.content if hasattr(b, 'id')]
-                    ]
+                    "content": tool_results
                 })
                 continue
             
