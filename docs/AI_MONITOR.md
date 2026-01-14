@@ -1,8 +1,24 @@
 # AI Monitor - Self-Healing & Triage System
 
-## Overview
+> **⚠️ LEGACY DOCUMENTATION**
+>
+> This document describes the original rule-based AI monitor (`monitor.py`), which has been **superseded by the agent-based architecture**.
+>
+> **Current implementation**: See [AUTONOMOUS_SRE_MASTER_PLAN.md](AUTONOMOUS_SRE_MASTER_PLAN.md) and [AI_MONITOR_AGENT_ARCHITECTURE.md](AI_MONITOR_AGENT_ARCHITECTURE.md)
+>
+> The agent-based system (`agent_monitor.py`) provides:
+> - LLM-driven investigation with 11+ tools (vs. hard-coded queries)
+> - Verification loop to confirm actions resolved issues
+> - Knowledge base for learning from past incidents
+> - MQTT and InfluxDB data-layer investigation
+>
+> This document is retained for historical reference.
 
-The AI monitor is an autonomous agent that monitors Docker containers and Prometheus metrics, providing:
+---
+
+## Overview (Legacy)
+
+The legacy AI monitor is a rule-based agent that monitors Docker containers and Prometheus metrics, providing:
 - **Self-healing**: Automatic restart of unhealthy containers with guardrails
 - **LLM triage**: Human-readable explanations of infrastructure issues via Claude or Gemini
 - **Prometheus metrics**: Observability into the monitoring system itself

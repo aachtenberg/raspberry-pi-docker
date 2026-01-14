@@ -1,15 +1,19 @@
 # AI Monitor: Agent-Based Architecture
 
+**Status**: Implemented (Phase 2 Complete)
+**Last Updated**: January 14, 2026
+**Implementation**: `ai-monitor/agent_monitor.py`
+
 ## Philosophy Shift
 
-**Current (Rule-Based with AI Triage)**:
+**Legacy (Rule-Based with AI Triage)** - See [AI_MONITOR.md](AI_MONITOR.md):
 ```
 Hard-coded queries → Snapshot → LLM analysis → Recommended actions
 ```
 
-**Proposed (Agent-Based with Guardrails)**:
+**Current (Agent-Based with Guardrails)** - Fully Implemented:
 ```
-LLM observes → Query APIs (tools) → Iterative investigation → Guardrailed actions
+LLM observes → Query APIs (tools) → Iterative investigation → Guardrailed actions → Verification
 ```
 
 ## Core Architecture
@@ -79,9 +83,43 @@ tools = [
             "expected_status": "int (default 200)",
             "headers": "dict (optional)"
         }
+    },
+    {
+        "name": "mqtt_subscribe",
+        "description": "Subscribe to MQTT topics and receive live messages",
+        "parameters": {
+            "topics": "list[string] (supports wildcards # and +)",
+            "duration_seconds": "int (default 5, max 30)",
+            "max_messages": "int (default 20, max 100)"
+        }
+    },
+    {
+        "name": "mqtt_inspect",
+        "description": "Get MQTT broker statistics via $SYS topics",
+        "parameters": {}
+    },
+    {
+        "name": "influxdb_query",
+        "description": "Execute FlightSQL query against InfluxDB 3 Core",
+        "parameters": {
+            "database": "string",
+            "query": "string (SQL)",
+            "limit": "int (default 50, max 200)"
+        }
+    },
+    {
+        "name": "influxdb_list",
+        "description": "List databases, tables, or schema information",
+        "parameters": {
+            "show": "enum (databases, tables, columns)",
+            "database": "string (required for tables/columns)",
+            "table": "string (required for columns)"
+        }
     }
 ]
 ```
+
+**Data-Layer Tools**: For detailed MQTT and InfluxDB tool documentation, see [AI_AGENT_DATA_TOOLS.md](AI_AGENT_DATA_TOOLS.md).
 
 #### Action Tools (Guardrailed)
 ```python
@@ -459,12 +497,21 @@ AI_MONITOR_GUARDRAIL_COOLDOWN_SECONDS=600
 AI_MONITOR_GUARDRAIL_MAX_RESTARTS_PER_HOUR=3
 ```
 
-## Next Steps
+## Implementation Status
 
-1. Implement tool system (observation + action tools)
-2. Add guardrail enforcer
-3. Build agent loop with Claude/Gemini function calling
-4. Test in dry-run mode against historical incidents
-5. Deploy in hybrid mode alongside existing monitor
-6. Tune system prompt and guardrails based on results
-7. Graduate to agent-primary mode
+All core components are now implemented:
+
+- ✅ Tool system with 11+ observation tools and 4 action tools
+- ✅ Guardrail enforcer (allowlist, cooldowns, rate limits)
+- ✅ Agent loop with Claude/Gemini function calling
+- ✅ Execute mode enabled (no longer dry-run only)
+- ✅ Verification loop for closed-loop control
+- ✅ Knowledge base with SQLite/PostgreSQL support
+- ✅ Web UI dashboard for investigation browsing
+- ✅ MQTT and InfluxDB data-layer investigation tools
+
+## Related Documentation
+
+- [AUTONOMOUS_SRE_MASTER_PLAN.md](AUTONOMOUS_SRE_MASTER_PLAN.md) - Full architecture and roadmap
+- [AI_AGENT_DATA_TOOLS.md](AI_AGENT_DATA_TOOLS.md) - MQTT and InfluxDB tool details
+- [AI_MONITOR.md](AI_MONITOR.md) - Legacy rule-based monitor (deprecated)

@@ -1,6 +1,6 @@
 # Raspberry Pi Docker Infrastructure
 
-Home automation and monitoring stack with InfluxDB 3 Core, Grafana Cloud, Home Assistant, and ESP sensor integration.
+Home automation and monitoring stack with InfluxDB 3 Core, Grafana Cloud, Home Assistant, ESP sensor integration, and **autonomous LLM-driven infrastructure monitoring**.
 
 ## Quick Start
 
@@ -22,20 +22,22 @@ docker compose up -d
 
 **📚 Documentation:**
 - **[Setup Guide](docs/SETUP.md)** - Complete installation and configuration
-- **[Operations Guide](docs/OPERATIONS.md)** - Daily operations, backup, troubleshooting  
+- **[Operations Guide](docs/OPERATIONS.md)** - Daily operations, backup, troubleshooting
 - **[Reference Guide](docs/REFERENCE.md)** - Architecture, integrations, advanced topics
+- **[Autonomous SRE Master Plan](docs/AUTONOMOUS_SRE_MASTER_PLAN.md)** - LLM-driven monitoring architecture
 
 ---
 
 ## What This Does
 
-Receives, stores, and visualizes sensor data from ESP devices:
+Receives, stores, and visualizes sensor data from ESP devices with **autonomous self-healing**:
 
 - **ESP Sensors** → MQTT → Telegraf → **InfluxDB 3 Core** (time-series database)
 - **Grafana Cloud** → Dashboards & alerting (via pdc-agent)
 - **Home Assistant** → Automation & smart home control
 - **Prometheus Stack** → System & container monitoring
 - **Cloudflare Tunnel** → Secure remote access
+- **AI Agent** → LLM-driven monitoring with autonomous remediation
 
 **Perfect for:**
 - 🏠 Multi-location temperature monitoring
@@ -43,6 +45,7 @@ Receives, stores, and visualizes sensor data from ESP devices:
 - 🔔 Automated alerts
 - 🌐 Remote dashboard access
 - 📈 System observability
+- 🤖 Autonomous infrastructure monitoring
 
 ---
 
@@ -54,6 +57,8 @@ ESP Sensors → MQTT (1883) → Telegraf → InfluxDB 3 Core (8181)
                                     Grafana Cloud (pdc-agent)
                                             ↓
                                Prometheus Stack (monitoring)
+                                            ↓
+                      AI Agent (LLM-driven investigation & remediation)
                                             ↓
                             Cloudflare Tunnel (remote access)
 ```
@@ -96,6 +101,24 @@ docker compose logs influxdb3-core
 
 For detailed integration instructions, see the [Setup Guide](docs/SETUP.md) and [Operations Guide](docs/OPERATIONS.md).
 
+## Autonomous SRE Agent
+
+An LLM-powered monitoring agent that autonomously investigates and remediates infrastructure issues.
+
+**Capabilities:**
+- **Tool-Based Investigation**: Queries Prometheus, Docker, MQTT, and InfluxDB to diagnose issues
+- **Autonomous Remediation**: Restarts containers with safety guardrails (allowlist, cooldowns, rate limits)
+- **Verification Loop**: Validates actions actually resolved the issue (closed-loop control)
+- **Knowledge Base**: Learns from past incidents to improve future investigations
+- **Web UI**: Dashboard at port 8001 for browsing investigations and tool calls
+
+**LLM Backends:** Claude 3.5 Sonnet (primary) or Gemini 2.0 Flash (fallback)
+
+**Documentation:**
+- [Autonomous SRE Master Plan](docs/AUTONOMOUS_SRE_MASTER_PLAN.md) - Architecture and roadmap
+- [Agent Architecture](docs/AI_MONITOR_AGENT_ARCHITECTURE.md) - Tool system and agent loop
+- [Data-Layer Tools](docs/AI_AGENT_DATA_TOOLS.md) - MQTT and InfluxDB investigation tools
+
 ### 1. Configure Secrets
 
 ```bash
@@ -114,6 +137,7 @@ cp .env.example .env
 | Home Assistant | 8123 | Home automation |
 | Mosquitto | 1883, 9001 | MQTT broker (MQTT + WebSocket) |
 | Nginx Proxy Manager | 81, 8080 | Reverse proxy |
+| AI Agent | 8000, 8001 | Metrics + Web UI (autonomous monitoring) |
 
 ---
 
