@@ -18,7 +18,30 @@ import pytest
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from conftest import create_test_incident
+
+def create_test_incident(knowledge_base, trigger_type="container_unhealthy", outcome="resolved"):
+    """Helper to create a test incident."""
+    return knowledge_base.record_incident(
+        trigger=f"Test trigger for {trigger_type}",
+        trigger_type=trigger_type,
+        outcome=outcome,
+        findings="Test findings",
+        actions=[
+            {
+                "type": "restart_container",
+                "target": "test-container",
+                "parameters": {},
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "success": True,
+                "resolved_incident": outcome == "resolved"
+            }
+        ] if outcome == "resolved" else [],
+        tool_calls=[],
+        verifications=[],
+        root_cause="Test root cause",
+        resolution_summary="Test resolution",
+        duration_seconds=30.0
+    )
 
 
 class TestKnowledgeBaseTools:
