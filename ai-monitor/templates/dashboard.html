@@ -1,0 +1,164 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - AI Monitor{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Dashboard</h2>
+    <div class="subtitle">System overview and monitoring statistics</div>
+</div>
+
+<div class="card-grid" id="stats-grid">
+    <div class="stat-card">
+        <div class="label">Total Incidents</div>
+        <div class="value" id="total-incidents">-</div>
+        <div class="change">All time</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Unread</div>
+        <div class="value" id="unread-incidents">-</div>
+        <div class="change">Requires attention</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Critical</div>
+        <div class="value" id="critical-incidents">-</div>
+        <div class="change">High priority</div>
+    </div>
+    <div class="stat-card">
+        <div class="label">Investigations</div>
+        <div class="value" id="total-investigations">-</div>
+        <div class="change">Completed</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>⚙️ LLM Configuration</h3>
+        <button onclick="saveBackendPreference()" class="btn btn-primary" id="save-backend-btn" style="display:none">Save Configuration</button>
+    </div>
+    <div id="llm-config" class="loading">Loading LLM config...</div>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h3>🎯 System Status</h3>
+        <button onclick="refreshStatus()" class="btn">Refresh</button>
+    </div>
+    <div id="system-status" class="loading">Loading system status...</div>
+</div>
+
+<div id="error-message" class="error" style="display: none;"></div>
+
+{% block extra_scripts %}
+<script>
+async function loadStats() {
+    try {
+        const response = await fetch('/api/stats');
+        const data = await response.json();
+        
+        document.getElementById('total-incidents').textContent = data.total_incidents || 0;
+        document.getElementById('unread-incidents').textContent = data.unread_count || 0;
+        document.getElementById('critical-incidents').textContent = data.by_severity?.critical || 0;
+        document.getElementById('total-investigations').textContent = data.total_incidents || 0;
+    } catch (error) {
+        console.error('Failed to load stats:', error);
+    }
+}
+
+async function loadLLMConfig() {
+    try {
+        const response = await fetch('/api/llm/config');
+        const data = await response.json();
+        
+        let html = '<div style="display: flex; align-items: center; gap: 15px;">';
+        html += '<label for="llm-backend-select" style="font-weight: 600;">Backend:</label>';
+        html += '<select id="llm-backend-select" class="btn" style="padding: 8px 12px;" onchange="onBackendChange()">';
+        html += `<option value="auto" ${data.preferred_backend === 'auto' ? 'selected' : ''}>Auto (Claude priority)</option>`;
+        html += `<option value="claude" ${data.preferred_backend === 'claude' ? 'selected' : ''}>Claude</option>`;
+        html += `<option value="gemini" ${data.preferred_backend === 'gemini' ? 'selected' : ''}>Gemini</option>`;
+        html += '</select>';
+        html += `<span style="color: #8b949e; font-size: 14px;">Current: ${data.current_backend} (${data.model})</span>`;
+        html += '</div>';
+        
+        document.getElementById('llm-config').innerHTML = html;
+    } catch (error) {
+        document.getElementById('llm-config').innerHTML = `<div class="error">Failed to load LLM config: ${error.message}</div>`;
+    }
+}
+
+function onBackendChange() {
+    document.getElementById('save-backend-btn').style.display = 'inline-flex';
+}
+
+async function saveBackendPreference() {
+    const select = document.getElementById('llm-backend-select');
+    const backend = select.value;
+    
+    try {
+        const response = await fetch('/api/llm/backend', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({backend: backend})
+        });
+        
+        if (response.ok) {
+            alert('Backend preference saved! Restart ai-agent container to apply.');
+            document.getElementById('save-backend-btn').style.display = 'none';
+        }
+    } catch (error) {
+        alert('Failed to save preference: ' + error.message);
+    }
+}
+
+async function loadStatus() {
+    try {
+        const response = await fetch('/api/status');
+        const data = await response.json();
+        
+        let html = '<table class="data-table"><thead><tr>';
+        html += '<th>Metric</th><th>Status</th><th>Details</th>';
+        html += '</tr></thead><tbody>';
+        
+        // Prometheus
+        html += '<tr>';
+        html += '<td><strong>Prometheus</strong></td>';
+        html += `<td><span class="status-badge status-${data.prometheus?.healthy ? 'low' : 'critical'}">${data.prometheus?.healthy ? 'UP' : 'DOWN'}</span></td>`;
+        html += `<td>${data.prometheus?.url || 'Unknown'}</td>`;
+        html += '</tr>';
+        
+        // Scrape Targets
+        if (data.scrape_targets) {
+            data.scrape_targets.forEach(target => {
+                html += '<tr>';
+                html += `<td>Target: ${target.job}</td>`;
+                html += `<td><span class="status-badge status-${target.health === 'up' ? 'low' : 'critical'}">${target.health.toUpperCase()}</span></td>`;
+                html += `<td>${target.instance}</td>`;
+                html += '</tr>';
+            });
+        }
+        
+        html += '</tbody></table>';
+        document.getElementById('system-status').innerHTML = html;
+    } catch (error) {
+        document.getElementById('system-status').innerHTML = `<div class="error">Failed to load status: ${error.message}</div>`;
+    }
+}
+
+function refreshStatus() {
+    document.getElementById('system-status').innerHTML = '<div class="loading">Loading...</div>';
+    loadStatus();
+}
+
+// Initial load
+loadStats();
+loadLLMConfig();
+loadStatus();
+
+// Auto-refresh every 30 seconds
+setInterval(() => {
+    loadStats();
+    loadStatus();
+}, 30000);
+</script>
+{% endblock %}
+{% endblock %}

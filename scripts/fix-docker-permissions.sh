@@ -99,12 +99,6 @@ docker compose restart
 echo "✓ Docker compose stack restarted"
 
 echo ""
-echo "=== Fixing PDC agent ==="
-docker update --restart=unless-stopped pdc-agent 2>/dev/null || echo "PDC agent already configured"
-docker start pdc-agent 2>/dev/null || echo "PDC agent already running"
-echo "✓ PDC agent checked"
-
-echo ""
 echo "=== Verification ==="
 docker ps --format 'table {{.Names}}\t{{.Status}}'
 

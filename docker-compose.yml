@@ -225,48 +225,74 @@ services:
       - -gcloud-hosted-grafana-id=${GRAFANA_PDC_GCLOUD_HOSTED_GRAFANA_ID}
     environment:
       - TZ=UTC
+    volumes:
+      - pdc-agent-ssh:/home/pdc/.ssh
     networks:
       - monitoring
     depends_on:
       - prometheus
 
   # ============================================================================
-  # AI MONITOR - Rule-based monitoring with LLM triage (legacy)
+  # TELEMETRY COLLECTOR - Health metrics for AI agent investigation
   # ============================================================================
-  ai-monitor:
+  telemetry-collector:
     build:
-      context: ./ai-monitor
+      context: ./telemetry-collector
       dockerfile: Dockerfile
-    container_name: ai-monitor
+    container_name: telemetry-collector
     restart: unless-stopped
-    profiles:
-      - legacy  # Only start with: docker compose --profile legacy up
-    ports:
-      - '8000:8000'  # Prometheus metrics endpoint
     environment:
-      - PROMETHEUS_URL=${AI_MONITOR_PROMETHEUS_URL:-http://prometheus:9090}
-      - AI_MONITOR_INTERVAL_SECONDS=${AI_MONITOR_INTERVAL_SECONDS:-60}
-      - AI_MONITOR_EXECUTE=${AI_MONITOR_EXECUTE:-false}
-      - AI_MONITOR_ALLOWED_CONTAINERS=${AI_MONITOR_ALLOWED_CONTAINERS:-}
-      - AI_MONITOR_LOG_LEVEL=${AI_MONITOR_LOG_LEVEL:-info}
-      - AI_MONITOR_PREDICTIVE_ENABLED=${AI_MONITOR_PREDICTIVE_ENABLED:-false}
-      - AI_MONITOR_PREDICTIVE_INTERVAL_SECONDS=${AI_MONITOR_PREDICTIVE_INTERVAL_SECONDS:-86400}
-      - AI_MONITOR_INCIDENT_REPORTS_ENABLED=${AI_MONITOR_INCIDENT_REPORTS_ENABLED:-true}
-      - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
-      - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-3-haiku-20240307}
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash-exp}
-      - AI_MONITOR_HTTP_CHECKS=${AI_MONITOR_HTTP_CHECKS:-http://nginx-proxy-manager:81|200}
+      - PROMETHEUS_URL=http://prometheus:9090
+      - INFLUXDB3_URL=http://influxdb3-core:8181
+      - INFLUXDB3_ADMIN_TOKEN=${INFLUXDB3_ADMIN_TOKEN}
+      - TELEMETRY_COLLECTION_INTERVAL=60
+      - TELEMETRY_METRICS_PORT=9101
+      - HOSTNAME=${HOSTNAME:-raspberrypi}
+    ports:
+      - "9101:9101"  # Health metrics endpoint
     volumes:
-      # Docker socket (write access required for container restart self-healing)
-      # Security note: Grants full Docker daemon control. For read-only monitoring
-      # without restarts, append :ro and set AI_MONITOR_EXECUTE=false
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./ai-monitor/incidents:/app/incidents  # Incident reports
-    depends_on:
-      - prometheus
+      - /var/run/docker.sock:/var/run/docker.sock:ro
     networks:
       - monitoring
+    depends_on:
+      - prometheus
+      - influxdb3-core
+
+  # ============================================================================
+  # AI MONITOR - Rule-based monitoring with LLM triage (DEPRECATED - use ai-agent)
+  # ============================================================================
+  # ai-monitor:
+  #   build:
+  #     context: ./ai-monitor
+  #     dockerfile: Dockerfile
+  #   container_name: ai-monitor
+  #   restart: unless-stopped
+  #   profiles:
+  #     - legacy  # Only start with: docker compose --profile legacy up
+  #   ports:
+  #     - '8000:8000'  # Prometheus metrics endpoint
+  #     - '8001:8001'  # Web UI
+  #   environment:
+  #     - PROMETHEUS_URL=${AI_MONITOR_PROMETHEUS_URL:-http://prometheus:9090}
+  #     - AI_MONITOR_INTERVAL_SECONDS=${AI_MONITOR_INTERVAL_SECONDS:-60}
+  #     - AI_MONITOR_EXECUTE=${AI_MONITOR_EXECUTE:-false}
+  #     - AI_MONITOR_ALLOWED_CONTAINERS=${AI_MONITOR_ALLOWED_CONTAINERS:-}
+  #     - AI_MONITOR_LOG_LEVEL=${AI_MONITOR_LOG_LEVEL:-info}
+  #     - AI_MONITOR_PREDICTIVE_ENABLED=${AI_MONITOR_PREDICTIVE_ENABLED:-false}
+  #     - AI_MONITOR_PREDICTIVE_INTERVAL_SECONDS=${AI_MONITOR_PREDICTIVE_INTERVAL_SECONDS:-86400}
+  #     - AI_MONITOR_INCIDENT_REPORTS_ENABLED=${AI_MONITOR_INCIDENT_REPORTS_ENABLED:-true}
+  #     - CLAUDE_API_KEY=${CLAUDE_API_KEY:-}
+  #     - CLAUDE_MODEL=${CLAUDE_MODEL:-claude-3-haiku-20240307}
+  #     - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+  #     - GEMINI_MODEL=${GEMINI_MODEL:-gemini-2.0-flash-exp}
+  #     - AI_MONITOR_HTTP_CHECKS=${AI_MONITOR_HTTP_CHECKS:-http://nginx-proxy-manager:81|200}
+  #   volumes:
+  #     - /var/run/docker.sock:/var/run/docker.sock
+  #     - ./ai-monitor/incidents:/app/incidents
+  #   depends_on:
+  #     - prometheus
+  #   networks:
+  #     - monitoring
 
   # ============================================================================
   # AI AGENT MONITOR - LLM-driven investigation with tool calling
@@ -278,8 +304,9 @@ services:
     container_name: ai-agent
     restart: unless-stopped
     ports:
-      - '8001:8000'  # Prometheus metrics endpoint (different port to avoid conflict)
-    command: ["python", "agent_monitor.py"]
+      - '8000:8000'  # Prometheus metrics endpoint
+      - '8001:8001'  # Web UI
+    command: ["./agent_entrypoint.sh"]
     environment:
       - PROMETHEUS_URL=${AI_MONITOR_PROMETHEUS_URL:-http://prometheus:9090}
       - AI_MONITOR_INTERVAL_SECONDS=${AI_MONITOR_INTERVAL_SECONDS:-60}
@@ -298,6 +325,12 @@ services:
       - AI_MONITOR_ALLOWED_CONTAINERS=${AI_MONITOR_ALLOWED_CONTAINERS:-prometheus,influxdb3-core,nginx-proxy-manager,telegraf,mosquitto}
       - AI_MONITOR_GUARDRAIL_COOLDOWN_SECONDS=${AI_MONITOR_GUARDRAIL_COOLDOWN_SECONDS:-600}
       - AI_MONITOR_GUARDRAIL_MAX_RESTARTS_PER_HOUR=${AI_MONITOR_GUARDRAIL_MAX_RESTARTS_PER_HOUR:-3}
+      # Data layer access
+      - MQTT_HOST=mosquitto-broker
+      - MQTT_PORT=1883
+      - INFLUXDB3_HOST=influxdb3-core
+      - INFLUXDB3_GRPC_PORT=8182
+      - INFLUXDB3_ADMIN_TOKEN=${INFLUXDB3_ADMIN_TOKEN}
       # Incident reports
       - AI_MONITOR_INCIDENT_REPORTS_DIR=/app/incidents
     volumes:
@@ -326,6 +359,7 @@ volumes:
   mosquitto-data:
   mosquitto-log:
   portainer-data:
+  pdc-agent-ssh:
 
 # ==============================================================================
 # NETWORKS

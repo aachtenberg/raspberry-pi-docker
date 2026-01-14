@@ -1,0 +1,9 @@
+{
+  "incident_20260113_183236.md": {
+    "dismissed": true,
+    "dismissed_at": "2026-01-13T18:33:57.399309Z"
+  },
+  "_preferences": {
+    "llm_backend": "gemini"
+  }
+}

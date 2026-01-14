@@ -93,7 +93,7 @@ log "Creating backup directory structure..."
 mkdir -p "${BACKUP_DIR}"/{volumes,configs,metadata}
 
 # Backup Docker volumes (live, without stopping containers)
-# Exclude deprecated/ephemeral services: grafana-local, influxdb3-explorer, legacy influxdb2
+# Exclude: influxdb-data/config (deprecated v2), ollama-data (large ML models, can be re-downloaded)
 log "Backing up Docker volumes..."
 VOLUMES=(
     "docker_prometheus-data"
@@ -101,6 +101,8 @@ VOLUMES=(
     "docker_portainer-data"
     "docker_mosquitto-data"
     "docker_mosquitto-log"
+    "docker_loki-data"
+    "docker_pdc-agent-ssh"
 )
 
 for volume in "${VOLUMES[@]}"; do
@@ -122,6 +124,7 @@ log "Backing up bind-mounted directories..."
 BIND_MOUNTS=(
     "/home/aachten/homeassistant:homeassistant"
     "/storage/nginx-proxy-manager:nginx-proxy-manager"
+    "/home/aachten/docker/ai-monitor/incidents:ai-monitor-incidents"
 )
 
 for mount in "${BIND_MOUNTS[@]}"; do

@@ -12,6 +12,9 @@ RUN apt-get update \
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY monitor.py ./
+COPY monitor.py agent_monitor.py web_ui.py entrypoint.sh agent_entrypoint.sh ./
+COPY templates ./templates
 
-CMD ["python", "-u", "monitor.py"]
+RUN chmod +x entrypoint.sh agent_entrypoint.sh
+
+CMD ["./entrypoint.sh"]

@@ -13,6 +13,7 @@ import os
 import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional, Set
 from threading import Thread, Lock
 
@@ -32,6 +33,18 @@ try:
     GEMINI_AVAILABLE = True
 except ImportError:
     GEMINI_AVAILABLE = False
+
+try:
+    import paho.mqtt.client as mqtt
+    MQTT_AVAILABLE = True
+except ImportError:
+    MQTT_AVAILABLE = False
+
+try:
+    import adbc_driver_flightsql.dbapi as flightsql
+    INFLUXDB_AVAILABLE = True
+except ImportError:
+    INFLUXDB_AVAILABLE = False
 
 
 # ================================ Utilities ===================================
@@ -121,6 +134,14 @@ ACTIVE_INVESTIGATIONS = Gauge(
     "ai_agent_active_investigations",
     "Number of investigations currently in progress"
 )
+
+
+# ============================= Tool Call History ==============================
+
+# Global tool call history (last 500 calls)
+TOOL_CALL_HISTORY: List[Dict[str, Any]] = []
+TOOL_CALL_HISTORY_LOCK = Lock()
+MAX_TOOL_CALL_HISTORY = 500
 
 
 # =============================== Data Models ==================================
@@ -331,6 +352,82 @@ OBSERVATION_TOOLS = [
             },
             "required": ["url"]
         }
+    },
+    {
+        "name": "mqtt_subscribe",
+        "description": "Subscribe to MQTT topic(s) and receive messages. Use this to inspect live data from sensors, check message formats, or diagnose publishing issues.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "topics": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "MQTT topics to subscribe to (supports wildcards: # for multi-level, + for single-level)"
+                },
+                "duration_seconds": {
+                    "type": "integer",
+                    "description": "How long to listen for messages (default: 5, max: 30)"
+                },
+                "max_messages": {
+                    "type": "integer",
+                    "description": "Maximum messages to collect (default: 20)"
+                }
+            },
+            "required": ["topics"]
+        }
+    },
+    {
+        "name": "mqtt_inspect",
+        "description": "Get MQTT broker statistics and connection info. Use this to check broker health, client connections, and message throughput.",
+        "input_schema": {
+            "type": "object",
+            "properties": {}
+        }
+    },
+    {
+        "name": "influxdb_query",
+        "description": "Execute FlightSQL query against InfluxDB 3 Core. Use this to check data freshness, validate schemas, investigate missing data, or analyze time-series patterns.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "database": {
+                    "type": "string",
+                    "description": "Database name to query"
+                },
+                "query": {
+                    "type": "string",
+                    "description": "SQL query to execute (e.g., 'SELECT * FROM temperature LIMIT 10')"
+                },
+                "limit": {
+                    "type": "integer",
+                    "description": "Row limit to prevent overwhelming context (default: 50, max: 200)"
+                }
+            },
+            "required": ["database", "query"]
+        }
+    },
+    {
+        "name": "influxdb_list",
+        "description": "List databases, tables, or schema information from InfluxDB 3 Core. Use this to discover what data exists.",
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "show": {
+                    "type": "string",
+                    "enum": ["databases", "tables", "columns"],
+                    "description": "What to list (databases, tables in a database, or columns in a table)"
+                },
+                "database": {
+                    "type": "string",
+                    "description": "Database name (required for 'tables' and 'columns')"
+                },
+                "table": {
+                    "type": "string",
+                    "description": "Table name (required for 'columns')"
+                }
+            },
+            "required": ["show"]
+        }
     }
 ]
 
@@ -484,30 +581,81 @@ class ToolExecutor:
     
     def execute(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """Execute a tool and return result."""
+        start_time = time.time()
+        success = False
+        result_data = None
+        error_msg = None
+        
         try:
             # Check guardrails for action tools
             if tool_name in ["restart_container", "create_alert", "mark_resolved"]:
                 check = self.guardrails.check_action(tool_name, arguments)
                 if not check.allowed:
+                    error_msg = f"Guardrail blocked: {check.reason}"
                     return {
                         "success": False,
-                        "error": f"Guardrail blocked: {check.reason}",
+                        "error": error_msg,
                         "metadata": check.metadata
                     }
             
             # Route to appropriate handler
             handler = getattr(self, f"_tool_{tool_name}", None)
             if handler is None:
-                return {"success": False, "error": f"Unknown tool: {tool_name}"}
+                error_msg = f"Unknown tool: {tool_name}"
+                return {"success": False, "error": error_msg}
             
-            result = handler(arguments)
+            result_data = handler(arguments)
+            success = True
             TOOL_CALLS_TOTAL.labels(tool_name=tool_name, success="true").inc()
-            return {"success": True, "data": result}
+            return {"success": True, "data": result_data}
         
         except Exception as e:
+            error_msg = str(e)
             TOOL_CALLS_TOTAL.labels(tool_name=tool_name, success="false").inc()
-            _log("error", "Tool execution failed", tool=tool_name, error=str(e))
-            return {"success": False, "error": str(e)}
+            _log("error", "Tool execution failed", tool=tool_name, error=error_msg)
+            return {"success": False, "error": error_msg}
+        
+        finally:
+            # Record tool call in history
+            duration_ms = int((time.time() - start_time) * 1000)
+            self._record_tool_call(
+                tool_name=tool_name,
+                arguments=arguments,
+                success=success,
+                result=result_data,
+                error=error_msg,
+                duration_ms=duration_ms
+            )
+    
+    def _record_tool_call(self, tool_name: str, arguments: Dict[str, Any], 
+                          success: bool, result: Any, error: Optional[str], 
+                          duration_ms: int) -> None:
+        """Record tool call in global history."""
+        global TOOL_CALL_HISTORY
+        
+        # Truncate large results/errors for history
+        result_preview = None
+        if result:
+            result_str = json.dumps(result, default=str)
+            result_preview = result_str[:500] + "..." if len(result_str) > 500 else result_str
+        
+        error_preview = error[:200] if error else None
+        
+        record = {
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "tool_name": tool_name,
+            "arguments": arguments,
+            "success": success,
+            "result_preview": result_preview,
+            "error": error_preview,
+            "duration_ms": duration_ms
+        }
+        
+        with TOOL_CALL_HISTORY_LOCK:
+            TOOL_CALL_HISTORY.append(record)
+            # Keep only last MAX_TOOL_CALL_HISTORY calls
+            if len(TOOL_CALL_HISTORY) > MAX_TOOL_CALL_HISTORY:
+                TOOL_CALL_HISTORY.pop(0)
     
     # ----------------------- Observation Tools --------------------------------
     
@@ -699,6 +847,224 @@ class ToolExecutor:
                 "error": str(e),
             }
     
+    def _tool_mqtt_subscribe(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Subscribe to MQTT topics and collect messages."""
+        if not MQTT_AVAILABLE:
+            return {"error": "MQTT client not available (paho-mqtt not installed)"}
+        
+        topics = args["topics"]
+        duration = min(args.get("duration_seconds", 5), 30)
+        max_messages = min(args.get("max_messages", 20), 100)
+        
+        mqtt_host = os.getenv("MQTT_HOST", "mosquitto")
+        mqtt_port = int(os.getenv("MQTT_PORT", "1883"))
+        
+        messages = []
+        received_event = Lock()
+        
+        def on_message(client, userdata, msg):
+            if len(messages) < max_messages:
+                try:
+                    payload = msg.payload.decode('utf-8')
+                    messages.append({
+                        "topic": msg.topic,
+                        "payload": payload,
+                        "qos": msg.qos,
+                        "retain": msg.retain,
+                        "timestamp": time.time()
+                    })
+                except Exception as e:
+                    messages.append({
+                        "topic": msg.topic,
+                        "error": f"Failed to decode: {e}",
+                        "payload_hex": msg.payload.hex()[:200]
+                    })
+        
+        try:
+            client = mqtt.Client()
+            client.on_message = on_message
+            client.connect(mqtt_host, mqtt_port, 60)
+            
+            for topic in topics:
+                client.subscribe(topic)
+            
+            client.loop_start()
+            time.sleep(duration)
+            client.loop_stop()
+            client.disconnect()
+            
+            return {
+                "topics": topics,
+                "duration_seconds": duration,
+                "messages_received": len(messages),
+                "messages": messages
+            }
+        except Exception as e:
+            return {"error": f"MQTT connection failed: {e}"}
+    
+    def _tool_mqtt_inspect(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Get MQTT broker stats via $SYS topics."""
+        if not MQTT_AVAILABLE:
+            return {"error": "MQTT client not available"}
+        
+        mqtt_host = os.getenv("MQTT_HOST", "mosquitto")
+        mqtt_port = int(os.getenv("MQTT_PORT", "1883"))
+        
+        stats = {}
+        
+        def on_message(client, userdata, msg):
+            try:
+                stats[msg.topic] = msg.payload.decode('utf-8')
+            except:
+                pass
+        
+        try:
+            client = mqtt.Client()
+            client.on_message = on_message
+            client.connect(mqtt_host, mqtt_port, 60)
+            client.subscribe("$SYS/#")
+            
+            client.loop_start()
+            time.sleep(2)
+            client.loop_stop()
+            client.disconnect()
+            
+            # Parse key metrics
+            result = {
+                "broker": mqtt_host,
+                "uptime": stats.get("$SYS/broker/uptime"),
+                "clients_connected": stats.get("$SYS/broker/clients/connected"),
+                "clients_total": stats.get("$SYS/broker/clients/total"),
+                "messages_received": stats.get("$SYS/broker/messages/received"),
+                "messages_sent": stats.get("$SYS/broker/messages/sent"),
+                "subscriptions": stats.get("$SYS/broker/subscriptions/count"),
+                "retained_messages": stats.get("$SYS/broker/retained messages/count"),
+                "all_stats": stats
+            }
+            return result
+        except Exception as e:
+            return {"error": f"Failed to inspect broker: {e}"}
+    
+    def _tool_influxdb_query(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute FlightSQL query against InfluxDB 3."""
+        if not INFLUXDB_AVAILABLE:
+            return {"error": "InfluxDB FlightSQL driver not available"}
+        
+        database = args["database"]
+        query = args["query"]
+        limit = min(args.get("limit", 50), 200)
+        
+        influxdb_host = os.getenv("INFLUXDB3_HOST", "influxdb3-core")
+        influxdb_port = int(os.getenv("INFLUXDB3_GRPC_PORT", "8182"))
+        token = os.getenv("INFLUXDB3_ADMIN_TOKEN", "")
+        
+        if not token:
+            return {"error": "INFLUXDB3_ADMIN_TOKEN not set"}
+        
+        # Add LIMIT if not present
+        query_lower = query.lower()
+        if "limit" not in query_lower:
+            query = f"{query} LIMIT {limit}"
+        
+        try:
+            uri = f"grpc://{influxdb_host}:{influxdb_port}"
+            conn = flightsql.connect(
+                uri,
+                db_kwargs={
+                    "username": "ignored",
+                    "password": token,
+                    "adbc.flight.sql.rpc.call_header.database": database
+                }
+            )
+            
+            cursor = conn.cursor()
+            cursor.execute(query)
+            rows = cursor.fetchall()
+            columns = [desc[0] for desc in cursor.description] if cursor.description else []
+            
+            # Convert rows to dicts
+            results = []
+            for row in rows[:limit]:
+                results.append(dict(zip(columns, row)))
+            
+            cursor.close()
+            conn.close()
+            
+            return {
+                "database": database,
+                "query": query,
+                "rows_returned": len(results),
+                "columns": columns,
+                "data": results
+            }
+        except Exception as e:
+            return {"error": f"Query failed: {e}"}
+    
+    def _tool_influxdb_list(self, args: Dict[str, Any]) -> Dict[str, Any]:
+        """List InfluxDB databases, tables, or schema."""
+        if not INFLUXDB_AVAILABLE:
+            return {"error": "InfluxDB FlightSQL driver not available"}
+        
+        show = args["show"]
+        database = args.get("database")
+        table = args.get("table")
+        
+        influxdb_host = os.getenv("INFLUXDB3_HOST", "influxdb3-core")
+        influxdb_port = int(os.getenv("INFLUXDB3_GRPC_PORT", "8182"))
+        token = os.getenv("INFLUXDB3_ADMIN_TOKEN", "")
+        
+        if not token:
+            return {"error": "INFLUXDB3_ADMIN_TOKEN not set"}
+        
+        try:
+            uri = f"grpc://{influxdb_host}:{influxdb_port}"
+            conn = flightsql.connect(
+                uri,
+                db_kwargs={
+                    "username": "ignored",
+                    "password": token
+                }
+            )
+            
+            cursor = conn.cursor()
+            
+            if show == "databases":
+                cursor.execute("SHOW DATABASES")
+                rows = cursor.fetchall()
+                result = {"databases": [row[0] for row in rows]}
+            
+            elif show == "tables":
+                if not database:
+                    return {"error": "database parameter required for show=tables"}
+                cursor.adbc_connection.set_options(**{"adbc.flight.sql.rpc.call_header.database": database})
+                cursor.execute("SHOW TABLES")
+                rows = cursor.fetchall()
+                result = {"database": database, "tables": [row[0] for row in rows]}
+            
+            elif show == "columns":
+                if not database or not table:
+                    return {"error": "database and table parameters required for show=columns"}
+                cursor.adbc_connection.set_options(**{"adbc.flight.sql.rpc.call_header.database": database})
+                cursor.execute(f"DESCRIBE {table}")
+                rows = cursor.fetchall()
+                columns = []
+                for row in rows:
+                    columns.append({
+                        "name": row[0],
+                        "type": row[1] if len(row) > 1 else None
+                    })
+                result = {"database": database, "table": table, "columns": columns}
+            
+            else:
+                result = {"error": f"Unknown show option: {show}"}
+            
+            cursor.close()
+            conn.close()
+            
+            return result
+        except Exception as e:
+            return {"error": f"List operation failed: {e}"}
+    
     # -------------------------- Action Tools ----------------------------------
     
     def _tool_restart_container(self, args: Dict[str, Any]) -> Dict[str, Any]:
@@ -812,14 +1178,42 @@ class AgentMonitor:
     """LLM-driven monitoring agent with tool calling."""
     
     def __init__(self):
+        # Load user preference from state file
+        incident_dir = os.getenv("AI_MONITOR_INCIDENT_REPORTS_DIR", "/app/incidents")
+        state_file = Path(incident_dir) / "incidents_state.json"
+        preferred_backend = "auto"
+        
+        if state_file.exists():
+            try:
+                state = json.loads(state_file.read_text())
+                preferred_backend = state.get("_preferences", {}).get("llm_backend", "auto")
+                _log("info", "Loaded LLM preference from state", preference=preferred_backend)
+            except Exception as e:
+                _log("warn", "Failed to load state file", error=str(e))
+        
         # LLM setup
         self.claude_api_key = os.getenv("CLAUDE_API_KEY")
         self.claude_model = os.getenv("CLAUDE_MODEL", "claude-3-5-sonnet-20241022")
-        self.use_claude = bool(self.claude_api_key and ANTHROPIC_AVAILABLE)
+        claude_available = bool(self.claude_api_key and ANTHROPIC_AVAILABLE)
         
         self.gemini_api_key = os.getenv("GEMINI_API_KEY")
         self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
-        self.use_gemini = bool(self.gemini_api_key and GEMINI_AVAILABLE and not self.use_claude)
+        gemini_available = bool(self.gemini_api_key and GEMINI_AVAILABLE)
+        
+        # Respect user preference
+        if preferred_backend == "claude" and claude_available:
+            self.use_claude = True
+            self.use_gemini = False
+        elif preferred_backend == "gemini" and gemini_available:
+            self.use_claude = False
+            self.use_gemini = True
+        elif preferred_backend == "auto":
+            # Default: Claude priority if both available
+            self.use_claude = claude_available
+            self.use_gemini = gemini_available and not claude_available
+        else:
+            self.use_claude = False
+            self.use_gemini = False
         
         if self.use_claude:
             self._anthropic_client = Anthropic(api_key=self.claude_api_key)
@@ -836,10 +1230,11 @@ class AgentMonitor:
         self.interval_seconds = _env_int("AI_MONITOR_INTERVAL_SECONDS", 60)
         self.max_tool_calls = _env_int("AI_MONITOR_MAX_TOOL_CALLS", 20)
         self.max_investigation_time = _env_int("AI_MONITOR_MAX_INVESTIGATION_TIME_SECONDS", 300)
-        self.incident_dir = os.getenv("AI_MONITOR_INCIDENT_REPORTS_DIR", "/app/incidents")
+        self.incident_dir = incident_dir
         
         _log("info", "Agent monitor initialized",
              llm_backend="claude" if self.use_claude else "gemini" if self.use_gemini else "none",
+             preferred=preferred_backend,
              max_tool_calls=self.max_tool_calls,
              execute_mode=self.tool_executor.execute_mode)
     

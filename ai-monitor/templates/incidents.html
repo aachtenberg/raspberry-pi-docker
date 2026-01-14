@@ -1,0 +1,518 @@
+{% extends "base.html" %}
+
+{% block title %}Incidents - AI Monitor{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .incident-list {
+        margin-bottom: 20px;
+    }
+    
+    .incident-item {
+        background: #0d1117;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        padding: 16px;
+        margin-bottom: 12px;
+        cursor: pointer;
+        transition: all 0.2s;
+        position: relative;
+    }
+    
+    .incident-item.unread {
+        border-left: 3px solid #58a6ff;
+        background: #0d111720;
+    }
+    
+    .incident-item:hover {
+        border-color: #58a6ff;
+        box-shadow: 0 0 0 1px #58a6ff;
+    }
+    
+    .incident-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    
+    .incident-summary {
+        flex: 1;
+        margin-right: 20px;
+    }
+    
+    .incident-meta {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .incident-detail {
+        display: none;
+        margin-top: 16px;
+        padding-top: 16px;
+        border-top: 1px solid #30363d;
+    }
+    
+    .incident-detail.active {
+        display: block;
+    }
+    
+    .incident-detail .content {
+        background: #0d1117;
+        padding: 16px;
+        border-radius: 6px;
+        overflow-x: auto;
+    }
+    
+    .filter-bar {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
+    
+    .filter-bar select, .filter-bar button {
+        padding: 8px 16px;
+        background: #21262d;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        color: #c9d1d9;
+        cursor: pointer;
+    }
+    
+    .filter-bar select:hover, .filter-bar button:hover {
+        background: #30363d;
+    }
+    
+    .incident-actions {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        padding-top: 12px;
+        border-top: 1px solid #30363d;
+    }
+    
+    .btn-action {
+        padding: 6px 12px;
+        font-size: 12px;
+        background: #21262d;
+        color: #c9d1d9;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+    
+    .btn-action:hover {
+        background: #30363d;
+        border-color: #58a6ff;
+    }
+    
+    .btn-action.btn-danger:hover {
+        background: #da3633;
+        border-color: #f85149;
+        color: #fff;
+    }
+    
+    .unread-badge {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        background: #58a6ff;
+        border-radius: 50%;
+        margin-right: 8px;
+    }
+    
+    .bulk-actions {
+        margin-bottom: 16px;
+        padding: 12px;
+        background: #0d1117;
+        border: 1px solid #30363d;
+        border-radius: 6px;
+        display: flex;
+        gap: 10px;
+        align-items: center;
+    }
+    
+    .bulk-actions .btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+    }
+    
+    .incident-checkbox {
+        margin-right: 12px;
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+    }
+    
+    #selection-count {
+        margin-left: auto;
+        color: #8b949e;
+        font-size: 0.9em;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h2>Incident Reports</h2>
+    <div class="subtitle">AI-generated investigation reports and alerts</div>
+</div>
+
+<div class="card">
+    <div class="card-header" style="border:none; margin:0; padding:0 0 16px 0;">
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <label style="display: flex; align-items: center; gap: 8px; color: #8b949e;">
+                <input type="checkbox" id="select-all" class="incident-checkbox"> 
+                <span>Select All</span>
+            </label>
+            <button id="bulk-read" class="btn" disabled>Mark Read</button>
+            <button id="bulk-dismiss" class="btn" disabled>Dismiss</button>
+            <button id="bulk-delete" class="btn btn-danger" disabled>Delete</button>
+            <span id="selection-count" style="color: #8b949e; font-size: 0.9em;"></span>
+        </div>
+        <div style="display: flex; gap: 12px; align-items: center;">
+            <select id="severity-filter" class="btn" style="padding: 8px 12px;">
+                <option value="">All Severities</option>
+                <option value="critical">Critical</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+            </select>
+            <button onclick="loadIncidents()" class="btn">🔄 Refresh</button>
+        </div>
+    </div>
+    
+    <div id="incident-list" class="loading">Loading incidents...</div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    let allIncidents = [];
+    let selectedIncidents = new Set();
+    
+    async function loadIncidents() {
+        try {
+            const response = await fetch('/api/incidents');
+            allIncidents = await response.json();
+            renderIncidents();
+            updateBulkActions();
+        } catch (error) {
+            document.getElementById('incident-list').innerHTML = 
+                `<div class="error">Failed to load incidents: ${error.message}</div>`;
+        }
+    }
+    
+    function renderIncidents() {
+        const filter = document.getElementById('severity-filter').value;
+        const filtered = filter ? 
+            allIncidents.filter(inc => inc.severity === filter) : 
+            allIncidents;
+        
+        const listDiv = document.getElementById('incident-list');
+        
+        if (filtered.length === 0) {
+            listDiv.innerHTML = '<p style="color: #8b949e; text-align: center; padding: 40px;">No incidents found.</p>';
+            return;
+        }
+        
+        listDiv.innerHTML = '<div class="incident-list">' +
+            filtered.map((inc, idx) => `
+                <div class="incident-item ${!inc.read ? 'unread' : ''}" id="incident-${idx}">
+                    <div class="incident-header">
+                        <input type="checkbox" 
+                               class="incident-checkbox" 
+                               data-filename="${inc.filename}"
+                               onclick="event.stopPropagation(); toggleSelection('${inc.filename}')">
+                        <div class="incident-summary" onclick="toggleDetail(${idx})">
+                            ${!inc.read ? '<span class="unread-badge"></span>' : ''}
+                            ${inc.summary}
+                        </div>
+                        <div class="incident-meta">
+                            <span class="status-badge status-${inc.severity}">${inc.severity}</span>
+                            <span class="timestamp">${formatTimestamp(inc.timestamp)}</span>
+                            <span style="color: #8b949e;">${(inc.confidence * 100).toFixed(0)}%</span>
+                        </div>
+                    </div>
+                    <div class="incident-detail" id="detail-${idx}">
+                        <div class="loading">Loading...</div>
+                    </div>
+                </div>
+            `).join('') +
+            '</div>';
+        
+        // Restore checkbox states
+        selectedIncidents.forEach(filename => {
+            const checkbox = document.querySelector(`input[data-filename="${filename}"]`);
+            if (checkbox) checkbox.checked = true;
+        });
+        
+        // Check if URL has a hash to auto-expand
+        if (window.location.hash) {
+            const filename = window.location.hash.substring(1);
+            const idx = filtered.findIndex(inc => inc.filename === filename);
+            if (idx !== -1) {
+                setTimeout(() => toggleDetail(idx), 100);
+                setTimeout(() => document.getElementById(`incident-${idx}`).scrollIntoView({ behavior: 'smooth' }), 200);
+            }
+        }
+    }
+    
+    async function toggleDetail(idx) {
+        const detailDiv = document.getElementById(`detail-${idx}`);
+        
+        if (detailDiv.classList.contains('active')) {
+            detailDiv.classList.remove('active');
+            return;
+        }
+        
+        // Close all other details
+        document.querySelectorAll('.incident-detail.active').forEach(el => {
+            el.classList.remove('active');
+        });
+        
+        // Load and show this detail
+        detailDiv.classList.add('active');
+        
+        const filter = document.getElementById('severity-filter').value;
+        const filtered = filter ? 
+            allIncidents.filter(inc => inc.severity === filter) : 
+            allIncidents;
+        
+        const incident = filtered[idx];
+        
+        try {
+            const response = await fetch(`/api/incidents/${incident.filename}`);
+            const data = await response.json();
+            
+            // Convert markdown to HTML-ish display
+            const contentHtml = data.content
+                .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+                .replace(/\n/g, '<br>');
+            
+            detailDiv.innerHTML = `
+                <div class="content">
+                    <div style="margin-bottom: 10px;">
+                        <strong>Confidence:</strong> ${(data.confidence * 100).toFixed(0)}%
+                        <span style="margin: 0 15px;">|</span>
+                        <strong>File:</strong> <code>${data.filename}</code>
+                    </div>
+                    <hr style="border: none; border-top: 1px solid #30363d; margin: 15px 0;">
+                    <div style="line-height: 1.8;">${contentHtml}</div>
+                    <div class="incident-actions">
+                        ${incident.read ? '' : '<button class="btn-action" onclick="markAsRead(\'' + incident.filename + '\', event)">✓ Mark as Read</button>'}
+                        <button class="btn-action" onclick="dismissIncident('${incident.filename}', event)">Hide</button>
+                        <button class="btn-action btn-danger" onclick="deleteIncident('${incident.filename}', event)">🗑 Delete</button>
+                    </div>
+                </div>
+            `;
+        } catch (error) {
+            detailDiv.innerHTML = `<div class="error">Failed to load incident details: ${error.message}</div>`;
+        }
+    }
+    
+    function formatTimestamp(ts) {
+        if (!ts) return 'Unknown';
+        try {
+            const date = new Date(ts.replace(/_/g, '').replace(/(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})/, '$1-$2-$3T$4:$5:$6Z'));
+            return date.toLocaleString();
+        } catch {
+            return ts;
+        }
+    }
+    
+    async function markAsRead(filename, event) {
+        event.stopPropagation();
+        try {
+            const response = await fetch(`/api/incidents/${filename}/read`, {
+                method: 'POST'
+            });
+            if (response.ok) {
+                await loadIncidents();
+            }
+        } catch (error) {
+            alert('Failed to mark as read: ' + error.message);
+        }
+    }
+    
+    async function dismissIncident(filename, event) {
+        event.stopPropagation();
+        if (!confirm('Hide this incident? It will no longer appear in the list.')) {
+            return;
+        }
+        try {
+            const response = await fetch(`/api/incidents/${filename}/dismiss`, {
+                method: 'POST'
+            });
+            if (response.ok) {
+                await loadIncidents();
+            }
+        } catch (error) {
+            alert('Failed to dismiss incident: ' + error.message);
+        }
+    }
+    
+    async function deleteIncident(filename, event) {
+        event.stopPropagation();
+        if (!confirm('Permanently delete this incident? This cannot be undone.')) {
+            return;
+        }
+        try {
+            const response = await fetch(`/api/incidents/${filename}`, {
+                method: 'DELETE'
+            });
+            if (response.ok) {
+                await loadIncidents();
+            }
+        } catch (error) {
+            alert('Failed to delete incident: ' + error.message);
+        }
+    }
+    
+    // Bulk operations
+    function toggleSelection(filename) {
+        if (selectedIncidents.has(filename)) {
+            selectedIncidents.delete(filename);
+        } else {
+            selectedIncidents.add(filename);
+        }
+        updateBulkActions();
+    }
+    
+    function updateBulkActions() {
+        const count = selectedIncidents.size;
+        const buttons = ['bulk-read', 'bulk-dismiss', 'bulk-delete'];
+        
+        buttons.forEach(id => {
+            document.getElementById(id).disabled = count === 0;
+        });
+        
+        document.getElementById('selection-count').textContent = 
+            count > 0 ? `${count} selected` : '';
+        
+        // Update select-all checkbox state
+        const filter = document.getElementById('severity-filter').value;
+        const filtered = filter ? 
+            allIncidents.filter(inc => inc.severity === filter) : 
+            allIncidents;
+        
+        const selectAll = document.getElementById('select-all');
+        if (filtered.length === 0) {
+            selectAll.checked = false;
+            selectAll.disabled = true;
+        } else {
+            selectAll.disabled = false;
+            const allFilteredSelected = filtered.every(inc => selectedIncidents.has(inc.filename));
+            selectAll.checked = allFilteredSelected && filtered.length > 0;
+        }
+    }
+    
+    async function bulkMarkRead() {
+        if (selectedIncidents.size === 0) return;
+        
+        try {
+            const response = await fetch('/api/incidents/bulk/read', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({filenames: Array.from(selectedIncidents)})
+            });
+            
+            if (response.ok) {
+                selectedIncidents.clear();
+                await loadIncidents();
+            }
+        } catch (error) {
+            alert('Failed to mark as read: ' + error.message);
+        }
+    }
+    
+    async function bulkDismiss() {
+        if (selectedIncidents.size === 0) return;
+        
+        if (!confirm(`Dismiss ${selectedIncidents.size} incident(s)? They will be hidden from the list.`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/incidents/bulk/dismiss', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({filenames: Array.from(selectedIncidents)})
+            });
+            
+            if (response.ok) {
+                selectedIncidents.clear();
+                await loadIncidents();
+            }
+        } catch (error) {
+            alert('Failed to dismiss: ' + error.message);
+        }
+    }
+    
+    async function bulkDelete() {
+        if (selectedIncidents.size === 0) return;
+        
+        if (!confirm(`Permanently delete ${selectedIncidents.size} incident(s)? This cannot be undone.`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/incidents/bulk/delete', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({filenames: Array.from(selectedIncidents)})
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.errors && data.errors.length > 0) {
+                    alert(`Deleted ${data.deleted} incident(s). Errors: ${data.errors.join(', ')}`);
+                }
+                selectedIncidents.clear();
+                await loadIncidents();
+            }
+        } catch (error) {
+            alert('Failed to delete: ' + error.message);
+        }
+    }
+    
+    function toggleSelectAll() {
+        const filter = document.getElementById('severity-filter').value;
+        const filtered = filter ? 
+            allIncidents.filter(inc => inc.severity === filter) : 
+            allIncidents;
+        
+        const selectAll = document.getElementById('select-all');
+        
+        if (selectAll.checked) {
+            // Select all visible
+            filtered.forEach(inc => selectedIncidents.add(inc.filename));
+        } else {
+            // Deselect all visible
+            filtered.forEach(inc => selectedIncidents.delete(inc.filename));
+        }
+        
+        renderIncidents();
+        updateBulkActions();
+    }
+    
+    // Event listeners
+    document.getElementById('severity-filter').addEventListener('change', () => {
+        renderIncidents();
+        updateBulkActions();
+    });
+    document.getElementById('select-all').addEventListener('change', toggleSelectAll);
+    document.getElementById('bulk-read').addEventListener('click', bulkMarkRead);
+    document.getElementById('bulk-dismiss').addEventListener('click', bulkDismiss);
+    document.getElementById('bulk-delete').addEventListener('click', bulkDelete);
+    
+    // Initial load
+    loadIncidents();
+    
+    // Auto-refresh every 60 seconds
+    setInterval(loadIncidents, 60000);
+</script>
+{% endblock %}

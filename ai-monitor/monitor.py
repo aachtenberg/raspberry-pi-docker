@@ -3,6 +3,7 @@ import os
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any, Dict, List, Optional
 from threading import Thread
 
@@ -154,13 +155,26 @@ class AiMonitor:
         # LLM backend selection (priority: Claude > Gemini)
         self.claude_api_key = os.getenv("CLAUDE_API_KEY")
         self.claude_model = os.getenv("CLAUDE_MODEL", "claude-3-haiku-20240307")
-        self.use_claude = bool(self.claude_api_key and ANTHROPIC_AVAILABLE)
-        if self.use_claude:
-            self._anthropic_client = Anthropic(api_key=self.claude_api_key)
         
         self.gemini_api_key = os.getenv("GEMINI_API_KEY")
         self.gemini_model = os.getenv("GEMINI_MODEL", "gemini-2.0-flash-exp")
-        self.use_gemini = bool(self.gemini_api_key and GEMINI_AVAILABLE and not self.use_claude)
+        
+        # Check for backend preference from state file
+        preferred_backend = self._load_backend_preference()
+        
+        # Initialize backends based on preference
+        if preferred_backend == "claude":
+            self.use_claude = bool(self.claude_api_key and ANTHROPIC_AVAILABLE)
+            self.use_gemini = False
+        elif preferred_backend == "gemini":
+            self.use_claude = False
+            self.use_gemini = bool(self.gemini_api_key and GEMINI_AVAILABLE)
+        else:  # auto - Claude takes priority if both available
+            self.use_claude = bool(self.claude_api_key and ANTHROPIC_AVAILABLE)
+            self.use_gemini = bool(self.gemini_api_key and GEMINI_AVAILABLE and not self.use_claude)
+        
+        if self.use_claude:
+            self._anthropic_client = Anthropic(api_key=self.claude_api_key)
         if self.use_gemini:
             genai.configure(api_key=self.gemini_api_key)
             self._gemini_model = genai.GenerativeModel(self.gemini_model)
@@ -184,6 +198,18 @@ class AiMonitor:
         # Predictive memory thresholds (tunable via env)
         self.mem_growth_bytes = _env_int("AI_MONITOR_MEM_GROWTH_BYTES", 300_000_000)  # 300MB
         self.mem_growth_window_hours = _env_int("AI_MONITOR_MEM_GROWTH_WINDOW_HOURS", 2)  # 2h
+    
+    def _load_backend_preference(self) -> str:
+        """Load LLM backend preference from state file"""
+        try:
+            state_file = Path(self.incident_reports_dir if hasattr(self, 'incident_reports_dir') else '/app/incidents') / 'incidents_state.json'
+            if state_file.exists():
+                import json
+                state = json.loads(state_file.read_text())
+                return state.get('_preferences', {}).get('llm_backend', 'auto')
+        except Exception as e:
+            logger.warning(f"Failed to load backend preference: {e}")
+        return 'auto'
         
         # HTTP synthetic checks
         self.http_checks = self._parse_http_checks(os.getenv("AI_MONITOR_HTTP_CHECKS", ""))

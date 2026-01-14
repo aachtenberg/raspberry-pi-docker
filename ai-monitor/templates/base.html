@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Monitor{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Ubuntu:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Ubuntu', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            line-height: 1.6;
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        .sidebar {
+            width: 240px;
+            background: #161b22;
+            border-right: 1px solid #30363d;
+            padding: 20px 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+        
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #30363d;
+            margin-bottom: 20px;
+        }
+        
+        .sidebar-header h1 {
+            color: #58a6ff;
+            font-size: 1.5em;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .sidebar-header .subtitle {
+            color: #8b949e;
+            font-size: 0.75em;
+            font-weight: 400;
+            margin-top: 4px;
+        }
+        
+        .sidebar-nav {
+            list-style: none;
+        }
+        
+        .sidebar-nav li {
+            margin-bottom: 4px;
+        }
+        
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: #8b949e;
+            text-decoration: none;
+            padding: 10px 20px;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+        }
+        
+        .sidebar-nav a:hover {
+            background: #21262d;
+            color: #c9d1d9;
+            border-left-color: #58a6ff;
+        }
+        
+        .sidebar-nav a.active {
+            background: #1f6feb20;
+            color: #58a6ff;
+            border-left-color: #1f6feb;
+            font-weight: 600;
+        }
+        
+        .sidebar-nav .icon {
+            font-size: 1.2em;
+            width: 20px;
+            text-align: center;
+        }
+        
+        .main-content {
+            margin-left: 240px;
+            flex: 1;
+            padding: 30px;
+            width: calc(100% - 240px);
+        }
+        
+        .page-header {
+            margin-bottom: 30px;
+        }
+        
+        .page-header h2 {
+            color: #c9d1d9;
+            font-size: 1.75em;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .page-header .subtitle {
+            color: #8b949e;
+            font-size: 0.95em;
+        }
+        
+        .card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        .card-header h3 {
+            color: #c9d1d9;
+            font-size: 1.1em;
+            font-weight: 600;
+        }
+        
+        .card-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background: #161b22;
+            border: 1px solid #30363d;
+            border-radius: 8px;
+            padding: 20px;
+            transition: all 0.2s;
+        }
+        
+        .stat-card:hover {
+            border-color: #58a6ff;
+            box-shadow: 0 0 0 1px #58a6ff;
+        }
+        
+        .stat-card .label {
+            color: #8b949e;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+        }
+        
+        .stat-card .value {
+            color: #58a6ff;
+            font-size: 2.5em;
+            font-weight: 700;
+            line-height: 1;
+        }
+        
+        .stat-card .change {
+            color: #8b949e;
+            font-size: 0.85em;
+            margin-top: 8px;
+        }
+        
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        
+        .data-table th {
+            background: #0d1117;
+            color: #8b949e;
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #30363d;
+            font-weight: 600;
+        }
+        
+        .data-table td {
+            padding: 12px;
+            border-bottom: 1px solid #30363d;
+        }
+        
+        .data-table tr:hover {
+            background: #21262d;
+        }
+        
+        .btn {
+            background: #21262d;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .btn:hover {
+            background: #30363d;
+            border-color: #58a6ff;
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn-primary {
+            background: #1f6feb;
+            border-color: #1f6feb;
+            color: #fff;
+        }
+        
+        .btn-primary:hover {
+            background: #388bfd;
+        }
+        
+        .btn-danger {
+            background: #21262d;
+            border-color: #da3633;
+            color: #f85149;
+        }
+        
+        .btn-danger:hover {
+            background: #da3633;
+            color: #fff;
+        }
+        
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .status-critical {
+            background: #da363320;
+            color: #f85149;
+            border: 1px solid #da3633;
+        }
+        
+        .status-high {
+            background: #f8514920;
+            color: #ff7b72;
+            border: 1px solid #f85149;
+        }
+        
+        .status-medium {
+            background: #d2992220;
+            color: #f0b72f;
+            border: 1px solid #d29922;
+        }
+        
+        .status-low {
+            background: #3fb95020;
+            color: #56d364;
+            border: 1px solid #3fb950;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #8b949e;
+            padding: 40px;
+        }
+        
+        .error {
+            background: #da363320;
+            color: #f85149;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 20px 0;
+            border: 1px solid #da3633;
+        }
+        
+        {% block extra_styles %}{% endblock %}
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1>🤖 AI Monitor</h1>
+            <div class="subtitle">Agent Dashboard</div>
+        </div>
+        <nav>
+            <ul class="sidebar-nav">
+                <li><a href="/" class="{% if request.path == '/' %}active{% endif %}">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </a></li>
+                <li><a href="/incidents" class="{% if request.path == '/incidents' %}active{% endif %}">
+                    <span class="icon">🔔</span>
+                    <span>Incidents</span>
+                </a></li>
+                <li><a href="/tool-calls" class="{% if request.path == '/tool-calls' %}active{% endif %}">
+                    <span class="icon">🔧</span>
+                    <span>Tool Calls</span>
+                </a></li>
+            </ul>
+        </nav>
+    </aside>
+    
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

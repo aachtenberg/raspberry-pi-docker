@@ -9,16 +9,22 @@ This guide covers initial installation, configuration, and first-time setup of a
 git clone https://github.com/aachtenberg/raspberry-pi-docker.git ~/docker
 cd ~/docker
 
-# 2. Copy environment template
+# 2. Initialize directories with correct permissions
+./scripts/init-dirs.sh
+
+# 3. Copy environment template
 cp .env.example .env
 
-# 3. Edit secrets (see Configuration section below)
+# 4. Edit secrets (see Configuration section below)
 nano .env
 
-# 4. Start all services
+# 5. Setup network-specific configs
+./scripts/setup-local-configs.sh
+
+# 6. Start all services
 docker compose up -d
 
-# 5. Verify deployment
+# 7. Verify deployment
 ./scripts/status.sh
 ```
 
